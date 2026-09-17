@@ -121,7 +121,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Sign Up / Organization Onboarding Button */}
           <button
-            onClick={() => scrollToAuth("signup")}
+            onClick={() => setIsOnboardingOpen(true)}
+            data-testid="nav-get-started-btn"
             className="px-4 py-1.5 rounded-lg bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
           >
             <span>Get Started</span>
@@ -156,7 +157,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Call to Action Buttons */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
           <button
-            onClick={() => scrollToAuth("signup")}
+            onClick={() => setIsOnboardingOpen(true)}
+            data-testid="hero-onboarding-btn"
             className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
           >
             <Building2 className="w-4 h-4" />
