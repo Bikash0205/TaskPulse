@@ -4,7 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ManagerDispatcher } from "@/components/ManagerDispatcher";
 import { WorkloadMatrix } from "@/components/WorkloadMatrix";
-import { useAuth } from "@/context/AuthContext";
+import { LandingPage } from "@/components/LandingPage";
+import { TaskPulseLogo } from "@/components/TaskPulseLogo";
+import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
 import { Sparkles, ArrowRight, X, Building2 } from "lucide-react";
 import {
@@ -17,7 +19,7 @@ import { mockColleagues, mockTasks, mockPulseFeed, mockProjects } from "@shared/
 import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole, Project, SubTask } from "@shared/types";
 
 export default function TaskPulseWorkspacePage() {
-  const { user, teamRoles } = useAuth();
+  const { user, loading, teamRoles, loginDemoUser, signInWithCustomUser } = useAuth();
   const {
     currentOrg,
     assignedProjectForCurrentLogin,
@@ -355,6 +357,29 @@ export default function TaskPulseWorkspacePage() {
     maxBandwidth: 5,
     isOnline: !!user,
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] flex flex-col items-center justify-center p-6 text-[#002055] dark:text-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-4 animate-pulse">
+          <TaskPulseLogo size="lg" />
+          <div className="text-xs font-mono text-[#556070] dark:text-[#94A3B8]">
+            Initializing TaskPulse Velocity Engine...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LandingPage
+        onEnterDemo={loginDemoUser}
+        onEnterMarcus={() => signInWithCustomUser("Marcus Vance", "marcus.vance@taskpulse.internal")}
+        onEnterAdmin={() => signInWithCustomUser("Zevon", PERMANENT_ADMIN_EMAIL)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
