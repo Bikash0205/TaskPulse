@@ -43,3 +43,4 @@ temp_apk/
 *.idsig
 uber-apk-signer.jar
 taskpulse_updated_unsigned.apk
+.vercel
