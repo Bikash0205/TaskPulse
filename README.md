@@ -1,6 +1,11 @@
 # TaskPulse — Enterprise Velocity Engine
 
+[![Live Production](https://img.shields.io/badge/Vercel-Live%20Production-756EF3?logo=vercel&logoColor=white)](https://happy-fermi-kappa.vercel.app)
+[![GitHub](https://img.shields.io/badge/GitHub-Bikash0205%2FTaskPulse-181717?logo=github&logoColor=white)](https://github.com/Bikash0205/TaskPulse)
+
 Production-ready enterprise task synchronization and colleague workload platform with Next.js 15 App Router (Web), React Native Expo (Mobile), and Firebase RBAC.
+
+* **Live Web App**: [https://happy-fermi-kappa.vercel.app](https://happy-fermi-kappa.vercel.app)
 
 ---
 
