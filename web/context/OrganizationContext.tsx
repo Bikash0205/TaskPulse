@@ -14,9 +14,9 @@ export interface OrganizationContextType {
   setAssignedProjectForCurrentLogin: (projId: string | null) => void;
   onboardCompany: (
     name: string,
-    department: Department,
-    initialProjectName: string,
-    initialProjectCode: string
+    departments?: Department[] | Department,
+    initialProjectName?: string,
+    initialProjectCode?: string
   ) => { org: Organization; initialProject: Project };
   joinWithCode: (codeOrOrgId: string) => { success: boolean; message: string; org?: Organization };
   inviteTeammate: (
@@ -201,13 +201,24 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Onboard a new company as Admin
   const onboardCompany = (
     name: string,
-    department: Department,
-    initialProjectName: string,
-    initialProjectCode: string
+    departments?: Department[] | Department,
+    initialProjectName?: string,
+    initialProjectCode?: string
   ) => {
     const adminEmail = user?.email || PERMANENT_ADMIN_EMAIL;
     const orgId = `org-${Date.now()}`;
-    const cleanCode = (initialProjectCode || name.slice(0, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const cleanCode = (initialProjectCode || name.slice(0, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "") || "PROJ";
+
+    let resolvedDepts: Department[] = [];
+    if (Array.isArray(departments)) {
+      resolvedDepts = departments.filter(Boolean);
+    } else if (typeof departments === "string" && departments.trim()) {
+      resolvedDepts = [departments.trim()];
+    }
+    if (resolvedDepts.length === 0) {
+      resolvedDepts = ["Operations", "Platform", "Product"];
+    }
+    const uniqueDepts = Array.from(new Set(resolvedDepts));
 
     const newOrg: Organization = {
       id: orgId,
@@ -215,15 +226,15 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       adminEmail,
       createdAt: new Date().toISOString(),
-      departments: [department, "Engineering", "Product", "Marketing"],
+      departments: uniqueDepts,
       inviteCode: `${cleanCode}-${Math.floor(1000 + Math.random() * 9000)}`,
     };
 
     const initialProject: Project = {
       id: `proj-${Date.now()}`,
-      name: initialProjectName.trim() || `${name} Core Roadmap`,
+      name: (initialProjectName || `${name.trim()} Core Roadmap`).trim(),
       code: cleanCode,
-      department,
+      department: uniqueDepts[0] || "General",
       description: `Primary initiative for ${name}`,
       progressPercentage: 0,
       targetDate: "Next 30 Days",

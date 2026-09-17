@@ -1,7 +1,7 @@
 export type TaskStatus = "backlog" | "in_progress" | "in_review" | "completed" | "blocked";
 export type CapacityLevel = "normal" | "warning" | "overload";
 export type UserRole = "admin" | "manager" | "member" | "viewer";
-export type Department = "Engineering" | "Product" | "Design" | "Marketing" | "Security" | "Operations";
+export type Department = string;
 
 export interface ColleagueProfile {
   id: string;

@@ -93,7 +93,13 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
   const [newAssigneeId, setNewAssigneeId] = useState(colleagues[0]?.id || "");
   const [rawSubtasks, setRawSubtasks] = useState("");
 
-  const departments = ["All", "Engineering", "Marketing", "Product", "Design"];
+  const departments = useMemo(() => {
+    const taskDepts = tasks.map((t) => t.department).filter(Boolean);
+    const colleagueDepts = colleagues.map((c) => c.department).filter(Boolean);
+    const projectDepts = projects.map((p) => p.department).filter(Boolean);
+    const combined = Array.from(new Set([...taskDepts, ...colleagueDepts, ...projectDepts]));
+    return ["All", ...(combined.length > 0 ? combined : ["Engineering", "Product", "Design"])];
+  }, [tasks, colleagues, projects]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -686,19 +692,20 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">Department</label>
-                  <select
+                  <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">Department (Custom)</label>
+                  <input
+                    type="text"
                     value={newProjDept}
-                    onChange={(e) => setNewProjDept(e.target.value as Department)}
+                    onChange={(e) => setNewProjDept(e.target.value)}
+                    placeholder="e.g. Platform, Design, Marketing..."
+                    list="manager-proj-depts"
                     className="w-full px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-[#756EF3]"
-                  >
-                    <option value="Engineering">Engineering</option>
-                    <option value="Product">Product</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Design">Design</option>
-                    <option value="Security">Security</option>
-                    <option value="Operations">Operations</option>
-                  </select>
+                  />
+                  <datalist id="manager-proj-depts">
+                    {departments.filter((d) => d !== "All").map((d) => (
+                      <option key={d} value={d} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 

@@ -281,20 +281,24 @@ export const RoleManagementModal: React.FC<RoleManagementModalProps> = ({
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                      Department
+                      Department (Custom)
                     </label>
-                    <select
+                    <input
+                      type="text"
                       value={newDept}
-                      onChange={(e) => setNewDept(e.target.value as Department)}
+                      onChange={(e) => setNewDept(e.target.value)}
+                      placeholder="e.g. Engineering, Platform, Product..."
+                      list="role-dept-options"
                       className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
-                    >
-                      <option value="Engineering">Engineering</option>
-                      <option value="Product">Product</option>
-                      <option value="Design">Design</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Operations">Operations</option>
-                      <option value="Security">Security</option>
-                    </select>
+                    />
+                    <datalist id="role-dept-options">
+                      <option value="Engineering" />
+                      <option value="Product" />
+                      <option value="Design" />
+                      <option value="Marketing" />
+                      <option value="Operations" />
+                      <option value="Security" />
+                    </datalist>
                   </div>
                 </div>
 

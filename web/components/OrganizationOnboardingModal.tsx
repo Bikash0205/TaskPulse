@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
@@ -25,6 +25,7 @@ import {
   Laptop,
   Eye,
   X,
+  Plus,
 } from "lucide-react";
 
 interface EmployeeEntry {
@@ -34,6 +35,17 @@ interface EmployeeEntry {
   role: UserRole;
   department: Department;
 }
+
+const DEFAULT_POPULAR_DEPTS = [
+  "Platform Engineering",
+  "Design Systems",
+  "Product Management",
+  "Customer Success",
+  "Growth Marketing",
+  "Operations",
+  "Security & Compliance",
+  "Data Science",
+];
 
 export const OrganizationOnboardingModal: React.FC = () => {
   const { user, signOutUser, signInWithCustomUser } = useAuth();
@@ -48,45 +60,43 @@ export const OrganizationOnboardingModal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Step 1: Admin & Organization Profile
+  // Step 1: Admin & Organization Profile (Basic Company Information Only - No department)
   const [adminName, setAdminName] = useState(user?.displayName || "Alex Vance");
   const [adminEmail, setAdminEmail] = useState(user?.email || "");
   const [companyName, setCompanyName] = useState("");
-  const [department, setDepartment] = useState<Department>("Engineering");
-  const [initialProject, setInitialProject] = useState("");
-  const [projectCode, setProjectCode] = useState("");
   const [teamSize, setTeamSize] = useState("11-50");
   const [slug, setSlug] = useState("");
 
-  // Step 2: Employee Roles
+  // Step 2: Employee Roles & Custom Departments
   const [employees, setEmployees] = useState<EmployeeEntry[]>([
     {
       id: "e1",
       name: "Marcus Lee",
-      email: "marcus@taskpulse.io",
+      email: "marcus@company.com",
       role: "manager",
-      department: "Engineering",
+      department: "Platform Engineering",
     },
     {
       id: "e2",
       name: "Elena Rostova",
-      email: "elena@taskpulse.io",
+      email: "elena@company.com",
       role: "member",
-      department: "Design",
+      department: "Product Design",
     },
     {
       id: "e3",
       name: "David Kim",
-      email: "david@taskpulse.io",
+      email: "david@company.com",
       role: "viewer",
-      department: "Product",
+      department: "Customer Operations",
     },
   ]);
 
   const [newEmpName, setNewEmpName] = useState("");
   const [newEmpEmail, setNewEmpEmail] = useState("");
-  const [newEmpRole, setNewEmpRole] = useState<UserRole>("manager");
-  const [newEmpDept, setNewEmpDept] = useState<Department>("Engineering");
+  const [newEmpRole, setNewEmpRole] = useState<UserRole>("member");
+  // Department name can be custom, and it's NOT preselected
+  const [newEmpDept, setNewEmpDept] = useState<string>("");
 
   // Step 3: Link copy feedback
   const [linkCopied, setLinkCopied] = useState(false);
@@ -96,20 +106,29 @@ export const OrganizationOnboardingModal: React.FC = () => {
   const [inviteCodeInput, setInviteCodeInput] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
 
+  // Dynamic suggestions combining existing departments + standard suggestions
+  const suggestedChips = useMemo(() => {
+    const existing = employees.map((e) => e.department.trim()).filter(Boolean);
+    return Array.from(new Set([...existing, ...DEFAULT_POPULAR_DEPTS]));
+  }, [employees]);
+
   if (!isOnboardingOpen) return null;
 
   const handleAddEmployee = () => {
     if (!newEmpEmail.trim()) return;
+    const resolvedDept = newEmpDept.trim() || "Operations";
     const entry: EmployeeEntry = {
       id: `emp-${Date.now()}`,
       name: newEmpName.trim() || newEmpEmail.split("@")[0],
       email: newEmpEmail.trim().toLowerCase(),
       role: newEmpRole,
-      department: newEmpDept,
+      department: resolvedDept,
     };
     setEmployees((prev) => [...prev, entry]);
     setNewEmpName("");
     setNewEmpEmail("");
+    // Reset back to unselected/blank so the next user can type or choose their custom department
+    setNewEmpDept("");
   };
 
   const handleLaunchWorkspace = (e: React.FormEvent) => {
@@ -118,12 +137,25 @@ export const OrganizationOnboardingModal: React.FC = () => {
 
     setIsSubmitting(true);
     if (!user) {
-      signInWithCustomUser(adminName.trim() || "Administrator", adminEmail.trim() || "admin@company.com");
+      signInWithCustomUser(
+        adminName.trim() || "Administrator",
+        adminEmail.trim() || "admin@company.com"
+      );
     }
-    const code = projectCode.trim() || companyName.trim().slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const projName = initialProject.trim() || `${companyName.trim()} Core Roadmap`;
 
-    const { org, initialProject: proj } = onboardCompany(companyName, department, projName, code);
+    // Extract all unique custom departments entered for employees
+    const customDepts = Array.from(
+      new Set(employees.map((emp) => emp.department.trim()).filter(Boolean))
+    );
+    if (customDepts.length === 0) {
+      customDepts.push("Operations", "Platform", "Product");
+    }
+
+    const { org, initialProject: proj } = onboardCompany(
+      companyName.trim(),
+      customDepts,
+      `${companyName.trim()} Core Roadmap`
+    );
 
     // Register all invited teammates
     employees.forEach((emp) => {
@@ -147,7 +179,13 @@ export const OrganizationOnboardingModal: React.FC = () => {
     }
   };
 
-  const generatedSlug = slug || companyName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "acme-workspace";
+  const generatedSlug =
+    slug || companyName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "acme-workspace";
+
+  // Compute unique departments for summary
+  const configuredDepartments = Array.from(
+    new Set(employees.map((e) => e.department.trim()).filter(Boolean))
+  );
 
   return (
     <AnimatePresence>
@@ -237,14 +275,56 @@ export const OrganizationOnboardingModal: React.FC = () => {
           {activeTab === "create" && (
             <div className="px-6 pt-4 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${step >= 1 ? "bg-indigo-600 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>1</span>
-                <span className={`font-semibold ${step === 1 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"}`}>Admin & Org</span>
+                <span
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                    step >= 1
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                  }`}
+                >
+                  1
+                </span>
+                <span
+                  className={`font-semibold ${
+                    step === 1 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"
+                  }`}
+                >
+                  Company Profile
+                </span>
                 <div className="w-8 h-0.5 bg-slate-200 dark:bg-slate-800" />
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${step >= 2 ? "bg-indigo-600 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>2</span>
-                <span className={`font-semibold ${step === 2 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"}`}>Employee Roles</span>
+                <span
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                    step >= 2
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                  }`}
+                >
+                  2
+                </span>
+                <span
+                  className={`font-semibold ${
+                    step === 2 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"
+                  }`}
+                >
+                  Team & Departments
+                </span>
                 <div className="w-8 h-0.5 bg-slate-200 dark:bg-slate-800" />
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${step >= 3 ? "bg-indigo-600 text-white" : "bg-slate-200 dark:bg-slate-800 text-slate-500"}`}>3</span>
-                <span className={`font-semibold ${step === 3 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"}`}>Invitations</span>
+                <span
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                    step >= 3
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                  }`}
+                >
+                  3
+                </span>
+                <span
+                  className={`font-semibold ${
+                    step === 3 ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"
+                  }`}
+                >
+                  Invitations
+                </span>
               </div>
               <span className="text-slate-400 font-mono">Step {step}/3</span>
             </div>
@@ -254,9 +334,28 @@ export const OrganizationOnboardingModal: React.FC = () => {
           <div className="p-6 max-h-[60vh] overflow-y-auto">
             {activeTab === "create" ? (
               <div>
-                {/* STEP 1: ADMIN & ORG PROFILE */}
+                {/* STEP 1: BASIC COMPANY INFORMATION ONLY (NO PRESELECTED OR FIXED DEPARTMENT) */}
                 {step === 1 && (
                   <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Company / Organization Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={companyName}
+                        onChange={(e) => {
+                          setCompanyName(e.target.value);
+                          if (!slug) {
+                            setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
+                          }
+                        }}
+                        placeholder="e.g. Acme Corporation, Stripe, Vercel"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                      />
+                    </div>
+
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                         Admin Full Name <span className="text-red-500">*</span>
@@ -289,63 +388,25 @@ export const OrganizationOnboardingModal: React.FC = () => {
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Company / Organization Name <span className="text-red-500">*</span>
+                        Workspace Domain
                       </label>
-                      <input
-                        type="text"
-                        required
-                        value={companyName}
-                        onChange={(e) => {
-                          setCompanyName(e.target.value);
-                          if (!projectCode && e.target.value) {
-                            setProjectCode(e.target.value.slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, ""));
-                          }
-                          if (!slug) {
-                            setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
-                          }
-                        }}
-                        placeholder="e.g. Apex Dynamics, TaskPulse Technologies"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Primary Department
-                        </label>
-                        <select
-                          value={department}
-                          onChange={(e) => setDepartment(e.target.value as Department)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
-                        >
-                          <option value="Engineering">Engineering</option>
-                          <option value="Product">Product</option>
-                          <option value="Design">Design</option>
-                          <option value="Marketing">Marketing</option>
-                          <option value="Operations">Operations</option>
-                          <option value="Security">Security</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Initial Project Code
-                        </label>
+                      <div className="flex items-center rounded-xl border border-slate-300 dark:border-slate-700 px-3 bg-slate-50 dark:bg-slate-900">
+                        <span className="text-xs text-slate-400 font-mono">taskpulse.io/</span>
                         <input
                           type="text"
-                          maxLength={6}
-                          value={projectCode}
-                          onChange={(e) => setProjectCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
-                          placeholder="e.g. APEX"
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono uppercase focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                          value={slug}
+                          onChange={(e) =>
+                            setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"))
+                          }
+                          placeholder="company-slug"
+                          className="flex-1 py-2 text-xs bg-transparent outline-none font-mono text-slate-900 dark:text-slate-100"
                         />
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Team Size
+                        Organization Size
                       </label>
                       <div className="grid grid-cols-4 gap-2">
                         {["1-10", "11-50", "50-250", "250+"].map((sz) => (
@@ -365,20 +426,15 @@ export const OrganizationOnboardingModal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        Workspace Domain
-                      </label>
-                      <div className="flex items-center rounded-xl border border-slate-300 dark:border-slate-700 px-3 bg-slate-50 dark:bg-slate-900">
-                        <span className="text-xs text-slate-400 font-mono">taskpulse.io/</span>
-                        <input
-                          type="text"
-                          value={slug}
-                          onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"))}
-                          placeholder="company-slug"
-                          className="flex-1 py-2 text-xs bg-transparent outline-none font-mono text-slate-900 dark:text-slate-100"
-                        />
-                      </div>
+                    {/* Enterprise Guidance Note */}
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                      <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          Next step:
+                        </span>{" "}
+                        You will add team members under their custom departments with tailored role permissions.
+                      </p>
                     </div>
 
                     <button
@@ -387,137 +443,208 @@ export const OrganizationOnboardingModal: React.FC = () => {
                       onClick={() => setStep(2)}
                       className="w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
                     >
-                      <span>Proceed to Employee Roles</span>
+                      <span>Proceed to Team & Departments</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 )}
 
-                {/* STEP 2: ADD EMPLOYEES ACCORDING TO ROLES */}
+                {/* STEP 2: ADD USERS UNDER CUSTOM DEPARTMENTS (NOT PRESELECTED) */}
                 {step === 2 && (
                   <div className="space-y-4">
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                        Configure Employee Roles & Access
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        Add Members Under Custom Departments
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Assign teammates as Managers (can review & approve tasks), Members (can execute tasks), or Viewers (stakeholders).
+                        Each user is added under their department. Department names are fully customizable to match your team structure.
                       </p>
                     </div>
 
                     {/* Role Picker */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setNewEmpRole("manager")}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          newEmpRole === "manager"
-                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300"
-                            : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Manager</span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-1">Review & approve</p>
-                      </button>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Access Role
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setNewEmpRole("manager")}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            newEmpRole === "manager"
+                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300"
+                              : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Manager</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1">Review & approve</p>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setNewEmpRole("member")}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          newEmpRole === "member"
-                            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-300"
-                            : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          <Laptop className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                          <span>Member</span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-1">Work & submit</p>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewEmpRole("member")}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            newEmpRole === "member"
+                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-300"
+                              : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <Laptop className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                            <span>Member</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1">Work & submit</p>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setNewEmpRole("viewer")}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          newEmpRole === "viewer"
-                            ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-900 dark:text-sky-300"
-                            : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          <Eye className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                          <span>Viewer</span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-1">Read-only</p>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewEmpRole("viewer")}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            newEmpRole === "viewer"
+                              ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-900 dark:text-sky-300"
+                              : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <Eye className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                            <span>Viewer</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-1">Read-only</p>
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Inputs */}
+                    {/* Member Details */}
                     <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                          Colleague Name
+                        </label>
+                        <input
+                          type="text"
+                          value={newEmpName}
+                          onChange={(e) => setNewEmpName(e.target.value)}
+                          placeholder="e.g. Marcus Vance"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                          Work Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={newEmpEmail}
+                          onChange={(e) => setNewEmpEmail(e.target.value)}
+                          placeholder="e.g. marcus@company.com"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Custom Department Name (NOT PRESELECTED) */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Department Name (Custom) <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
-                        value={newEmpName}
-                        onChange={(e) => setNewEmpName(e.target.value)}
-                        placeholder="Employee Name (e.g. Marcus)"
-                        className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none"
+                        value={newEmpDept}
+                        onChange={(e) => setNewEmpDept(e.target.value)}
+                        placeholder="Type any custom department (e.g. Infrastructure, Brand, Success, AI Ops)"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none focus:border-indigo-500"
                       />
-                      <input
-                        type="email"
-                        value={newEmpEmail}
-                        onChange={(e) => setNewEmpEmail(e.target.value)}
-                        placeholder="Work Email"
-                        className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs outline-none"
-                      />
+
+                      {/* Quick Department Suggestion Chips */}
+                      <div className="mt-2">
+                        <span className="text-[10px] text-slate-400 font-medium">Quick suggestions:</span>
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {suggestedChips.map((deptChip) => (
+                            <button
+                              key={deptChip}
+                              type="button"
+                              onClick={() => setNewEmpDept(deptChip)}
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border transition-colors cursor-pointer ${
+                                newEmpDept === deptChip
+                                  ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold"
+                                  : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
+                              }`}
+                            >
+                              + {deptChip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     <button
                       type="button"
+                      disabled={!newEmpEmail.trim()}
                       onClick={handleAddEmployee}
-                      className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
-                      <Users className="w-3.5 h-3.5" />
-                      <span>+ Add Employee to Workspace</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Member to Department</span>
                     </button>
 
-                    {/* Employee Roster */}
-                    <div className="space-y-1.5 mt-2">
-                      <p className="text-xs font-bold text-slate-500">Configured Roster ({employees.length})</p>
-                      {employees.map((emp) => (
-                        <div
-                          key={emp.id}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs"
-                        >
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-slate-900 dark:text-slate-100">{emp.name}</span>
-                              <span
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                  emp.role === "manager"
-                                    ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                                    : emp.role === "member"
-                                    ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300"
-                                    : "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300"
-                                }`}
-                              >
-                                {emp.role}
+                    {/* Configured Roster */}
+                    <div className="space-y-1.5 mt-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-slate-500">
+                          Configured Members ({employees.length})
+                        </p>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {configuredDepartments.length} unique department{configuredDepartments.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                        {employees.map((emp) => (
+                          <div
+                            key={emp.id}
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs"
+                          >
+                            <div className="min-w-0 pr-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {emp.name}
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                    emp.role === "manager"
+                                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                                      : emp.role === "member"
+                                      ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300"
+                                      : "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300"
+                                  }`}
+                                >
+                                  {emp.role}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700">
+                                  {emp.department}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-400 truncate block mt-0.5">
+                                {emp.email}
                               </span>
                             </div>
-                            <span className="text-[11px] text-slate-400">{emp.email} • {emp.department}</span>
-                          </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setEmployees((prev) => prev.filter((e) => e.id !== emp.id))}
-                            className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEmployees((prev) => prev.filter((e) => e.id !== emp.id))
+                              }
+                              className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer shrink-0"
+                              title="Remove member"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-2">
@@ -526,7 +653,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         onClick={() => setStep(1)}
                         className="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
                       >
-                        ← Back
+                        Back
                       </button>
                       <button
                         type="button"
@@ -552,7 +679,10 @@ export const OrganizationOnboardingModal: React.FC = () => {
 
                       <div className="space-y-1 text-xs">
                         <p className="text-slate-500 dark:text-slate-400">
-                          <span className="font-semibold text-slate-700 dark:text-slate-300">From:</span> TaskPulse &lt;invites@taskpulse.io&gt;
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            From:
+                          </span>{" "}
+                          TaskPulse &lt;invites@taskpulse.io&gt;
                         </p>
                         <p className="text-slate-900 dark:text-white font-semibold">
                           Subject: {adminName} has invited you to join {companyName} on TaskPulse
@@ -561,14 +691,17 @@ export const OrganizationOnboardingModal: React.FC = () => {
 
                       <div className="p-3 rounded-xl bg-white dark:bg-[#0E1322] border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-2">
                         <p>
-                          Hi there, {adminName} invited you to collaborate in the <strong>{companyName}</strong> workspace. Your role permissions and project access are pre-configured.
+                          Hi there, {adminName} invited you to collaborate in the{" "}
+                          <strong>{companyName}</strong> workspace. Your role permissions and department access are pre-configured.
                         </p>
                         <div className="py-1">
-                          <p className="text-[10px] uppercase font-bold text-slate-400">Invited Team Members ({employees.length}):</p>
+                          <p className="text-[10px] uppercase font-bold text-slate-400">
+                            Invited Team Members ({employees.length}) across {configuredDepartments.length} Departments:
+                          </p>
                           <ul className="list-disc list-inside text-[11px] text-slate-600 dark:text-slate-400 mt-1 space-y-0.5">
                             {employees.map((e) => (
                               <li key={e.id}>
-                                {e.name} ({e.email}) - <strong className="uppercase">{e.role}</strong>
+                                {e.name} ({e.email}) - <strong className="uppercase">{e.role}</strong> under <em>{e.department}</em>
                               </li>
                             ))}
                           </ul>
@@ -593,14 +726,20 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            navigator.clipboard.writeText(`https://taskpulse.io/join/${generatedSlug}?token=tk_invite_98a7`);
+                            navigator.clipboard.writeText(
+                              `https://taskpulse.io/join/${generatedSlug}?token=tk_invite_98a7`
+                            );
                             setLinkCopied(true);
                             setTimeout(() => setLinkCopied(false), 2500);
                           }}
                           className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
                         >
-                          {linkCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{linkCopied ? "Copied!" : "Copy"}</span>
+                          {linkCopied ? (
+                            <Check className="w-3.5 h-3.5" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                          <span>{linkCopied ? "Copied" : "Copy"}</span>
                         </button>
                       </div>
                     </div>
@@ -611,14 +750,15 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         onClick={() => setStep(2)}
                         className="px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
                       >
-                        ← Back to Roles
+                        Back to Roles
                       </button>
                       <button
                         type="submit"
                         disabled={isSubmitting}
                         className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
                       >
-                        <span>🚀 Launch Organization & Enter Workspace</span>
+                        <span>Launch Organization Workspace</span>
+                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                   </form>
