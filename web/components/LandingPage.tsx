@@ -25,6 +25,8 @@ import {
   ExternalLink,
   Check,
 } from "lucide-react";
+import GoogleSignInModal from "./GoogleSignInModal";
+import { OrganizationOnboardingModal } from "./OrganizationOnboardingModal";
 
 interface LandingPageProps {
   onEnterDemo: () => void;
@@ -37,10 +39,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onEnterMarcus,
   onEnterAdmin,
 }) => {
-  const { signInWithGoogle, signInWithCustomUser } = useAuth();
+  const { signInWithGoogle, signInWithCustomUser, isLiveFirebase } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { setIsOnboardingOpen } = useOrganization();
 
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
   const [customName, setCustomName] = useState("");
   const [customEmail, setCustomEmail] = useState("");
@@ -476,7 +479,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div>
                 <button
                   onClick={async () => {
-                    await signInWithGoogle();
+                    if (isLiveFirebase) {
+                      await signInWithGoogle();
+                    } else {
+                      setIsGoogleModalOpen(true);
+                    }
                   }}
                   data-testid="landing-google-signin"
                   className="w-full py-3 px-4 rounded-xl bg-white dark:bg-[#0B0F19] hover:bg-slate-50 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] font-semibold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs hover:border-[#756EF3] cursor-pointer"
@@ -659,6 +666,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
       </footer>
+
+      <GoogleSignInModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+      />
+      <OrganizationOnboardingModal />
     </div>
   );
 };
