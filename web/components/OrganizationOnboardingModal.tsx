@@ -24,6 +24,7 @@ import {
   Shield,
   Laptop,
   Eye,
+  X,
 } from "lucide-react";
 
 interface EmployeeEntry {
@@ -35,7 +36,7 @@ interface EmployeeEntry {
 }
 
 export const OrganizationOnboardingModal: React.FC = () => {
-  const { user, signOutUser } = useAuth();
+  const { user, signOutUser, signInWithCustomUser } = useAuth();
   const {
     isOnboardingOpen,
     setIsOnboardingOpen,
@@ -49,6 +50,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
 
   // Step 1: Admin & Organization Profile
   const [adminName, setAdminName] = useState(user?.displayName || "Alex Vance");
+  const [adminEmail, setAdminEmail] = useState(user?.email || "");
   const [companyName, setCompanyName] = useState("");
   const [department, setDepartment] = useState<Department>("Engineering");
   const [initialProject, setInitialProject] = useState("");
@@ -94,7 +96,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
   const [inviteCodeInput, setInviteCodeInput] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
 
-  if (!isOnboardingOpen || !user) return null;
+  if (!isOnboardingOpen) return null;
 
   const handleAddEmployee = () => {
     if (!newEmpEmail.trim()) return;
@@ -115,6 +117,9 @@ export const OrganizationOnboardingModal: React.FC = () => {
     if (!companyName.trim()) return;
 
     setIsSubmitting(true);
+    if (!user) {
+      signInWithCustomUser(adminName.trim() || "Administrator", adminEmail.trim() || "admin@company.com");
+    }
     const code = projectCode.trim() || companyName.trim().slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "");
     const projName = initialProject.trim() || `${companyName.trim()} Core Roadmap`;
 
@@ -156,17 +161,29 @@ export const OrganizationOnboardingModal: React.FC = () => {
           {/* Header Banner with Gradient */}
           <div className="p-6 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-transparent border-b border-slate-100 dark:border-slate-800/80">
             <div className="flex items-center justify-between">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/30">
+              <div className="w-10 h-10 rounded-2xl bg-[#756EF3] text-white flex items-center justify-center shadow-md shadow-[#756EF3]/30">
                 <Building2 className="w-5 h-5" />
               </div>
-              <button
-                onClick={() => signOutUser()}
-                title="Sign out and try another email"
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Switch Account</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {user && (
+                  <button
+                    onClick={() => signOutUser()}
+                    title="Sign out and try another email"
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Switch Account</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsOnboardingOpen(false)}
+                  data-testid="onboarding-close-btn"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  aria-label="Close modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-3">
@@ -174,7 +191,13 @@ export const OrganizationOnboardingModal: React.FC = () => {
                 Organization Onboarding
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Logged in as <span className="font-semibold text-indigo-600 dark:text-indigo-400">{user.email}</span>. Setup your company and add your team roles.
+                {user ? (
+                  <>
+                    Logged in as <span className="font-semibold text-[#756EF3] dark:text-[#818CF8]">{user.email}</span>. Setup your company and add your team roles.
+                  </>
+                ) : (
+                  <>Setup your company workspace, configure department teams, and invite members.</>
+                )}
               </p>
             </div>
 
@@ -247,6 +270,22 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                       />
                     </div>
+
+                    {!user && (
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          Admin Work Email <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={adminEmail}
+                          onChange={(e) => setAdminEmail(e.target.value)}
+                          placeholder="e.g. alex.vance@company.com"
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
