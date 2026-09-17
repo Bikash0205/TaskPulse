@@ -1,0 +1,152 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // Core RBAC & Security Rule Helpers
+    // =========================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userToken() {
+      return request.auth.token;
+    }
+
+    function getUserRole() {
+      return userToken().role;
+    }
+
+    function getUserOrg() {
+      return userToken().orgId;
+    }
+
+    function getUserDepartment() {
+      return userToken().departmentId;
+    }
+
+    function isPermanentAdmin() {
+      return isSignedIn() && userToken().email == 'zevonbcash@gmail.com';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (getUserRole() == 'admin' || isPermanentAdmin());
+    }
+
+    function isManager() {
+      return isSignedIn() && (getUserRole() == 'manager' || isAdmin());
+    }
+
+    function isMember() {
+      return isSignedIn() && (getUserRole() == 'member' || isManager());
+    }
+
+    function isInSameOrg(docOrgId) {
+      return isSignedIn() && getUserOrg() == docOrgId;
+    }
+
+    function isDepartmentManager(deptId) {
+      return isAdmin() || (isManager() && getUserDepartment() == deptId);
+    }
+
+    function isTaskAssignee(assigneeId) {
+      return isSignedIn() && request.auth.uid == assigneeId;
+    }
+
+    // =========================================================================
+    // User Directory (/users/{userId})
+    // =========================================================================
+
+    match /users/{userId} {
+      // Teammates can view colleagues in their organization
+      allow read: if isSignedIn() && (isInSameOrg(resource.data.orgId) || request.auth.uid == userId);
+
+      // Creation handled exclusively via backend / Cloud Functions
+      allow create: if isAdmin();
+
+      // Updates: Non-admins cannot alter their role, org, or department (Anti-Privilege Escalation)
+      allow update: if isSignedIn() && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'orgId', 'departmentId'])
+        )
+      );
+
+      // Deletion restricted to Super Admin
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // Tasks Dispatcher Collection (/tasks/{taskId})
+    // =========================================================================
+
+    match /tasks/{taskId} {
+      // Visibility: Colleagues in the same enterprise organization can inspect tasks
+      allow read: if isSignedIn() && isInSameOrg(resource.data.orgId);
+
+      // Creation: Admins and Department Managers can dispatch tasks
+      allow create: if isSignedIn() && 
+        isInSameOrg(request.resource.data.orgId) &&
+        isDepartmentManager(request.resource.data.departmentId);
+
+      // Updates: Fine-grained RBAC mutation permissions
+      allow update: if isSignedIn() && isInSameOrg(resource.data.orgId) && (
+        // 1. Admin has unrestricted mutation authority
+        isAdmin() ||
+
+        // 2. Department Manager can update title, priority, assignee, status within department
+        (isDepartmentManager(resource.data.departmentId) && 
+         request.resource.data.orgId == resource.data.orgId) ||
+
+        // 3. Task Assignee Member: Restricted mutation of completion metrics & status ONLY
+        (
+          isTaskAssignee(resource.data.assigneeId) &&
+          // Enforce immutable task metadata: Member cannot change assignee, department, org, or priority
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'assigneeId',
+            'departmentId',
+            'orgId',
+            'priority',
+            'title',
+            'createdBy',
+            'createdAt'
+          ]) &&
+          // Only permitted to update completion percentage, status, blocker state, notes, updatedAt
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'progressPercentage',
+            'isBlocked',
+            'notes',
+            'updatedAt'
+          ]) &&
+          // Progress percentage range validation [0, 100]
+          request.resource.data.progressPercentage >= 0 &&
+          request.resource.data.progressPercentage <= 100
+        )
+      );
+
+      // Deletion: Restricted to Department Managers or Admins
+      allow delete: if isSignedIn() && 
+        isInSameOrg(resource.data.orgId) && 
+        isDepartmentManager(resource.data.departmentId);
+    }
+
+    // =========================================================================
+    // Colleague Pulse Feed Snapshot (/colleague_pulse/{userId})
+    // =========================================================================
+
+    match /colleague_pulse/{userId} {
+      // Real-time peer visibility across the organization
+      allow read: if isSignedIn();
+
+      // Colleague can update their own pulse snapshot (progress, current task, heartbeat)
+      allow write: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        (isManager() && getUserDepartment() == resource.data.department)
+      );
+    }
+  }
+}

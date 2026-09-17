@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+*/node_modules/
+package-lock.json.bak
+
+# Next.js build artifacts
+.next/
+web/.next/
+out/
+web/out/
+
+# Expo / React Native build artifacts
+.expo/
+mobile/.expo/
+dist/
+mobile/dist/
+*.hbc
+
+# Binaries & Packaging
+*.apk
+*.aab
+*.jar
+*.tmp
+*.log
+
+# Environment & local credentials
+.env
+.env.local
+.env.*.local
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# System Generated & Logs
+.system_generated/
+scratch/
+
+apk_signed/
+temp_apk/
+*.idsig
+uber-apk-signer.jar
+taskpulse_updated_unsigned.apk

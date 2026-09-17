@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #F8FAFF;
+    --foreground: #002055;
+  }
+
+  .dark {
+    --background: #0B0F19;
+    --foreground: #F8FAFC;
+  }
+  
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Tier 3 Glass Acrylic Panel Utility */
+.glass-tier3 {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(233, 241, 255, 0.9);
+  box-shadow: 0 4px 20px 0 rgba(0, 32, 85, 0.05);
+}
+
+.dark .glass-tier3 {
+  background: rgba(21, 28, 44, 0.75);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-tier3-elevated {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid #E9F1FF;
+  box-shadow: 0 10px 30px 0 rgba(0, 32, 85, 0.08);
+}
+
+.dark .glass-tier3-elevated {
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Hide scrollbar for clean dashboard aesthetic while retaining smooth scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

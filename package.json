@@ -1,0 +1,14 @@
+{
+  "name": "taskpulse-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "start": "npm --prefix web start",
+    "test": "npm --prefix web test",
+    "web": "npm --prefix web run dev",
+    "mobile": "npm --prefix mobile start",
+    "build:apk": "npm --prefix mobile run build:apk"
+  }
+}

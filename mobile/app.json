@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "TaskPulse",
+    "slug": "taskpulse",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#070A13"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.taskpulse.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#070A13"
+      },
+      "package": "io.taskpulse.app"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "666bb785-5a87-42c1-a406-cc5286e43d18"
+      }
+    },
+    "owner": "bikash0205"
+  }
+}
