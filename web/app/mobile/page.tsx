@@ -30,6 +30,22 @@ export default function MobileAppDedicatedPage() {
       }
     }
 
+    fetch("/api/tasks")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : data?.tasks;
+        if (list && list.length > 0) {
+          setTasks((prev) => {
+            const remoteIds = new Set(list.map((t: any) => t.id));
+            const localOnly = prev.filter((t) => !remoteIds.has(t.id));
+            const merged = [...list, ...localOnly];
+            syncColleagueCounts(merged);
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
+
     const unsubscribe = subscribeTasks((remoteTasks) => {
       setTasks(remoteTasks);
       syncColleagueCounts(remoteTasks);
@@ -92,6 +108,7 @@ export default function MobileAppDedicatedPage() {
   };
 
   const handleUpdateTaskProgress = async (taskId: string, progress: number) => {
+    let targetTask: TaskPulseItem | null = null;
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         const nextStatus =
@@ -102,21 +119,30 @@ export default function MobileAppDedicatedPage() {
             : t.status === "backlog"
             ? ("in_progress" as const)
             : t.status;
-        return {
+        targetTask = {
           ...t,
           progressPercentage: progress,
           status: nextStatus,
           updatedAt: new Date().toISOString(),
         };
+        return targetTask;
       }
       return t;
     });
     persistTasks(updated);
     await updateTaskProgressDocument(taskId, progress);
+    if (targetTask) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(targetTask),
+      }).catch(() => {});
+    }
   };
 
   const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
     let computedProgress = 0;
+    let modifiedTask: TaskPulseItem | null = null;
     const updated = tasks.map((task) => {
       if (task.id !== taskId || !task.subtasks) return task;
 
@@ -135,35 +161,62 @@ export default function MobileAppDedicatedPage() {
           ? ("in_progress" as const)
           : task.status;
 
-      return {
+      modifiedTask = {
         ...task,
         subtasks: newSubtasks,
         progressPercentage: computedProgress,
         status: nextStatus,
         updatedAt: new Date().toISOString(),
       };
+      return modifiedTask;
     });
 
     setTasks(updated);
     syncColleagueCounts(updated);
     await updateTaskProgressDocument(taskId, computedProgress);
+    if (modifiedTask) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modifiedTask),
+      }).catch(() => {});
+    }
   };
 
   const handleToggleTaskBlocked = (taskId: string) => {
+    let modifiedTask: TaskPulseItem | null = null;
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         const nextBlocked = !t.isBlocked;
-        return {
+        modifiedTask = {
           ...t,
           isBlocked: nextBlocked,
           blockReason: nextBlocked ? "Flagged via Mobile Client" : undefined,
           updatedAt: new Date().toISOString(),
         };
+        return modifiedTask;
       }
       return t;
     });
     setTasks(updated);
     syncColleagueCounts(updated);
+    if (modifiedTask) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modifiedTask),
+      }).catch(() => {});
+    }
+  };
+
+  const handleAddTask = (newTask: TaskPulseItem) => {
+    const updated = [newTask, ...tasks];
+    persistTasks(updated);
+    fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    }).catch(() => {});
   };
 
   const currentRole: UserRole = user?.role || "member";
@@ -211,6 +264,7 @@ export default function MobileAppDedicatedPage() {
             onUpdateTaskProgress={handleUpdateTaskProgress}
             onToggleTaskBlocked={handleToggleTaskBlocked}
             onToggleSubtask={handleToggleSubtask}
+            onAddTask={handleAddTask}
           />
         </div>
       </main>

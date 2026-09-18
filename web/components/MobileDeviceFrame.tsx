@@ -43,6 +43,7 @@ interface MobileDeviceFrameProps {
   onUpdateTaskProgress: (taskId: string, progress: number) => void;
   onToggleTaskBlocked: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
+  onAddTask?: (task: TaskPulseItem) => void;
 }
 
 // Taskcy Design Tokens from Figma (K8Kc3Vs6ikYNPdNFsKZoIS)
@@ -85,6 +86,28 @@ interface MobileProject {
 }
 
 const INITIAL_PROJECTS: MobileProject[] = [
+  {
+    id: "proj-web",
+    name: "Website Building",
+    category: "Fullstack Web App",
+    department: "Engineering",
+    completed: 2,
+    total: 4,
+    progress: 62,
+    color: "#3B82F6",
+    code: "WEB",
+  },
+  {
+    id: "proj-mktg",
+    name: "Digital Marketing",
+    category: "Growth & Ads",
+    department: "Marketing",
+    completed: 2,
+    total: 4,
+    progress: 54,
+    color: "#EC4899",
+    code: "MKTG",
+  },
   {
     id: "p1",
     name: "Application Design",
@@ -239,10 +262,18 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   onUpdateTaskProgress,
   onToggleTaskBlocked,
   onToggleSubtask,
+  onAddTask,
 }) => {
   const [internalTasks, setInternalTasks] = useState<TaskPulseItem[]>(
     propTasks.length > 0 ? propTasks : DEFAULT_TASKS
   );
+
+  React.useEffect(() => {
+    if (propTasks && propTasks.length > 0) {
+      setInternalTasks(propTasks);
+    }
+  }, [propTasks]);
+
   const activeTasks = internalTasks.length > 0 ? internalTasks : DEFAULT_TASKS;
 
   const [currentTab, setCurrentTab] = useState<"home" | "projects" | "details" | "profile">("home");
@@ -436,6 +467,12 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
 
     setInternalTasks([newTask, ...activeTasks]);
     setSelectedTask(newTask);
+    onAddTask?.(newTask);
+    fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    }).catch(() => {});
     setIsCreateOpen(false);
     setNewTaskTitle("");
     setNewTaskSteps(["Review requirements", "Implement changes"]);
@@ -457,6 +494,17 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
       code: newProjectName.trim().slice(0, 3).toUpperCase(),
     };
     setProjectsList([newProj, ...projectsList]);
+    fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: newProj.id,
+        name: newProj.name,
+        code: newProj.code,
+        department: newProj.department,
+        progressPercentage: 0,
+      }),
+    }).catch(() => {});
     setIsCreateOpen(false);
     setNewProjectName("");
   };

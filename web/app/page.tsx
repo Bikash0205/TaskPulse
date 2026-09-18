@@ -63,6 +63,37 @@ export default function TaskPulseWorkspacePage() {
       } else {
         setProjects(mockProjects);
       }
+
+      // Initial cloud sync with backend REST API
+      fetch("/api/tasks")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const list = Array.isArray(data) ? data : data?.tasks;
+          if (list && list.length > 0) {
+            setTasks((prev) => {
+              const remoteIds = new Set(list.map((t: any) => t.id));
+              const localOnly = prev.filter((t) => !remoteIds.has(t.id));
+              const merged = [...list, ...localOnly];
+              syncColleagueCounts(merged);
+              return merged;
+            });
+          }
+        })
+        .catch(() => {});
+
+      fetch("/api/projects")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const list = Array.isArray(data) ? data : data?.projects;
+          if (list && list.length > 0) {
+            setProjects((prev) => {
+              const remoteIds = new Set(list.map((p: any) => p.id));
+              const localOnly = prev.filter((p) => !remoteIds.has(p.id));
+              return [...list, ...localOnly];
+            });
+          }
+        })
+        .catch(() => {});
     }
 
     const unsubscribe = subscribeTasks((remoteTasks) => {
@@ -193,32 +224,52 @@ export default function TaskPulseWorkspacePage() {
     const updated = tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t));
     persistTasks(updated);
     await updateTaskStatusDocument(updatedTask.id, updatedTask.status, updatedTask.progressPercentage);
+    fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedTask),
+    }).catch(() => {});
   };
 
   const handleAddTask = async (newTask: TaskPulseItem) => {
     const updated = [newTask, ...tasks];
     persistTasks(updated);
     await createTaskDocument(newTask);
+    fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    }).catch(() => {});
   };
 
   const handleUpdateTaskProgress = async (taskId: string, progress: number) => {
+    let targetTask: TaskPulseItem | null = null;
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
-        return {
+        targetTask = {
           ...t,
           progressPercentage: progress,
           status: progress === 100 ? ("in_review" as const) : t.status === "completed" && progress < 100 ? ("in_progress" as const) : t.status === "backlog" ? ("in_progress" as const) : t.status,
           updatedAt: new Date().toISOString(),
         };
+        return targetTask;
       }
       return t;
     });
     persistTasks(updated);
     await updateTaskProgressDocument(taskId, progress);
+    if (targetTask) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(targetTask),
+      }).catch(() => {});
+    }
   };
 
   const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
     let computedProgress = 0;
+    let modifiedTask: TaskPulseItem | null = null;
     setTasks((prevTasks) => {
       const updated = prevTasks.map((task) => {
         if (task.id !== taskId || !task.subtasks) return task;
@@ -238,13 +289,14 @@ export default function TaskPulseWorkspacePage() {
             ? ("in_progress" as const)
             : task.status;
 
-        return {
+        modifiedTask = {
           ...task,
           subtasks: newSubtasks,
           progressPercentage: computedProgress,
           status: nextStatus,
           updatedAt: new Date().toISOString(),
         };
+        return modifiedTask;
       });
 
       syncColleagueCounts(updated);
@@ -255,19 +307,28 @@ export default function TaskPulseWorkspacePage() {
     });
 
     await updateTaskProgressDocument(taskId, computedProgress);
+    if (modifiedTask) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modifiedTask),
+      }).catch(() => {});
+    }
   };
 
   const handleToggleTaskBlocked = (taskId: string) => {
+    let modifiedTask: TaskPulseItem | null = null;
     setTasks((prevTasks) => {
       const updated = prevTasks.map((t) => {
         if (t.id === taskId) {
           const nextBlocked = !t.isBlocked;
-          return {
+          modifiedTask = {
             ...t,
             isBlocked: nextBlocked,
             blockReason: nextBlocked ? "Flagged via Mobile Client" : undefined,
             updatedAt: new Date().toISOString(),
           };
+          return modifiedTask;
         }
         return t;
       });
@@ -277,6 +338,13 @@ export default function TaskPulseWorkspacePage() {
       }
       return updated;
     });
+    if (modifiedTask) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(modifiedTask),
+      }).catch(() => {});
+    }
   };
 
   const handleAddProject = (newProject: Project) => {
@@ -287,6 +355,11 @@ export default function TaskPulseWorkspacePage() {
       }
       return updated;
     });
+    fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newProject),
+    }).catch(() => {});
   };
 
   const handleAddSubtask = async (taskId: string, subtaskTitle: string) => {

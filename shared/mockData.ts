@@ -62,6 +62,51 @@ export const mockProjects: Project[] = [
     progressPercentage: 54,
     targetDate: "Nov 01",
   },
+  {
+    id: "p1",
+    name: "Application Design",
+    code: "APP",
+    department: "Design",
+    description: "UI design kit, mobile screens, wireframes and design system",
+    progressPercentage: 62,
+    targetDate: "Oct 20",
+  },
+  {
+    id: "p2",
+    name: "Unity Dashboard",
+    code: "UNT",
+    department: "Engineering",
+    description: "Design system, biometrics, glass blur and analytics components",
+    progressPercentage: 50,
+    targetDate: "Oct 25",
+  },
+  {
+    id: "p3",
+    name: "Instagram Shots",
+    code: "MKT",
+    department: "Marketing",
+    description: "Creative assets, video reels launch and campaign tags",
+    progressPercentage: 70,
+    targetDate: "Nov 05",
+  },
+  {
+    id: "p4",
+    name: "Cubbles Engine",
+    code: "ENG",
+    department: "Engineering",
+    description: "Core architecture, WebSocket cluster sync and serialization",
+    progressPercentage: 80,
+    targetDate: "Nov 12",
+  },
+  {
+    id: "p5",
+    name: "Ui8 Platform",
+    code: "PRD",
+    department: "Product",
+    description: "Product roadmap, sprint specifications and user feedback",
+    progressPercentage: 90,
+    targetDate: "Nov 18",
+  },
 ];
 
 export const mockTasks: TaskPulseItem[] = [
@@ -217,6 +262,123 @@ export const mockTasks: TaskPulseItem[] = [
     ],
     createdAt: "2026-09-17T08:00:00Z",
     updatedAt: "2026-09-17T09:15:00Z",
+  },
+  // Application Design Tasks
+  {
+    id: "task-app-1",
+    projectId: "p1",
+    projectName: "Application Design",
+    title: "Create Detail Booking Screens",
+    department: "Design",
+    projectBadge: "APP",
+    status: "in_progress",
+    progressPercentage: 60,
+    priority: "high",
+    assignee: mockColleagues[3], // David
+    subtasks: [
+      { id: "sub-app-1", title: "Review component specs & grid system", completed: true },
+      { id: "sub-app-2", title: "Build time-slot picker carousel", completed: true },
+      { id: "sub-app-3", title: "Connect manager review dispatch", completed: false },
+    ],
+    createdAt: "2026-09-16T11:00:00Z",
+    updatedAt: "2026-09-17T08:00:00Z",
+  },
+  {
+    id: "task-app-2",
+    projectId: "p1",
+    projectName: "Application Design",
+    title: "Wireframe Passenger Identity Tokens",
+    department: "Design",
+    projectBadge: "APP",
+    status: "completed",
+    progressPercentage: 100,
+    priority: "medium",
+    assignee: mockColleagues[3], // David
+    subtasks: [
+      { id: "sub-app-4", title: "Validate token issuance flow", completed: true },
+      { id: "sub-app-5", title: "Security signature handshake", completed: true },
+    ],
+    createdAt: "2026-09-15T14:00:00Z",
+    updatedAt: "2026-09-16T16:00:00Z",
+  },
+  // Unity Dashboard Tasks
+  {
+    id: "task-unt-1",
+    projectId: "p2",
+    projectName: "Unity Dashboard",
+    title: "Revision Home Page & Analytics",
+    department: "Engineering",
+    projectBadge: "UNT",
+    status: "in_review",
+    progressPercentage: 90,
+    priority: "critical",
+    assignee: mockColleagues[1], // Marcus
+    subtasks: [
+      { id: "sub-unt-1", title: "Update card shadow & glass blur", completed: true },
+      { id: "sub-unt-2", title: "Format currency decimal alignment", completed: true },
+      { id: "sub-unt-3", title: "Integrate biometrics auth trigger", completed: true },
+    ],
+    createdAt: "2026-09-16T10:00:00Z",
+    updatedAt: "2026-09-17T09:00:00Z",
+  },
+  // Instagram Shots Tasks
+  {
+    id: "task-mkt-1",
+    projectId: "p3",
+    projectName: "Instagram Shots",
+    title: "Creative Assets & Video Reel Launch",
+    department: "Marketing",
+    projectBadge: "MKT",
+    status: "in_progress",
+    progressPercentage: 70,
+    priority: "medium",
+    assignee: mockColleagues[2], // Elena
+    subtasks: [
+      { id: "sub-mkt-1", title: "Responsive header navigation bar", completed: true },
+      { id: "sub-mkt-2", title: "Creator testimonial video reel embed", completed: true },
+      { id: "sub-mkt-3", title: "Campaign tag validation", completed: false },
+    ],
+    createdAt: "2026-09-16T12:00:00Z",
+    updatedAt: "2026-09-17T07:00:00Z",
+  },
+  // Cubbles Engine Tasks
+  {
+    id: "task-eng-1",
+    projectId: "p4",
+    projectName: "Cubbles Engine",
+    title: "Core Architecture & Webhooks",
+    department: "Engineering",
+    projectBadge: "ENG",
+    status: "in_progress",
+    progressPercentage: 80,
+    priority: "high",
+    assignee: mockColleagues[0], // Sarah
+    subtasks: [
+      { id: "sub-eng-1", title: "Setup WebSocket cluster sync", completed: true },
+      { id: "sub-eng-2", title: "Zero-copy message serialization", completed: true },
+      { id: "sub-eng-3", title: "Telemetry tracing buffer", completed: false },
+    ],
+    createdAt: "2026-09-16T15:00:00Z",
+    updatedAt: "2026-09-17T08:30:00Z",
+  },
+  // Ui8 Platform Tasks
+  {
+    id: "task-prd-1",
+    projectId: "p5",
+    projectName: "Ui8 Platform",
+    title: "Product Roadmap & Sprint Spec",
+    department: "Engineering",
+    projectBadge: "PRD",
+    status: "completed",
+    progressPercentage: 100,
+    priority: "medium",
+    assignee: mockColleagues[0], // Sarah
+    subtasks: [
+      { id: "sub-prd-1", title: "User feedback sprint prioritization", completed: true },
+      { id: "sub-prd-2", title: "Release changelog draft approval", completed: true },
+    ],
+    createdAt: "2026-09-15T09:00:00Z",
+    updatedAt: "2026-09-16T18:00:00Z",
   },
 ];
 
