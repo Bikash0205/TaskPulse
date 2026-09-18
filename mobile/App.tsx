@@ -206,6 +206,28 @@ interface MobileProject {
 
 const INITIAL_PROJECTS: MobileProject[] = [
   {
+    id: "proj-web",
+    name: "Website Building",
+    category: "Fullstack Web App",
+    department: "Engineering",
+    completed: 2,
+    total: 4,
+    progress: 62,
+    color: "#3B82F6",
+    code: "WEB",
+  },
+  {
+    id: "proj-mktg",
+    name: "Digital Marketing",
+    category: "Growth & Ads",
+    department: "Marketing",
+    completed: 2,
+    total: 4,
+    progress: 54,
+    color: "#EC4899",
+    code: "MKTG",
+  },
+  {
     id: "p1",
     name: "Application Design",
     category: "UI Design Kit",
@@ -263,6 +285,66 @@ const INITIAL_PROJECTS: MobileProject[] = [
 ];
 
 const INITIAL_TASKS: MobileTask[] = [
+  {
+    id: "task-web-1",
+    title: "Backend: Database Schema & Auth APIs",
+    project: "Website Building",
+    category: "Engineering",
+    priority: "high",
+    status: "in_review",
+    progress: 80,
+    timeAgo: "10 min ago",
+    subtasks: [
+      { id: "sub-w1", title: "Design PostgreSQL relational schema", completed: true },
+      { id: "sub-w2", title: "Setup JWT & Session middleware", completed: true },
+      { id: "sub-w3", title: "Write automated migration scripts", completed: true },
+      { id: "sub-w4", title: "Security audit on user role claims", completed: false },
+    ],
+  },
+  {
+    id: "task-web-4",
+    title: "Frontend: Interactive Landing Page & Features",
+    project: "Website Building",
+    category: "Engineering",
+    priority: "critical",
+    status: "in_progress",
+    progress: 66,
+    timeAgo: "15 min ago",
+    subtasks: [
+      { id: "sub-w5", title: "Hero animation and CTA conversion flow", completed: true },
+      { id: "sub-w6", title: "Interactive feature pricing calculator", completed: true },
+      { id: "sub-w7", title: "SEO meta tags & OpenGraph card preview", completed: false },
+    ],
+  },
+  {
+    id: "task-mktg-1",
+    title: "Facebook Ads: Campaign Setup & Targeting",
+    project: "Digital Marketing",
+    category: "Marketing",
+    priority: "high",
+    status: "in_progress",
+    progress: 66,
+    timeAgo: "20 min ago",
+    subtasks: [
+      { id: "sub-m1", title: "Install Meta Conversions API (CAPI)", completed: true },
+      { id: "sub-m2", title: "Upload video & carousel creative assets", completed: true },
+      { id: "sub-m3", title: "Configure A/B lookalike audience split", completed: false },
+    ],
+  },
+  {
+    id: "task-mktg-4",
+    title: "Ideas: Creative Hooks & Copywriting Concepts",
+    project: "Digital Marketing",
+    category: "Design",
+    priority: "high",
+    status: "in_progress",
+    progress: 50,
+    timeAgo: "25 min ago",
+    subtasks: [
+      { id: "sub-m4", title: "Brainstorm 10 high-converting ad hooks", completed: true },
+      { id: "sub-m5", title: "Design 5 static banner visual concepts", completed: false },
+    ],
+  },
   {
     id: "t1",
     title: "Create Detail Booking Screens",
@@ -488,10 +570,29 @@ export default function App() {
     };
 
     syncWithServer();
+    const interval = setInterval(syncWithServer, 10000);
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
   }, []);
+
+  const dispatchTaskSync = (task: MobileTask) => {
+    fetch("https://happy-fermi-kappa.vercel.app/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: task.id,
+        title: task.title,
+        projectName: task.project,
+        department: task.category,
+        priority: task.priority,
+        status: task.status,
+        progressPercentage: task.progress,
+        subtasks: task.subtasks,
+      }),
+    }).catch(() => {});
+  };
 
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -626,6 +727,8 @@ export default function App() {
           status: allCompleted ? "in_review" : "in_progress",
         };
 
+        dispatchTaskSync(updated);
+
         if (allCompleted && task.status !== "in_review" && task.status !== "completed") {
           targetTaskToReview = updated;
         }
@@ -660,6 +763,7 @@ export default function App() {
           completionScreenshot: screenshotToSave || undefined,
           submittedAt: "Just now",
         };
+        dispatchTaskSync(updated);
         if (selectedTask?.id === t.id) setSelectedTask(updated);
         return updated;
       })
@@ -681,6 +785,7 @@ export default function App() {
           reviewedBy: `${currentUser?.name || "Manager"} (${currentUser?.role?.toUpperCase() || "PM"})`,
           reviewDate: "Just now",
         };
+        dispatchTaskSync(updated);
         if (selectedTask?.id === taskId) setSelectedTask(updated);
         return updated;
       })
@@ -703,6 +808,7 @@ export default function App() {
           progress: newProg,
           status: "in_progress",
         };
+        dispatchTaskSync(updated);
         if (selectedTask?.id === taskId) setSelectedTask(updated);
         return updated;
       })
@@ -730,6 +836,7 @@ export default function App() {
 
     setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
     setSelectedTask(updatedTask);
+    dispatchTaskSync(updatedTask);
     setNewSubtaskInput("");
   };
 
@@ -2076,7 +2183,7 @@ export default function App() {
               {selectedTask.status === "in_review" && (
                 <View style={styles.underReviewBanner}>
                   <View style={styles.reviewBannerTop}>
-                    <Text style={styles.reviewBannerTitle}>⏳ Submitted for Project Manager Review</Text>
+                    <Text style={styles.reviewBannerTitle}>Submitted for Project Manager Review</Text>
                     <Text style={styles.reviewBannerTime}>{selectedTask.submittedAt || "Recently"}</Text>
                   </View>
 
