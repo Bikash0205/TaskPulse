@@ -80,7 +80,8 @@ interface MobileProject {
   total: number;
   progress: number;
   color: string;
-  emoji: string;
+  code: string;
+  emoji?: string;
 }
 
 const INITIAL_PROJECTS: MobileProject[] = [
@@ -89,65 +90,66 @@ const INITIAL_PROJECTS: MobileProject[] = [
     name: "Application Design",
     category: "UI Design Kit",
     department: "Design",
-    completed: 50,
-    total: 80,
+    completed: 5,
+    total: 8,
     progress: 62,
     color: "#756EF3",
-    emoji: "💎",
+    code: "APP",
   },
   {
     id: "p2",
     name: "Unity Dashboard",
     category: "Design System",
-    department: "Design",
-    completed: 10,
-    total: 20,
+    department: "Engineering",
+    completed: 3,
+    total: 6,
     progress: 50,
-    color: "#B0D97F",
-    emoji: "☺",
+    color: "#10B981",
+    code: "UNT",
   },
   {
     id: "p3",
     name: "Instagram Shots",
     category: "Marketing Campaign",
     department: "Marketing",
-    completed: 14,
-    total: 20,
+    completed: 7,
+    total: 10,
     progress: 70,
-    color: "#FFE1AC",
-    emoji: "✍",
+    color: "#F59E0B",
+    code: "MKT",
   },
   {
     id: "p4",
     name: "Cubbles Engine",
     category: "Architecture",
     department: "Engineering",
-    completed: 16,
-    total: 20,
+    completed: 8,
+    total: 10,
     progress: 80,
-    color: "#96C2FF",
-    emoji: "🤓",
+    color: "#3B82F6",
+    code: "ENG",
   },
   {
     id: "p5",
     name: "Ui8 Platform",
     category: "Product Management",
     department: "Product",
-    completed: 18,
-    total: 20,
+    completed: 9,
+    total: 10,
     progress: 90,
-    color: "#B2D29D",
-    emoji: "🤠",
+    color: "#8B5CF6",
+    code: "PRD",
   },
 ];
 
 const DEFAULT_TASKS: TaskPulseItem[] = [
   {
     id: "demo-t1",
-    title: "Create Detail Booking",
-    projectName: "Productivity Mobile App",
-    projectBadge: "PROD",
-    department: "Product" as Department,
+    title: "Create Detail Booking Screens",
+    projectId: "p1",
+    projectName: "Application Design",
+    projectBadge: "APP",
+    department: "Design" as Department,
     status: "in_progress" as const,
     priority: "high" as const,
     progressPercentage: 60,
@@ -161,35 +163,72 @@ const DEFAULT_TASKS: TaskPulseItem[] = [
   },
   {
     id: "demo-t2",
-    title: "Revision Home Page",
-    projectName: "Banking Mobile App",
-    projectBadge: "BANK",
-    department: "Engineering",
-    status: "in_progress" as const,
+    title: "Revision Home Page & Analytics",
+    projectId: "p2",
+    projectName: "Unity Dashboard",
+    projectBadge: "UNT",
+    department: "Engineering" as Department,
+    status: "in_review" as const,
     priority: "critical" as const,
-    progressPercentage: 70,
+    progressPercentage: 90,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     subtasks: [
       { id: "s4", title: "Update card shadow & glass blur", completed: true },
       { id: "s5", title: "Format currency decimal alignment", completed: true },
-      { id: "s6", title: "Integrate biometrics auth trigger", completed: false },
+      { id: "s6", title: "Integrate biometrics auth trigger", completed: true },
     ],
   },
   {
     id: "demo-t3",
-    title: "Working On Landing Page",
-    projectName: "Online Course",
-    projectBadge: "EDU",
-    department: "Design" as Department,
+    title: "Creative Assets & Video Reel Launch",
+    projectId: "p3",
+    projectName: "Instagram Shots",
+    projectBadge: "MKT",
+    department: "Marketing" as Department,
     status: "in_progress" as const,
     priority: "medium" as const,
-    progressPercentage: 80,
+    progressPercentage: 70,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     subtasks: [
       { id: "s7", title: "Responsive header navigation bar", completed: true },
       { id: "s8", title: "Tutor testimonial video embed", completed: true },
+      { id: "s9", title: "Campaign tag validation", completed: false },
+    ],
+  },
+  {
+    id: "demo-t4",
+    title: "Core Architecture & Webhooks",
+    projectId: "p4",
+    projectName: "Cubbles Engine",
+    projectBadge: "ENG",
+    department: "Engineering" as Department,
+    status: "in_progress" as const,
+    priority: "high" as const,
+    progressPercentage: 80,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    subtasks: [
+      { id: "s10", title: "Setup WebSocket cluster sync", completed: true },
+      { id: "s11", title: "Zero-copy message serialization", completed: true },
+    ],
+  },
+  {
+    id: "demo-t5",
+    title: "Product Roadmap & Sprint Spec",
+    projectId: "p5",
+    projectName: "Ui8 Platform",
+    projectBadge: "PRD",
+    department: "Product" as Department,
+    status: "completed" as const,
+    priority: "medium" as const,
+    progressPercentage: 100,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    subtasks: [
+      { id: "s12", title: "User feedback sprint prioritization", completed: true },
+      { id: "s13", title: "Release changelog draft approval", completed: true },
     ],
   },
 ];
@@ -235,7 +274,6 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   // New Project Form State
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectCategory, setNewProjectCategory] = useState("Design");
-  const [newProjectEmoji, setNewProjectEmoji] = useState("🚀");
 
   // Task Details Subtask Input & Comment
   const [newSubtaskInput, setNewSubtaskInput] = useState("");
@@ -416,7 +454,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
       total: 10,
       progress: 0,
       color: TASKCY.primary,
-      emoji: newProjectEmoji || "📁",
+      code: newProjectName.trim().slice(0, 3).toUpperCase(),
     };
     setProjectsList([newProj, ...projectsList]);
     setIsCreateOpen(false);
@@ -504,10 +542,10 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-semibold text-[#848A94]">Welcome back,</span>
-                        <span className="text-xs font-bold text-[#756EF3]">Bikash 👋</span>
+                        <span className="text-xs font-bold text-[#756EF3]">Bikash</span>
                       </div>
                       <h2 className="text-lg font-bold leading-tight text-[#002055] tracking-tight mt-0.5">
-                        Let’s make habits together 🙌
+                        Let's make habits together
                       </h2>
                     </div>
                     <img
@@ -549,12 +587,12 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-base">💎</span>
+                          <Folder className="w-5 h-5 text-white" />
                           <h3 className="font-bold text-base text-white leading-tight">
                             Application Design
                           </h3>
                         </div>
-                        <p className="text-xs text-[#C5DAFD] mt-0.5 ml-6">UI Design Kit & Task Pulse</p>
+                        <p className="text-xs text-[#C5DAFD] mt-0.5 ml-7">UI Design Kit & Task Pulse</p>
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/20 text-white backdrop-blur-sm border border-white/20">
                         Featured
@@ -823,27 +861,41 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                         if (projectFilter !== "All") return p.department === projectFilter;
                         return true;
                       })
-                      .map((p) => (
-                        <div
-                          key={p.id}
-                          onClick={() => setSelectedProject(p)}
-                          className="p-3.5 rounded-2xl bg-white border border-[#E9F1FF] hover:border-[#756EF3]/50 shadow-xs space-y-3 cursor-pointer transition-all hover:translate-y-[-1px]"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xl">{p.emoji}</span>
-                              <div>
-                                <h5 className="font-bold text-xs text-[#002055]">{p.name}</h5>
-                                <span className="text-[10px] text-[#848A94]">{p.category}</span>
+                      .map((p) => {
+                        const pTasks = activeTasks.filter(
+                          (t) =>
+                            (t.projectName && t.projectName.toLowerCase() === p.name.toLowerCase()) ||
+                            (t.projectId && t.projectId === p.id)
+                        );
+                        const done = pTasks.filter((t) => t.status === "completed").length;
+                        const countText = pTasks.length > 0 ? `${done}/${pTasks.length} tasks` : `${p.completed}/${p.total} tasks`;
+
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => setSelectedProject(p)}
+                            className="p-3.5 rounded-2xl bg-white border border-[#E9F1FF] hover:border-[#756EF3]/50 shadow-xs space-y-3 cursor-pointer transition-all hover:translate-y-[-1px]"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0"
+                                  style={{ backgroundColor: `${p.color}20`, color: p.color }}
+                                >
+                                  {p.code}
+                                </div>
+                                <div>
+                                  <h5 className="font-bold text-xs text-[#002055]">{p.name}</h5>
+                                  <span className="text-[10px] text-[#848A94]">{p.category}</span>
+                                </div>
                               </div>
+                              <span
+                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold border"
+                                style={{ borderColor: p.color, color: "#002055" }}
+                              >
+                                {countText}
+                              </span>
                             </div>
-                            <span
-                              className="px-2 py-0.5 rounded-lg text-[10px] font-bold border"
-                              style={{ borderColor: p.color, color: "#002055" }}
-                            >
-                              {p.completed}/{p.total} tasks
-                            </span>
-                          </div>
 
                           <div className="flex items-center gap-3">
                             <div className="flex items-center -space-x-1.5 shrink-0">
@@ -869,7 +921,8 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                             </span>
                           </div>
                         </div>
-                      ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
@@ -1127,7 +1180,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                       <h4 className="font-bold text-base text-[#002055]">Bikash Kumar Yadav</h4>
                       <div className="flex items-center justify-center gap-1.5 mt-0.5">
                         <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-700 flex items-center gap-1">
-                          👑 Permanent Super Admin
+                          Permanent Super Admin
                         </span>
                       </div>
                       <p className="text-[11px] text-[#848A94] mt-1 font-mono">zevonbcash@gmail.com</p>
@@ -1285,8 +1338,13 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                 className="absolute inset-x-0 bottom-0 top-14 bg-white rounded-t-3xl border-t border-[#E9F1FF] z-40 p-4 shadow-2xl flex flex-col"
               >
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{selectedProject.emoji}</span>
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0"
+                      style={{ backgroundColor: `${selectedProject.color}20`, color: selectedProject.color }}
+                    >
+                      {selectedProject.code}
+                    </div>
                     <div>
                       <h4 className="font-bold text-sm text-[#002055]">{selectedProject.name}</h4>
                       <p className="text-[10px] text-[#848A94]">{selectedProject.category}</p>
@@ -1322,17 +1380,31 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                       setSelectedProject(null);
                       setIsCreateOpen(true);
                     }}
-                    className="text-[11px] text-[#756EF3] flex items-center gap-1 cursor-pointer"
+                    className="text-[11px] text-[#756EF3] flex items-center gap-1 cursor-pointer font-semibold"
                   >
-                    <Plus className="w-3 h-3" />
+                    <Plus className="w-3.5 h-3.5" />
                     <span>Add Task</span>
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar pb-6">
-                  {activeTasks
-                    .filter((t) => !t.projectName || t.projectName.includes(selectedProject.name.slice(0, 5)) || true)
-                    .map((task) => (
+                  {(() => {
+                    const projectTasks = activeTasks.filter(
+                      (t) =>
+                        (t.projectName && t.projectName.toLowerCase() === selectedProject.name.toLowerCase()) ||
+                        (t.projectId && t.projectId === selectedProject.id)
+                    );
+
+                    if (projectTasks.length === 0) {
+                      return (
+                        <div className="text-center py-8 px-4 space-y-2 bg-[#F8FAFF] rounded-2xl border border-dashed border-[#E9F1FF] mt-2">
+                          <p className="text-xs font-semibold text-[#002055]">No tasks in this project yet</p>
+                          <p className="text-[10px] text-[#848A94]">Click "Add Task" above to create your first task in {selectedProject.name}.</p>
+                        </div>
+                      );
+                    }
+
+                    return projectTasks.map((task) => (
                       <div
                         key={task.id}
                         onClick={() => {
@@ -1340,7 +1412,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                           setSelectedProject(null);
                           setCurrentTab("details");
                         }}
-                        className="p-3 rounded-xl border border-[#E9F1FF] hover:border-[#756EF3]/50 flex items-center justify-between cursor-pointer"
+                        className="p-3 rounded-xl border border-[#E9F1FF] hover:border-[#756EF3]/50 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 transition-colors"
                       >
                         <div>
                           <div className="font-bold text-xs text-[#002055]">{task.title}</div>
@@ -1350,7 +1422,8 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                         </div>
                         <span className="text-xs font-bold text-[#756EF3]">{task.progressPercentage}%</span>
                       </div>
-                    ))}
+                    ));
+                  })()}
                 </div>
               </motion.div>
             )}
@@ -1445,10 +1518,10 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                             onChange={(e) => setNewTaskPriority(e.target.value as "low" | "medium" | "high" | "critical")}
                             className="w-full px-2.5 py-2 rounded-xl bg-[#F8FAFF] border border-[#E9F1FF] text-xs text-[#002055] focus:outline-none"
                           >
-                            <option value="critical">🔴 Critical</option>
-                            <option value="high">🟠 High</option>
-                            <option value="medium">🟡 Medium</option>
-                            <option value="low">🟢 Normal</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Normal</option>
                           </select>
                         </div>
                       </div>
@@ -1542,13 +1615,14 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
 
                         <div>
                           <label className="text-[10px] font-bold uppercase tracking-wider text-[#848A94] block mb-1">
-                            Emoji Icon
+                            Project Code
                           </label>
                           <input
                             type="text"
-                            value={newProjectEmoji}
-                            onChange={(e) => setNewProjectEmoji(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl bg-[#F8FAFF] border border-[#E9F1FF] text-xs text-center focus:outline-none"
+                            placeholder="e.g. PRJ"
+                            maxLength={4}
+                            defaultValue={newProjectName ? newProjectName.slice(0, 3).toUpperCase() : ""}
+                            className="w-full px-3 py-2 rounded-xl bg-[#F8FAFF] border border-[#E9F1FF] text-xs text-center font-mono font-bold text-[#002055] uppercase focus:outline-none"
                           />
                         </div>
                       </div>
@@ -1598,17 +1672,22 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
 
                   <div className="space-y-2">
                     {[
-                      { title: "Elena marked wireframes complete", time: "5m ago", icon: "✓", color: "#10B981" },
-                      { title: "Marcus assigned you to Banking App", time: "25m ago", icon: "👤", color: "#756EF3" },
-                      { title: "Velocity milestone: 90% reached!", time: "1h ago", icon: "⚡", color: "#F59E0B" },
-                      { title: "New build ready: TaskPulse.apk", time: "2h ago", icon: "📦", color: "#6366F1" },
+                      { title: "Elena marked wireframes complete", time: "5m ago", badge: "DONE", color: "#10B981" },
+                      { title: "Marcus assigned you to Banking App", time: "25m ago", badge: "TASK", color: "#756EF3" },
+                      { title: "Velocity milestone: 90% reached!", time: "1h ago", badge: "GOAL", color: "#F59E0B" },
+                      { title: "New build ready: TaskPulse.apk", time: "2h ago", badge: "APK", color: "#6366F1" },
                     ].map((n, i) => (
                       <div key={i} className="p-2.5 rounded-xl bg-[#F8FAFF] border border-[#E9F1FF] text-xs space-y-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm">{n.icon}</span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white font-mono"
+                            style={{ backgroundColor: n.color }}
+                          >
+                            {n.badge}
+                          </span>
                           <span className="font-bold text-[11px] text-[#002055]">{n.title}</span>
                         </div>
-                        <span className="text-[9px] text-[#848A94] ml-5 block">{n.time}</span>
+                        <span className="text-[9px] text-[#848A94] ml-11 block">{n.time}</span>
                       </div>
                     ))}
                   </div>

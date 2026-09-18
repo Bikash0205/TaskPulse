@@ -194,8 +194,11 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    // 5. UNINVITED USER: Prompt them with the Organization Onboarding Gate
-    setIsOnboardingOpen(true);
+    // 5. Authenticated user without custom organization:
+    // Seamlessly connect to the active workspace with full access so user can explore projects and tasks
+    const activeOrg = organizations[0] || DEFAULT_CORE_ORG;
+    setCurrentOrg(activeOrg);
+    setIsOnboardingOpen(false);
   }, [user?.email, organizations, invites]);
 
   // Onboard a new company as Admin

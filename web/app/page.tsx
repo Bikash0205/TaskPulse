@@ -41,19 +41,24 @@ export default function TaskPulseWorkspacePage() {
           initialTasks = JSON.parse(savedTasks);
           setTasks(initialTasks);
           syncColleagueCounts(initialTasks);
-        } catch (e) {}
+        } catch (e) {
+          initialTasks = mockTasks;
+          setTasks(mockTasks);
+          syncColleagueCounts(mockTasks);
+        }
       } else {
-        setTasks([]);
-        syncColleagueCounts([]);
+        initialTasks = mockTasks;
+        setTasks(mockTasks);
+        syncColleagueCounts(mockTasks);
       }
 
       const savedProjects = localStorage.getItem("taskpulse_custom_projects");
       if (savedProjects !== null) {
         try {
           const parsed = JSON.parse(savedProjects);
-          setProjects(Array.isArray(parsed) ? parsed : []);
+          setProjects(Array.isArray(parsed) && parsed.length > 0 ? parsed : mockProjects);
         } catch (e) {
-          setProjects([]);
+          setProjects(mockProjects);
         }
       } else {
         setProjects(mockProjects);

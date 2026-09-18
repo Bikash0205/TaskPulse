@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -201,7 +201,7 @@ interface MobileProject {
   total: number;
   progress: number;
   color: string;
-  emoji: string;
+  code: string;
 }
 
 const INITIAL_PROJECTS: MobileProject[] = [
@@ -210,63 +210,63 @@ const INITIAL_PROJECTS: MobileProject[] = [
     name: "Application Design",
     category: "UI Design Kit",
     department: "Design",
-    completed: 50,
-    total: 80,
+    completed: 5,
+    total: 8,
     progress: 62,
     color: "#756EF3",
-    emoji: "💎",
+    code: "APP",
   },
   {
     id: "p2",
     name: "Unity Dashboard",
     category: "Design System",
-    department: "Design",
-    completed: 10,
-    total: 20,
+    department: "Engineering",
+    completed: 3,
+    total: 6,
     progress: 50,
     color: "#10B981",
-    emoji: "☺",
+    code: "UNT",
   },
   {
     id: "p3",
     name: "Instagram Shots",
     category: "Marketing Campaign",
     department: "Marketing",
-    completed: 14,
-    total: 20,
+    completed: 7,
+    total: 10,
     progress: 70,
     color: "#F59E0B",
-    emoji: "✍",
+    code: "MKT",
   },
   {
     id: "p4",
     name: "Cubbles Engine",
     category: "Architecture",
     department: "Engineering",
-    completed: 16,
-    total: 20,
+    completed: 8,
+    total: 10,
     progress: 80,
     color: "#3B82F6",
-    emoji: "🤓",
+    code: "ENG",
   },
   {
     id: "p5",
     name: "Ui8 Platform",
     category: "Product Management",
     department: "Product",
-    completed: 18,
-    total: 20,
+    completed: 9,
+    total: 10,
     progress: 90,
-    color: "#B2D29D",
-    emoji: "🤠",
+    color: "#8B5CF6",
+    code: "PRD",
   },
 ];
 
 const INITIAL_TASKS: MobileTask[] = [
   {
     id: "t1",
-    title: "Create Detail Booking",
-    project: "Productivity Mobile App",
+    title: "Create Detail Booking Screens",
+    project: "Application Design",
     category: "Design",
     priority: "high",
     status: "in_progress",
@@ -280,8 +280,8 @@ const INITIAL_TASKS: MobileTask[] = [
   },
   {
     id: "t2",
-    title: "Revision Home Page",
-    project: "Banking Mobile App",
+    title: "Revision Home Page & Analytics",
+    project: "Unity Dashboard",
     category: "Engineering",
     priority: "critical",
     status: "in_review",
@@ -298,17 +298,60 @@ const INITIAL_TASKS: MobileTask[] = [
   },
   {
     id: "t3",
-    title: "Working On Landing Page",
-    project: "Online Course",
-    category: "Design",
+    title: "Creative Assets & Video Reel Launch",
+    project: "Instagram Shots",
+    category: "Marketing",
     priority: "medium",
     status: "in_progress",
-    progress: 80,
+    progress: 70,
     timeAgo: "7 min ago",
     subtasks: [
       { id: "s7", title: "Responsive header navigation bar", completed: true },
-      { id: "s8", title: "Tutor testimonial video embed", completed: true },
-      { id: "s9", title: "SEO meta tag validation", completed: false },
+      { id: "s8", title: "Creator testimonial video reel embed", completed: true },
+      { id: "s9", title: "Campaign tag validation", completed: false },
+    ],
+  },
+  {
+    id: "t4",
+    title: "Core Architecture & Webhooks",
+    project: "Cubbles Engine",
+    category: "Engineering",
+    priority: "high",
+    status: "in_progress",
+    progress: 80,
+    timeAgo: "12 min ago",
+    subtasks: [
+      { id: "s10", title: "Setup WebSocket cluster sync", completed: true },
+      { id: "s11", title: "Zero-copy message serialization", completed: true },
+      { id: "s12", title: "Telemetry tracing buffer", completed: false },
+    ],
+  },
+  {
+    id: "t5",
+    title: "Product Roadmap & Sprint Spec",
+    project: "Ui8 Platform",
+    category: "Product",
+    priority: "medium",
+    status: "completed",
+    progress: 100,
+    timeAgo: "1 hour ago",
+    subtasks: [
+      { id: "s13", title: "User feedback sprint prioritization", completed: true },
+      { id: "s14", title: "Release changelog draft approval", completed: true },
+    ],
+  },
+  {
+    id: "t6",
+    title: "Design System Dark Mode Tokens",
+    project: "Application Design",
+    category: "Design",
+    priority: "medium",
+    status: "completed",
+    progress: 100,
+    timeAgo: "2 hours ago",
+    subtasks: [
+      { id: "s15", title: "Export semantic color variables", completed: true },
+      { id: "s16", title: "Verify high contrast ratios", completed: true },
     ],
   },
 ];
@@ -376,9 +419,79 @@ export default function App() {
   const [tasks, setTasks] = useState<MobileTask[]>(INITIAL_TASKS);
   const [projects, setProjects] = useState<MobileProject[]>(INITIAL_PROJECTS);
   const [selectedTask, setSelectedTask] = useState<MobileTask | null>(INITIAL_TASKS[0]);
+  const [selectedProjectView, setSelectedProjectView] = useState<MobileProject | null>(null);
   const [projectFilter, setProjectFilter] = useState("All");
+  const [projectTaskFilter, setProjectTaskFilter] = useState("All");
   const [taskStatusFilter, setTaskStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Live Cloud Synchronization with Web API
+  useEffect(() => {
+    let isMounted = true;
+    const syncWithServer = async () => {
+      try {
+        const [tasksRes, projectsRes] = await Promise.allSettled([
+          fetch("https://happy-fermi-kappa.vercel.app/api/tasks"),
+          fetch("https://happy-fermi-kappa.vercel.app/api/projects"),
+        ]);
+
+        if (tasksRes.status === "fulfilled" && tasksRes.value.ok) {
+          const remoteTasks = await tasksRes.value.json();
+          if (isMounted && Array.isArray(remoteTasks) && remoteTasks.length > 0) {
+            const mappedTasks: MobileTask[] = remoteTasks.map((rt: any) => ({
+              id: rt.id,
+              title: rt.title,
+              project: rt.projectName || rt.projectBadge || "Application Design",
+              category: rt.department || "Design",
+              priority: rt.priority || "medium",
+              status: rt.status === "completed" ? "completed" : rt.status === "in_review" ? "in_review" : "in_progress",
+              progress: rt.progressPercentage ?? 0,
+              timeAgo: "Live sync",
+              subtasks: rt.subtasks?.map((st: any) => ({
+                id: st.id,
+                title: st.title,
+                completed: !!st.completed,
+              })) || [],
+            }));
+            setTasks((prev) => {
+              const remoteIds = new Set(mappedTasks.map((t) => t.id));
+              const localOnly = prev.filter((t) => !remoteIds.has(t.id));
+              return [...mappedTasks, ...localOnly];
+            });
+          }
+        }
+
+        if (projectsRes.status === "fulfilled" && projectsRes.value.ok) {
+          const remoteProjects = await projectsRes.value.json();
+          if (isMounted && Array.isArray(remoteProjects) && remoteProjects.length > 0) {
+            setProjects((prev) => {
+              const mapped = remoteProjects.map((rp: any, idx: number) => ({
+                id: rp.id || `rp-${idx}`,
+                name: rp.name,
+                category: rp.department || "General",
+                department: rp.department || "General",
+                completed: Math.round((rp.progressPercentage || 50) * 0.1),
+                total: 10,
+                progress: rp.progressPercentage || 50,
+                color: idx % 2 === 0 ? "#756EF3" : "#10B981",
+                code: rp.code || rp.name.slice(0, 3).toUpperCase(),
+              }));
+              const remoteNames = new Set(mapped.map((p: any) => p.name.toLowerCase()));
+              const keepLocal = prev.filter((p) => !remoteNames.has(p.name.toLowerCase()));
+              return [...mapped, ...keepLocal];
+            });
+          }
+        }
+      } catch {
+        // Offline resilience: keep local state intact
+      }
+    };
+
+    syncWithServer();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -407,7 +520,6 @@ export default function App() {
   // New Project Form
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectCategory, setNewProjectCategory] = useState("Design");
-  const [newProjectEmoji, setNewProjectEmoji] = useState("🚀");
 
   // Task Details Subtasks & Comments
   const [newSubtaskInput, setNewSubtaskInput] = useState("");
@@ -657,6 +769,30 @@ export default function App() {
     };
 
     setTasks((prev) => [newTask, ...prev]);
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.name.toLowerCase() === newTaskProject.toLowerCase()
+          ? { ...p, total: p.total + 1 }
+          : p
+      )
+    );
+
+    // Live Cloud Dispatch
+    fetch("https://happy-fermi-kappa.vercel.app/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: newTask.id,
+        title: newTask.title,
+        projectName: newTask.project,
+        department: newTask.category,
+        priority: newTask.priority,
+        status: newTask.status,
+        progressPercentage: newTask.progress,
+        subtasks: newTask.subtasks,
+      }),
+    }).catch(() => {});
+
     setNewTaskTitle("");
     setNewTaskSteps(["Review design specs", "Prepare component tokens"]);
     setIsCreateOpen(false);
@@ -674,10 +810,24 @@ export default function App() {
       total: 10,
       progress: 0,
       color: COLORS.primary,
-      emoji: newProjectEmoji || "🚀",
+      code: newProjectName.trim().slice(0, 3).toUpperCase(),
     };
 
     setProjects((prev) => [newProj, ...prev]);
+
+    // Live Cloud Dispatch
+    fetch("https://happy-fermi-kappa.vercel.app/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: newProj.id,
+        name: newProj.name,
+        code: newProj.code,
+        department: newProj.department,
+        progressPercentage: 0,
+      }),
+    }).catch(() => {});
+
     setNewProjectName("");
     setIsCreateOpen(false);
   };
@@ -854,9 +1004,9 @@ export default function App() {
           <Text style={[styles.inputLabel, { marginTop: 6 }]}>SELECT ROLE</Text>
           <View style={styles.rolePickerRow}>
             {[
-              { role: "manager", label: "👔 Manager", desc: "Reviews & Approves" },
-              { role: "member", label: "💻 Member", desc: "Executes Tasks" },
-              { role: "viewer", label: "👁️ Viewer", desc: "Read-only" },
+              { role: "manager", label: "Manager", desc: "Reviews & Approves" },
+              { role: "member", label: "Member", desc: "Executes Tasks" },
+              { role: "viewer", label: "Viewer", desc: "Read-only" },
             ].map((r) => (
               <TouchableOpacity
                 key={r.role}
@@ -1064,7 +1214,7 @@ export default function App() {
               onPress={handleLaunchWorkspace}
               style={[styles.launchWorkspaceBtn, { flex: 2 }]}
             >
-              <Text style={styles.launchWorkspaceBtnText}>🚀 Launch Organization</Text>
+              <Text style={styles.launchWorkspaceBtnText}>Launch Organization</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1139,7 +1289,7 @@ export default function App() {
               {/* Uninvited Warning Banner */}
               {uninvitedWarning && (
                 <View style={styles.uninvitedBanner}>
-                  <Text style={styles.uninvitedBannerTitle}>⚠️ Email Not Found in Workspace</Text>
+                  <Text style={styles.uninvitedBannerTitle}>Email Not Found in Workspace</Text>
                   <Text style={styles.uninvitedBannerBody}>
                     "{uninvitedWarning}" is not associated with an existing workspace. Would you like to set up a new organization?
                   </Text>
@@ -1153,7 +1303,7 @@ export default function App() {
                     }}
                     style={styles.uninvitedPromptBtn}
                   >
-                    <Text style={styles.uninvitedPromptBtnText}>🚀 Start Organization Onboarding</Text>
+                    <Text style={styles.uninvitedPromptBtnText}>Start Organization Onboarding</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1186,7 +1336,7 @@ export default function App() {
                   }}
                   style={styles.quickAccountChip}
                 >
-                  <Text style={styles.quickAccountChipText}>👔 Marcus (Manager)</Text>
+                  <Text style={styles.quickAccountChipText}>Marcus (Manager)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -1196,7 +1346,7 @@ export default function App() {
                   }}
                   style={styles.quickAccountChip}
                 >
-                  <Text style={styles.quickAccountChipText}>💻 Elena (Member)</Text>
+                  <Text style={styles.quickAccountChipText}>Elena (Member)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -1206,7 +1356,7 @@ export default function App() {
                   }}
                   style={styles.quickAccountChip}
                 >
-                  <Text style={styles.quickAccountChipText}>👑 Bikash (Admin)</Text>
+                  <Text style={styles.quickAccountChipText}>Bikash (Admin)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -1216,7 +1366,7 @@ export default function App() {
                   }}
                   style={[styles.quickAccountChip, { borderColor: "#EF4444" }]}
                 >
-                  <Text style={[styles.quickAccountChipText, { color: "#EF4444" }]}>⚠️ Test Uninvited User</Text>
+                  <Text style={[styles.quickAccountChipText, { color: "#EF4444" }]}>Test Uninvited User</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1301,7 +1451,7 @@ export default function App() {
               <View>
                 <View style={styles.welcomeRow}>
                   <Text style={styles.welcomeSubtitle}>Welcome back,</Text>
-                  <Text style={styles.welcomeName}>{currentUser.name.split(" ")[0]} 👋</Text>
+                  <Text style={styles.welcomeName}>{currentUser.name.split(" ")[0]}</Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
                   <Text style={styles.heroTitle}>{currentUser.organization}</Text>
@@ -1367,15 +1517,20 @@ export default function App() {
               activeOpacity={0.9}
               onPress={() => {
                 triggerHaptic("selection");
+                if (projects.length > 0) {
+                  setSelectedProjectView(projects[0]);
+                }
                 setCurrentTab("projects");
               }}
               style={styles.bannerCard}
             >
               <View style={styles.bannerHeader}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.bannerIcon}>💎</Text>
-                  <View style={{ marginLeft: 8 }}>
-                    <Text style={styles.bannerTitle}>Application Design</Text>
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "rgba(255, 255, 255, 0.2)", alignItems: "center", justifyContent: "center" }}>
+                    <FolderIcon size={16} color="#FFFFFF" />
+                  </View>
+                  <View style={{ marginLeft: 10 }}>
+                    <Text style={styles.bannerTitle}>{projects[0]?.name || "Application Design"}</Text>
                     <Text style={styles.bannerSubtitle}>UI Design Kit & Task Pulse</Text>
                   </View>
                 </View>
@@ -1570,7 +1725,192 @@ export default function App() {
         )}
 
         {/* PROJECTS SCREEN */}
-        {currentTab === "projects" && (
+        {currentTab === "projects" && selectedProjectView ? (
+          <View style={styles.projectsContainer}>
+            {/* Project Details Header */}
+            <View style={styles.projectDetailTopBar}>
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setSelectedProjectView(null);
+                }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={styles.backButton}
+              >
+                <ArrowLeftIcon size={20} color={COLORS.navy} />
+              </TouchableOpacity>
+              <View style={{ flex: 1, marginHorizontal: 10 }}>
+                <Text style={styles.detailsHeaderTitle} numberOfLines={1}>
+                  {selectedProjectView.name}
+                </Text>
+                <Text style={styles.projectCategory}>
+                  {selectedProjectView.department} • {selectedProjectView.category}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setNewTaskProject(selectedProjectView.name);
+                  setCreateType("task");
+                  setIsCreateOpen(true);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.newProjectButton}
+              >
+                <View style={{ marginRight: 4 }}>
+                  <PlusIcon size={14} color="#FFFFFF" />
+                </View>
+                <Text style={styles.newProjectButtonText}>Add Task</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Project Progress Card */}
+            <View style={styles.projectDetailHeroCard}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={[styles.projectCodeBadge, { backgroundColor: selectedProjectView.color + "25" }]}>
+                    <Text style={[styles.projectCodeBadgeText, { color: selectedProjectView.color }]}>
+                      {selectedProjectView.code}
+                    </Text>
+                  </View>
+                  <View style={{ marginLeft: 10 }}>
+                    <Text style={styles.projectName}>{selectedProjectView.name}</Text>
+                    <Text style={styles.projectCategory}>{selectedProjectView.category}</Text>
+                  </View>
+                </View>
+                <View style={styles.taskPillBadge}>
+                  <Text style={styles.taskPillBadgeText}>
+                    {tasks.filter((t) => t.project.toLowerCase() === selectedProjectView.name.toLowerCase() && t.status === "completed").length}/
+                    {tasks.filter((t) => t.project.toLowerCase() === selectedProjectView.name.toLowerCase()).length} tasks
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ marginTop: 14 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                  <Text style={styles.progressRatio}>Project Completion</Text>
+                  <Text style={[styles.projectProgressPercent, { marginLeft: 0 }]}>
+                    {selectedProjectView.progress}%
+                  </Text>
+                </View>
+                <View style={styles.progressBarBg}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${selectedProjectView.progress}%`, backgroundColor: selectedProjectView.color },
+                    ]}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Status Filter Chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              {["All", "In Progress", "In Review", "Completed"].map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setProjectTaskFilter(status);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                  style={[styles.filterChip, projectTaskFilter === status && styles.filterChipActive]}
+                >
+                  <Text style={[styles.filterChipText, projectTaskFilter === status && styles.filterChipTextActive]}>
+                    {status}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Tasks inside this project */}
+            {(() => {
+              const projTasks = tasks.filter((t) => {
+                const matchesProj = t.project.toLowerCase() === selectedProjectView.name.toLowerCase();
+                if (!matchesProj) return false;
+                if (projectTaskFilter === "In Progress") return t.status === "in_progress";
+                if (projectTaskFilter === "In Review") return t.status === "in_review";
+                if (projectTaskFilter === "Completed") return t.status === "completed";
+                return true;
+              });
+
+              if (projTasks.length === 0) {
+                return (
+                  <View style={styles.emptyProjectContainer}>
+                    <FolderIcon size={36} color={COLORS.muted} />
+                    <Text style={styles.emptyProjectTitle}>No tasks found in this project</Text>
+                    <Text style={styles.emptyProjectSubtitle}>
+                      Get started by adding the first task to {selectedProjectView.name}.
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        triggerHaptic("selection");
+                        setNewTaskProject(selectedProjectView.name);
+                        setCreateType("task");
+                        setIsCreateOpen(true);
+                      }}
+                      style={styles.emptyProjectBtn}
+                    >
+                      <PlusIcon size={14} color="#FFFFFF" />
+                      <Text style={styles.emptyProjectBtnText}>Create Task</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+
+              return projTasks.map((task) => (
+                <TouchableOpacity
+                  key={task.id}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setSelectedTask(task);
+                    setCurrentTab("details");
+                  }}
+                  style={styles.taskCard}
+                >
+                  <View style={styles.taskCardBody}>
+                    <View style={styles.taskBadgeRow}>
+                      <View style={styles.projectTagPill}>
+                        <Text style={styles.projectTagText}>{task.project}</Text>
+                      </View>
+                      {task.status === "in_review" && (
+                        <View style={styles.underReviewPill}>
+                          <Text style={styles.underReviewPillText}>Under Review</Text>
+                        </View>
+                      )}
+                      {task.priority === "critical" && <View style={[styles.priorityDot, { backgroundColor: "#EF4444" }]} />}
+                      {task.priority === "high" && <View style={[styles.priorityDot, { backgroundColor: "#F59E0B" }]} />}
+                    </View>
+
+                    <Text style={styles.taskTitle}>{task.title}</Text>
+
+                    <View style={styles.taskFooter}>
+                      <View style={{ marginRight: 4 }}><ClockIcon size={12} color={COLORS.muted} /></View>
+                      <Text style={styles.taskTime}>{task.timeAgo}</Text>
+                      <Text style={styles.taskDot}>•</Text>
+                      <Text style={styles.taskSubtaskCount}>
+                        {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.circleProgressWrap}>
+                    <View
+                      style={[
+                        styles.circleProgressRing,
+                        task.status === "completed" && { borderColor: COLORS.accentGreen },
+                        task.status === "in_review" && { borderColor: COLORS.accentYellow },
+                      ]}
+                    >
+                      <Text style={styles.circleProgressText}>{task.progress}%</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ));
+            })()}
+          </View>
+        ) : currentTab === "projects" && (
           <View style={styles.projectsContainer}>
             <View style={styles.projectsHeaderRow}>
               <View>
@@ -1597,13 +1937,15 @@ export default function App() {
               <TextInput
                 placeholder="Search projects..."
                 placeholderTextColor={COLORS.muted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
                 style={styles.searchInput}
               />
             </View>
 
             {/* Filter Pills */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {["All", "Design", "Marketing", "Engineering"].map((dep) => (
+              {["All", "Design", "Marketing", "Engineering", "Product"].map((dep) => (
                 <TouchableOpacity
                   key={dep}
                   onPress={() => {
@@ -1620,36 +1962,77 @@ export default function App() {
               ))}
             </ScrollView>
 
-            {/* Projects List */}
-            {projects.map((proj) => (
-              <View key={proj.id} style={styles.projectCard}>
-                <View style={styles.projectCardHeader}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={styles.projectEmoji}>{proj.emoji}</Text>
-                    <View style={{ marginLeft: 10 }}>
-                      <Text style={styles.projectName}>{proj.name}</Text>
-                      <Text style={styles.projectCategory}>{proj.category}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.taskPillBadge}>
-                    <Text style={styles.taskPillBadgeText}>{proj.completed}/{proj.total} tasks</Text>
-                  </View>
-                </View>
+            {/* Interactive Projects List */}
+            {projects
+              .filter((p) => {
+                const matchesDept = projectFilter === "All" || p.department.toLowerCase() === projectFilter.toLowerCase();
+                const matchesSearch =
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  p.category.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesDept && matchesSearch;
+              })
+              .map((proj) => {
+                const projTasks = tasks.filter((t) => t.project.toLowerCase() === proj.name.toLowerCase());
+                const completedTasks = projTasks.filter((t) => t.status === "completed");
+                const taskCountText =
+                  projTasks.length > 0
+                    ? `${completedTasks.length}/${projTasks.length} tasks`
+                    : `${proj.completed}/${proj.total} tasks`;
 
-                <View style={styles.projectProgressWrap}>
-                  <View style={styles.avatarStack}>
-                    <View style={[styles.miniAvatar, { backgroundColor: "#6366F1", zIndex: 2 }]}><Text style={styles.miniAvatarText}>B</Text></View>
-                    <View style={[styles.miniAvatar, { backgroundColor: "#EC4899", zIndex: 1, marginLeft: -8 }]}><Text style={styles.miniAvatarText}>E</Text></View>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <View style={styles.progressBarBg}>
-                      <View style={[styles.progressBarFill, { width: `${proj.progress}%`, backgroundColor: proj.color }]} />
+                return (
+                  <TouchableOpacity
+                    key={proj.id}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      setSelectedProjectView(proj);
+                    }}
+                    style={styles.projectCard}
+                  >
+                    <View style={styles.projectCardHeader}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <View style={[styles.projectCodeBadge, { backgroundColor: proj.color + "25" }]}>
+                          <Text style={[styles.projectCodeBadgeText, { color: proj.color }]}>{proj.code}</Text>
+                        </View>
+                        <View style={{ marginLeft: 10 }}>
+                          <Text style={styles.projectName}>{proj.name}</Text>
+                          <Text style={styles.projectCategory}>{proj.category}</Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <View style={styles.taskPillBadge}>
+                          <Text style={styles.taskPillBadgeText}>{taskCountText}</Text>
+                        </View>
+                        <View style={{ marginLeft: 6 }}>
+                          <ChevronRightIcon size={14} color={COLORS.muted} />
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                  <Text style={styles.projectProgressPercent}>{proj.progress}%</Text>
-                </View>
-              </View>
-            ))}
+
+                    <View style={styles.projectProgressWrap}>
+                      <View style={styles.avatarStack}>
+                        <View style={[styles.miniAvatar, { backgroundColor: "#6366F1", zIndex: 2 }]}>
+                          <Text style={styles.miniAvatarText}>B</Text>
+                        </View>
+                        <View style={[styles.miniAvatar, { backgroundColor: "#EC4899", zIndex: 1, marginLeft: -8 }]}>
+                          <Text style={styles.miniAvatarText}>E</Text>
+                        </View>
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 14 }}>
+                        <View style={styles.progressBarBg}>
+                          <View
+                            style={[
+                              styles.progressBarFill,
+                              { width: `${proj.progress}%`, backgroundColor: proj.color },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <Text style={styles.projectProgressPercent}>{proj.progress}%</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
           </View>
         )}
 
@@ -1857,10 +2240,10 @@ export default function App() {
               <Text style={styles.profileName}>{currentUser.name}</Text>
               <View style={styles.profileRoleBadge}>
                 <Text style={styles.profileRoleBadgeText}>
-                  {currentUser.role === "admin" && "👑 Permanent Super Admin"}
-                  {currentUser.role === "manager" && "👔 Project Manager"}
-                  {currentUser.role === "member" && "💻 Team Member / Contributor"}
-                  {currentUser.role === "viewer" && "👁️ Stakeholder / Viewer"}
+                  {currentUser.role === "admin" && "Permanent Super Admin"}
+                  {currentUser.role === "manager" && "Project Manager"}
+                  {currentUser.role === "member" && "Team Member / Contributor"}
+                  {currentUser.role === "viewer" && "Stakeholder / Viewer"}
                 </Text>
               </View>
               <Text style={styles.profileEmail}>{currentUser.email}</Text>
@@ -2254,6 +2637,31 @@ export default function App() {
                   style={styles.textInput}
                 />
 
+                <Text style={[styles.inputLabel, { marginTop: 10 }]}>ASSIGN TO PROJECT</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
+                  {projects.map((p) => {
+                    const isSelected = newTaskProject.toLowerCase() === p.name.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        onPress={() => {
+                          triggerHaptic("selection");
+                          setNewTaskProject(p.name);
+                        }}
+                        style={[
+                          styles.filterChip,
+                          isSelected && styles.filterChipActive,
+                          { paddingHorizontal: 12, paddingVertical: 6 },
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
                 <Text style={[styles.inputLabel, { marginTop: 10 }]}>SUBTASKS / CHECKLIST</Text>
                 {newTaskSteps.map((step, idx) => (
                   <View key={idx} style={styles.stepItemRow}>
@@ -2391,7 +2799,7 @@ export default function App() {
               }}
               style={styles.drawerLink}
             >
-              <Text style={[styles.drawerLinkText, { color: "#EF4444", marginLeft: 0 }]}>🚪 Log Out / Switch User</Text>
+              <Text style={[styles.drawerLinkText, { color: "#EF4444", marginLeft: 0 }]}>Log Out / Switch User</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -2904,6 +3312,69 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+    },
+    projectCodeBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    projectCodeBadgeText: {
+      fontSize: 11,
+      fontWeight: "bold",
+    },
+    projectDetailTopBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 14,
+      marginBottom: 12,
+    },
+    projectDetailHeroCard: {
+      backgroundColor: COLORS.card,
+      padding: 16,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      marginBottom: 12,
+    },
+    emptyProjectContainer: {
+      backgroundColor: COLORS.card,
+      padding: 24,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      alignItems: "center",
+      marginTop: 18,
+    },
+    emptyProjectTitle: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: COLORS.navy,
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    emptyProjectSubtitle: {
+      fontSize: 11,
+      color: COLORS.muted,
+      textAlign: "center",
+      marginBottom: 14,
+      maxWidth: 240,
+    },
+    emptyProjectBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: COLORS.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      borderRadius: 12,
+    },
+    emptyProjectBtnText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "bold",
     },
     projectEmoji: {
       fontSize: 22,

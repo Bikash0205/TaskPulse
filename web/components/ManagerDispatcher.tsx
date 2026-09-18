@@ -101,9 +101,17 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
     return ["All", ...(combined.length > 0 ? combined : ["Engineering", "Product", "Design"])];
   }, [tasks, colleagues, projects]);
 
+  const activeProject = useMemo(() => {
+    if (selectedProjectId === "all") return null;
+    return projects.find((p) => p.id === selectedProjectId) || null;
+  }, [selectedProjectId, projects]);
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      const matchesProject = selectedProjectId === "all" || task.projectId === selectedProjectId;
+      const matchesProject =
+        selectedProjectId === "all" ||
+        task.projectId === selectedProjectId ||
+        (activeProject && task.projectName && task.projectName.toLowerCase() === activeProject.name.toLowerCase());
       const matchesDept = selectedDept === "All" || task.department === selectedDept;
       const matchesSearch =
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -111,16 +119,15 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
         (task.projectName && task.projectName.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesProject && matchesDept && matchesSearch;
     });
-  }, [tasks, selectedProjectId, selectedDept, searchQuery]);
-
-  const activeProject = useMemo(() => {
-    if (selectedProjectId === "all") return null;
-    return projects.find((p) => p.id === selectedProjectId) || null;
-  }, [selectedProjectId, projects]);
+  }, [tasks, selectedProjectId, activeProject, selectedDept, searchQuery]);
 
   const activeProjectProgress = useMemo(() => {
     if (!activeProject) return 0;
-    const projectTasks = tasks.filter((t) => t.projectId === activeProject.id);
+    const projectTasks = tasks.filter(
+      (t) =>
+        t.projectId === activeProject.id ||
+        (activeProject.name && t.projectName && t.projectName.toLowerCase() === activeProject.name.toLowerCase())
+    );
     if (projectTasks.length === 0) return 0;
     const sum = projectTasks.reduce((acc, t) => acc + t.progressPercentage, 0);
     return Math.round(sum / projectTasks.length);
@@ -372,6 +379,35 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Empty State for Project with 0 Tasks */}
+      {activeProject && filteredTasks.length === 0 && (
+        <div className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3 shadow-xs mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#756EF3]/10 text-[#756EF3] mx-auto flex items-center justify-center font-bold">
+            <Layers className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+              No tasks currently tracked in {activeProject.name}
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+              Create and dispatch the first work item to assign ownership and start tracking velocity.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setNewProjectId(activeProject.id);
+              setNewDept(activeProject.department);
+              setNewBadge(`${activeProject.code}-TASK`);
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create First Task in {activeProject.name}</span>
+          </button>
         </div>
       )}
 
