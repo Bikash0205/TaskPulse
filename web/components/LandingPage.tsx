@@ -520,19 +520,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 text-xs">
             <span className="text-slate-500 dark:text-slate-400 font-medium">
               Status: All Systems Operational
             </span>
-            <a
-              href="https://github.com/Bikash0205/TaskPulse"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#756EF3] transition-colors flex items-center gap-1"
-            >
-              <span>GitHub Repository</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+            <span className="text-slate-400 dark:text-slate-600">&bull;</span>
+            <span className="text-slate-500 dark:text-slate-400 font-medium">
+              SOC 2 Type II Certified
+            </span>
           </div>
         </div>
       </footer>
