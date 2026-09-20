@@ -131,7 +131,7 @@ export const TaskPulseCard: React.FC<TaskPulseCardProps> = ({
       {task.status === "in_review" && (
         <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-800 dark:text-amber-300 font-medium">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
             <span className="font-semibold text-[11px]">Under Review</span>
           </div>
           <span className="text-[10px] font-mono opacity-80">Needs Sign-Off</span>

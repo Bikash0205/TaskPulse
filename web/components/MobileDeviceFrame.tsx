@@ -1091,10 +1091,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                     <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-2.5 shadow-xs">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                          </span>
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
                           <span>Manager Verification Required</span>
                         </div>
                         <span className="px-2 py-0.5 rounded-full bg-amber-200/60 text-[9px] font-bold text-amber-800 uppercase tracking-wider">
@@ -1390,7 +1387,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#002055]">Live Cloud Sync</span>
+                      <span className="text-[#002055]">Cloud Sync</span>
                       <button
                         onClick={() => setSyncEnabled(!syncEnabled)}
                         className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer ${
@@ -1983,7 +1980,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
             <div className="absolute top-4 left-1/2 -translate-x-1/2 h-5 w-28 bg-black rounded-full z-50 flex items-center justify-between px-2.5">
               <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
               <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 <span className="text-[8px] font-mono text-slate-400">PULSE</span>
               </div>
             </div>

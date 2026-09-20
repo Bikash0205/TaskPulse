@@ -312,7 +312,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                       <span className="font-bold text-amber-800 dark:text-amber-300 text-xs">
                         Submitted for Project Manager Review
                       </span>

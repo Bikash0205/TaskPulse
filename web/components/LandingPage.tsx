@@ -191,17 +191,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <Activity className="w-3.5 h-3.5 text-[#756EF3]" />
           <span>TaskPulse Enterprise</span>
           <span className="w-1.5 h-1.5 rounded-full bg-[#756EF3]" />
-          <span className="text-[#556070] dark:text-[#94A3B8] font-normal">Real-Time Synchronization</span>
+          <span className="text-[#556070] dark:text-[#94A3B8] font-normal">Sprint Execution &amp; Capacity Intelligence</span>
         </div>
 
         {/* Headline */}
         <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-4xl text-[#002055] dark:text-[#F8FAFC] leading-[1.15] font-sans">
-          Synchronous Task Execution &amp; Real-Time Workload Intelligence
+          Synchronous Sprint Execution &amp; Team Workload Balancing
         </h1>
 
         {/* Subtitle */}
         <p className="mt-4 sm:mt-5 text-xs sm:text-sm md:text-base lg:text-lg text-[#556070] dark:text-[#94A3B8] max-w-2xl leading-relaxed font-sans px-2">
-          Coordinate engineering sprints, prevent burnout with real-time capacity telemetry, and capture granular change logs upon task completion across web, Android, and iOS.
+          Coordinate engineering deliverables, balance team capacity across active sprints, and record verified change logs with audit trails across desktop, iOS, and Android.
         </p>
 
         {/* Call to Action Buttons */}
@@ -237,20 +237,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Key Metrics / Value Propositions */}
         <div className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 w-full max-w-3xl px-1">
           <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-[#756EF3]">Real-Time</div>
-            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">Capacity Telemetry</div>
+            <div className="text-lg sm:text-2xl font-bold text-[#756EF3]">Continuous</div>
+            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">Capacity Tracking</div>
           </div>
           <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-emerald-500">Sub-100ms</div>
-            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">State Synchronization</div>
+            <div className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">&lt; 100ms</div>
+            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">Cloud Synchronization</div>
           </div>
           <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-[#002055] dark:text-[#F8FAFC]">100% Parity</div>
-            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">iOS &amp; Android Sync</div>
+            <div className="text-lg sm:text-2xl font-bold text-[#002055] dark:text-[#F8FAFC]">Multi-Platform</div>
+            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">Desktop, iOS &amp; Android</div>
           </div>
           <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-amber-500">Zero Burnout</div>
-            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">Threshold Guardrails</div>
+            <div className="text-lg sm:text-2xl font-bold text-[#756EF3]">Enterprise</div>
+            <div className="text-[11px] sm:text-xs text-[#556070] dark:text-[#94A3B8] mt-0.5">Workload Thresholds</div>
           </div>
         </div>
 
@@ -270,13 +270,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             {/* Capacity Status Pill indicators */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span>Sarah Chen (Optimal &bull; 2 tasks)</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Sarah Chen &bull; 2 tasks (Optimal)</span>
               </span>
-              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                <span>Marcus Vance (Moderate &bull; 4 tasks)</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>Marcus Vance &bull; 4 tasks (Balanced)</span>
               </span>
             </div>
           </div>
@@ -382,14 +382,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <BarChart3 className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-[#002055] dark:text-[#F8FAFC]">
-              Synchronous Workload Telemetry
+              Continuous Capacity Tracking
             </h3>
             <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-2 leading-relaxed">
-              Real-time member capacity indicators automatically track assigned task density. Identify optimal, moderate, and overload thresholds instantly before sprint deliverables are impacted.
+              Real-time member bandwidth indicators automatically track assigned task load. Identify optimal, balanced, and capacity limits proactively before delivery timelines are impacted.
             </p>
             <div className="mt-4 pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Automated Burnout Prevention</span>
+              <span>Workload Distribution Guardrails</span>
             </div>
           </div>
 
@@ -399,14 +399,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <FileCheck className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-[#002055] dark:text-[#F8FAFC]">
-              Task Completion Change Logs &amp; Audit
+              Verified Change Logs &amp; Audit Records
             </h3>
             <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-2 leading-relaxed">
-              Whenever a team member completes a task, they can record exact code or design changes made alongside screenshot attachments for instant manager verification.
+              When completing tasks, assignees document specific code and implementation changes alongside optional screenshot attachments for manager verification.
             </p>
             <div className="mt-4 pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
               <Paperclip className="w-3.5 h-3.5" />
-              <span>Optional Screenshot Proof Attachments</span>
+              <span>Screenshot Verification Attachments</span>
             </div>
           </div>
 
@@ -416,14 +416,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Smartphone className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-[#002055] dark:text-[#F8FAFC]">
-              Cross-Platform Mobile Application
+              Cross-Platform Client Parity
             </h3>
             <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-2 leading-relaxed">
-              Unified task execution across mobile and desktop. Access sprint boards, workload telemetry, and change approvals seamlessly on iOS and Android devices.
+              Unified task execution across mobile and desktop. Access sprint boards, capacity metrics, and task approvals seamlessly on iOS Safari, Android, and desktop browsers.
             </p>
             <div className="mt-4 pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
               <Zap className="w-3.5 h-3.5" />
-              <span>Real-Time Cloud Synchronization</span>
+              <span>Instant Cloud Synchronization</span>
             </div>
           </div>
 
@@ -433,14 +433,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Building2 className="w-5 h-5" />
             </div>
             <h3 className="text-base font-bold text-[#002055] dark:text-[#F8FAFC]">
-              Enterprise Organization Onboarding
+              Structured Organization Onboarding
             </h3>
             <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-2 leading-relaxed">
-              Three-step initialization wizard allows workspace administrators to set up company parameters, configure engineering/product departments, and distribute shareable team join codes.
+              Three-step setup wizard allows administrators to initialize company workspaces, configure engineering departments, and issue team invitation codes.
             </p>
             <div className="mt-4 pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Instant Workspace Join Codes</span>
+              <span>Team Invitation Codes</span>
             </div>
           </div>
 
@@ -453,11 +453,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Multi-Tier Role-Based Access Control
             </h3>
             <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-2 leading-relaxed">
-              Strict separation between Primary Administrators, Department Managers, and Team Members. Real-time Firebase custom token claims enforce secure Firestore read/write boundaries.
+              Strict authorization boundaries between Administrators, Department Managers, and Team Members. Real-time security rules ensure secure data access.
             </p>
             <div className="mt-4 pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               <Lock className="w-3.5 h-3.5" />
-              <span>Firebase Security Rules Verification</span>
+              <span>Role-Based Access Governance</span>
             </div>
           </div>
 
@@ -470,11 +470,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Project-Scoped Sprint Dispatching
             </h3>
             <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-2 leading-relaxed">
-              Filter tasks by specific initiatives, departments, or individual team members. Managers can assign tasks, adjust deadlines, and re-balance team workloads in a single click.
+              Filter deliverables by specific initiatives, departments, or individual team members. Managers can distribute assignments, rebalance workloads, and adjust timelines directly.
             </p>
             <div className="mt-4 pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
               <Users className="w-3.5 h-3.5" />
-              <span>Direct Manager Dispatch Controls</span>
+              <span>Manager Dispatch Controls</span>
             </div>
           </div>
         </div>
@@ -491,7 +491,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Streamline your team&apos;s task execution
           </h2>
           <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-3 max-w-xl mx-auto leading-relaxed">
-            Access real-time colleague capacity telemetry, assign deliverables with deterministic confidence, and audit change logs in real-time.
+            Track team capacity, distribute sprint deliverables with clarity, and maintain verified audit records across every project.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
             <Link
@@ -521,9 +521,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Production Systems Operational</span>
+            <span className="text-slate-500 dark:text-slate-400 font-medium">
+              Status: All Systems Operational
             </span>
             <a
               href="https://github.com/Bikash0205/TaskPulse"

@@ -42,7 +42,6 @@ export default function LoginPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pingLatency, setPingLatency] = useState(42);
 
   // GSAP Animation Refs
   const pageContainerRef = useRef<HTMLDivElement>(null);
@@ -56,14 +55,6 @@ export default function LoginPage() {
   const rightColRef = useRef<HTMLDivElement>(null);
   const cardBoxRef = useRef<HTMLDivElement>(null);
   const sandboxRef = useRef<HTMLDivElement>(null);
-
-  // Live Ping Latency Sim
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPingLatency(Math.floor(38 + Math.random() * 12));
-    }, 3200);
-    return () => clearInterval(interval);
-  }, []);
 
   // GSAP Orchestrated Entrance
   useEffect(() => {
@@ -284,7 +275,7 @@ export default function LoginPage() {
               ref={badgeRef}
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 border border-[#756EF3]/30 text-[#756EF3] dark:text-[#818CF8] text-[11px] font-mono uppercase tracking-wider shadow-xs w-fit"
             >
-              <Zap className="w-3.5 h-3.5 text-[#756EF3] animate-pulse" />
+              <Zap className="w-3.5 h-3.5 text-[#756EF3]" />
               <span>Enterprise Single Sign-On</span>
             </div>
 
@@ -293,7 +284,7 @@ export default function LoginPage() {
               ref={titleRef}
               className="text-3xl xl:text-4.5xl font-black tracking-tight text-[#002055] dark:text-[#F8FAFC] leading-[1.18]"
             >
-              Real-Time Workload Visibility &amp; Synchronous Sprint Velocity
+              Enterprise Workload Intelligence &amp; Sprint Execution
             </h1>
 
             {/* Subtitle */}
@@ -301,7 +292,7 @@ export default function LoginPage() {
               ref={subtitleRef}
               className="text-sm text-[#556070] dark:text-[#94A3B8] leading-relaxed max-w-lg font-normal"
             >
-              Authenticate into your corporate workspace to access active sprint kanban boards, live colleague capacity telemetry, and tamper-evident audit logs.
+              Sign in to your corporate workspace to access sprint boards, monitor team capacity distribution, and review verified task completion logs.
             </p>
 
             {/* Feature Value Cards with Spotlight Glow */}
@@ -313,10 +304,10 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <h2 className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] tracking-tight">
-                      Deterministic Workload Telemetry
+                      Continuous Capacity Tracking
                     </h2>
                     <p className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-0.5 leading-normal">
-                      Continuous colleague bandwidth limits keep team leads proactive, preventing burn-out before sprint deadlines slip.
+                      Clear team bandwidth indicators keep managers proactive, balancing assignments effectively across active sprints.
                     </p>
                   </div>
                 </div>
@@ -329,10 +320,10 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <h2 className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] tracking-tight">
-                      SOC 2 Type II Verified &amp; Merkle Root Signed
+                      Enterprise Security &amp; Audit Logging
                     </h2>
                     <p className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-0.5 leading-normal">
-                      Every dispatch, status change, and ticket reassignment is recorded to a cryptographically validated local audit trail.
+                      Every task assignment, status update, and completion sign-off is preserved in the workspace audit record.
                     </p>
                   </div>
                 </div>
@@ -345,30 +336,32 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <h2 className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] tracking-tight">
-                      100% Cross-Platform Parity
+                      Cross-Platform Client Parity
                     </h2>
                     <p className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-0.5 leading-normal">
-                      Identical experience across native Android build, mobile browser web app (iOS Safari), and full desktop dashboard.
+                      Consistent workflow experience across desktop browsers, native Android, and iOS mobile web.
                     </p>
                   </div>
                 </div>
               </SpotlightCard>
             </div>
 
-            {/* Live Telemetry Ping Status */}
+            {/* Enterprise Security & Compliance Badges */}
             <div
               ref={telemetryRef}
-              className="flex items-center gap-3 pt-2 text-xs text-[#556070] dark:text-[#94A3B8] font-mono"
+              className="flex flex-wrap items-center gap-2 pt-2 text-xs text-[#556070] dark:text-[#94A3B8]"
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px]">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span>Telemetry Sync Active ({pingLatency}ms)</span>
-              </div>
-              <span className="text-slate-400">&bull;</span>
-              <span className="text-[11px] text-slate-500">Zero Trust TLS 1.3</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-slate-700 dark:text-slate-300 text-[11px] font-medium shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>SOC 2 Type II Certified</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-slate-700 dark:text-slate-300 text-[11px] font-medium shadow-2xs">
+                <Lock className="w-3.5 h-3.5 text-[#756EF3]" />
+                <span>End-to-End TLS 1.3</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-slate-700 dark:text-slate-300 text-[11px] font-medium shadow-2xs">
+                <span>AES-256 Encryption</span>
+              </span>
             </div>
           </div>
 
@@ -557,12 +550,8 @@ export default function LoginPage() {
       <footer className="relative z-10 mt-auto border-t border-[#E9F1FF]/80 dark:border-[#1E293B]/80 bg-white/60 dark:bg-[#0B0F19]/60 backdrop-blur-md py-4 px-6 text-center text-xs text-[#556070] dark:text-[#94A3B8]">
         <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium font-mono text-[11px]">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span>Security &amp; Audit Active</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">
+            Status: All Systems Operational
           </span>
         </div>
       </footer>

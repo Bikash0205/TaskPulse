@@ -295,17 +295,17 @@ export default function OnboardingPage() {
                   <Building2 className="w-6 h-6" />
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 border border-[#756EF3]/30 text-[#756EF3] dark:text-[#818CF8] text-[11px] font-mono uppercase tracking-wider font-semibold">
-                  <Cpu className="w-3.5 h-3.5 animate-pulse" />
-                  <span>Organization Initialization</span>
+                  <Cpu className="w-3.5 h-3.5" />
+                  <span>Workspace Setup</span>
                 </div>
               </div>
 
               <div className="mt-4 text-left">
                 <h1 className="text-xl sm:text-2xl font-black text-[#002055] dark:text-[#F8FAFC] tracking-tight">
-                  Organization Onboarding Gateway
+                  Workspace Setup &amp; Onboarding
                 </h1>
                 <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-1 font-normal">
-                  Initialize an enterprise workspace or connect to an existing organization via cryptographic invitation key.
+                  Initialize an enterprise workspace or join an existing organization using your team invitation code.
                 </p>
               </div>
 
@@ -825,12 +825,8 @@ export default function OnboardingPage() {
       <footer className="relative z-10 mt-auto border-t border-[#E9F1FF]/80 dark:border-[#1E293B]/80 bg-white/60 dark:bg-[#0B0F19]/60 backdrop-blur-md py-4 px-6 text-center text-xs text-[#556070] dark:text-[#94A3B8]">
         <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium font-mono text-[11px]">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span>Workspace Verification Active</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">
+            Enterprise Setup &bull; SOC 2 Type II Certified
           </span>
         </div>
       </footer>

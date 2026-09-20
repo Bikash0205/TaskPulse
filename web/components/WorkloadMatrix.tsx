@@ -25,21 +25,21 @@ export const WorkloadMatrix: React.FC<WorkloadMatrixProps> = ({
 
         {/* Capacity Legend */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] font-sans">
-          <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" /> &le; 3 Optimal
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Optimal (0 - 3 tasks)
           </span>
-          <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-amber-500" /> 4-5 Moderate
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Balanced (4 - 5 tasks)
           </span>
-          <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-red-500" /> &gt; 5 Overload
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-50 dark:bg-red-950/30 border border-red-200/50 dark:border-red-800/40 text-red-700 dark:text-red-300 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> At Capacity (6+ tasks)
           </span>
         </div>
       </div>
 
       {colleagues.length === 0 ? (
         <div className="py-6 px-4 text-center text-xs text-slate-500 dark:text-slate-400 font-sans">
-          No active workload telemetry. Add tasks and assign team members to track live capacity.
+          No active workload data. Create tasks and assign team members to track team capacity.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

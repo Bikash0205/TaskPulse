@@ -118,7 +118,7 @@ export const GovernanceGatesSection: React.FC<GovernanceGatesSectionProps> = ({
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                sla.isWarning ? "bg-[#F59E0B] animate-pulse" : "bg-[#10B981]"
+                sla.isWarning ? "bg-[#F59E0B]" : "bg-[#10B981]"
               }`}
             />
             <span>{sla.remainingStr}</span>
