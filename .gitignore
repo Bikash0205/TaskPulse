@@ -86,3 +86,6 @@ taskpulse_updated_unsigned.apk
 web/.playwright-mcp/
 test_device_screen.png
 screen_current.png
+
+.vercel
+.env*
