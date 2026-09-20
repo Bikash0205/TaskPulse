@@ -3,12 +3,17 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
 } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
   auth,
+  db,
   googleProvider,
   isFirebaseConfigured,
   saveFirebaseConfigAndReload,
@@ -31,13 +36,26 @@ export interface AppUser {
   assignedProjectIds?: string[];
 }
 
+export interface AuthResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   isLiveFirebase: boolean;
   teamRoles: Record<string, UserRole>;
   signInWithGoogle: () => Promise<void>;
-  signInWithCustomUser: (name: string, email: string) => void;
+  signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
+  signUpWithEmail: (
+    name: string,
+    email: string,
+    password: string,
+    department?: Department,
+    initialRole?: UserRole
+  ) => Promise<AuthResult>;
+  signInWithCustomUser: (name: string, email: string, role?: UserRole) => void;
   loginDemoUser: () => void;
   signOutUser: () => Promise<void>;
   switchRole: (role: UserRole) => void;
@@ -78,7 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Helper to resolve the authoritative role for any email
-  const resolveRole = (email?: string | null, fallbackRole: UserRole = "member", currentRolesMap = teamRoles): UserRole => {
+  const resolveRole = (
+    email?: string | null,
+    fallbackRole: UserRole = "member",
+    currentRolesMap = teamRoles
+  ): UserRole => {
     if (!email) return fallbackRole;
     const normalized = email.toLowerCase().trim();
     if (normalized === PERMANENT_ADMIN_EMAIL.toLowerCase()) {
@@ -118,7 +140,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const parsed = JSON.parse(savedUser);
           if (parsed && (parsed.email || parsed.displayName)) {
             const isPerm = isPermanentAdminEmail(parsed.email);
-            parsed.role = isPerm ? "admin" : (parsed.email ? (loadedRoles[parsed.email.toLowerCase().trim()] || parsed.role) : parsed.role);
+            parsed.role = isPerm
+              ? "admin"
+              : (parsed.email ? (loadedRoles[parsed.email.toLowerCase().trim()] || parsed.role) : parsed.role);
             parsed.isPermanentAdmin = isPerm;
             setUser(parsed);
             setLoading(false);
@@ -130,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 3. If Firebase credentials exist, listen to real Google Auth state
+    // 3. If Firebase credentials exist, listen to real Firebase Auth state
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
         if (firebaseUser) {
@@ -138,6 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           let role: UserRole = isPerm ? "admin" : "member";
           let department: Department = "Engineering";
 
+          // Read custom claims if set
           try {
             const idTokenResult = await firebaseUser.getIdTokenResult();
             if (idTokenResult.claims.role && !isPerm) {
@@ -150,6 +175,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn("Token claim error:", err);
           }
 
+          // Check Firestore user record if available
+          if (db) {
+            try {
+              const userRef = doc(db, "users", firebaseUser.uid);
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                const data = userSnap.data();
+                if (data.role && !isPerm) role = data.role as UserRole;
+                if (data.department) department = data.department as Department;
+              } else {
+                await setDoc(
+                  userRef,
+                  {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName || "Workspace Member",
+                    role: isPerm ? "admin" : role,
+                    department,
+                    updatedAt: new Date().toISOString(),
+                  },
+                  { merge: true }
+                );
+              }
+            } catch (err) {
+              console.warn("Firestore user sync warning:", err);
+            }
+          }
+
           if (!isPerm && firebaseUser.email && loadedRoles[firebaseUser.email.toLowerCase().trim()]) {
             role = loadedRoles[firebaseUser.email.toLowerCase().trim()];
           }
@@ -157,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const loggedInUser: AppUser = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: firebaseUser.displayName || (isPerm ? "Zevon (Super Admin)" : "Google User"),
+            displayName: firebaseUser.displayName || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
             photoURL:
               firebaseUser.photoURL ||
               `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -181,7 +234,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return () => unsubscribe();
     } else {
-      // Start clean with no mock user loaded
       setUser(null);
       setLoading(false);
     }
@@ -196,26 +248,126 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await signInWithPopup(auth, googleProvider);
       } catch (error: any) {
         console.error("Firebase Google Sign-In error:", error);
-        alert(`Google Sign-In notice: ${error.message}`);
+        throw error;
       }
     } else {
-      console.log("Firebase not yet configured with real API key.");
+      // Fallback
+      signInWithCustomUser("Google Colleague", "colleague@workspace.internal");
     }
   };
 
-  const signInWithCustomUser = (name: string, email: string) => {
+  const signInWithEmail = async (email: string, password: string): Promise<AuthResult> => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("taskpulse_signed_out");
+    }
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (isFirebaseConfigured && auth) {
+      try {
+        await signInWithEmailAndPassword(auth, cleanEmail, password);
+        return { success: true };
+      } catch (err: any) {
+        console.warn("Firebase email sign-in error:", err.code, err.message);
+        let message = "Authentication failed. Please verify your email and password.";
+        if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+          message = "Incorrect password. Please verify and try again.";
+        } else if (err.code === "auth/user-not-found") {
+          message = "No account found with this email. Switch to 'Create Account' to register.";
+        } else if (err.code === "auth/too-many-requests") {
+          message = "Too many failed attempts. Please wait a moment or reset your password.";
+        } else if (err.code === "auth/invalid-email") {
+          message = "Please enter a valid work email address.";
+        }
+        return { success: false, error: message };
+      }
+    } else {
+      // Offline / Demo fallback
+      const isPerm = isPermanentAdminEmail(cleanEmail);
+      const resolvedRole = isPerm ? "admin" : (teamRoles[cleanEmail] || "member");
+      const namePart = cleanEmail.split("@")[0].replace(/[._-]/g, " ");
+      const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+      signInWithCustomUser(formattedName, cleanEmail, resolvedRole);
+      return { success: true };
+    }
+  };
+
+  const signUpWithEmail = async (
+    name: string,
+    email: string,
+    password: string,
+    department: Department = "Engineering",
+    initialRole?: UserRole
+  ): Promise<AuthResult> => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("taskpulse_signed_out");
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+    const isPerm = isPermanentAdminEmail(cleanEmail);
+    const targetRole: UserRole = isPerm ? "admin" : (initialRole || "member");
+
+    if (isFirebaseConfigured && auth) {
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        if (cred.user) {
+          await updateProfile(cred.user, {
+            displayName: cleanName,
+            photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              cleanName
+            )}&background=${isPerm ? "7C3AED" : "756EF3"}&color=fff&size=128`,
+          });
+        }
+        if (db && cred.user) {
+          try {
+            await setDoc(
+              doc(db, "users", cred.user.uid),
+              {
+                uid: cred.user.uid,
+                email: cleanEmail,
+                displayName: cleanName,
+                role: targetRole,
+                department,
+                createdAt: new Date().toISOString(),
+              },
+              { merge: true }
+            );
+          } catch (e) {
+            console.warn("Firestore user creation sync warning:", e);
+          }
+        }
+        return { success: true };
+      } catch (err: any) {
+        console.warn("Firebase email signup error:", err.code, err.message);
+        let message = "Account registration failed. Please try again.";
+        if (err.code === "auth/email-already-in-use") {
+          message = "An account with this email already exists. Switch to 'Sign In' instead.";
+        } else if (err.code === "auth/weak-password") {
+          message = "Password must be at least 6 characters.";
+        } else if (err.code === "auth/invalid-email") {
+          message = "Please enter a valid work email address.";
+        }
+        return { success: false, error: message };
+      }
+    } else {
+      // Offline / Demo fallback
+      signInWithCustomUser(cleanName, cleanEmail, targetRole);
+      return { success: true };
+    }
+  };
+
+  const signInWithCustomUser = (name: string, email: string, roleOverride?: UserRole) => {
     const isPerm = isPermanentAdminEmail(email);
     const resolvedRole: UserRole = isPerm
       ? "admin"
-      : teamRoles[email.toLowerCase().trim()] || "member";
+      : roleOverride || teamRoles[email.toLowerCase().trim()] || "member";
 
     const customUser: AppUser = {
-      uid: isPerm ? "super-admin-zevon" : `google-${Date.now()}`,
-      email: email || "user@gmail.com",
-      displayName: name || (isPerm ? "Zevon (Super Admin)" : "Google User"),
+      uid: isPerm ? "super-admin-zevon" : `user-${Date.now()}`,
+      email: email || "user@workspace.internal",
+      displayName: name || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
       photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(
         name || (isPerm ? "Zevon" : "User")
-      )}&background=${isPerm ? "7C3AED" : "4285F4"}&color=fff&size=128`,
+      )}&background=${isPerm ? "7C3AED" : "756EF3"}&color=fff&size=128`,
       role: isPerm ? "admin" : resolvedRole,
       department: "Engineering",
       isPermanentAdmin: isPerm,
@@ -224,8 +376,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== "undefined") {
       localStorage.setItem("taskpulse_logged_user", JSON.stringify(customUser));
       localStorage.removeItem("taskpulse_signed_out");
-      if (isPerm) {
-        const updatedRoles = { ...teamRoles, [PERMANENT_ADMIN_EMAIL]: "admin" as UserRole };
+      if (isPerm || roleOverride) {
+        const updatedRoles = {
+          ...teamRoles,
+          [email.toLowerCase().trim()]: isPerm ? ("admin" as UserRole) : resolvedRole,
+          [PERMANENT_ADMIN_EMAIL]: "admin" as UserRole,
+        };
         setTeamRoles(updatedRoles);
         localStorage.setItem("taskpulse_team_roles", JSON.stringify(updatedRoles));
       }
@@ -313,7 +469,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem("taskpulse_team_roles", JSON.stringify(updatedRoles));
     }
 
-    // If currently logged-in user matches target email, reflect immediately
     if (user && user.email?.toLowerCase().trim() === normalized) {
       const updatedUser: AppUser = { ...user, role: newRole };
       setUser(updatedUser);
@@ -339,6 +494,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLiveFirebase: isFirebaseConfigured,
         teamRoles,
         signInWithGoogle,
+        signInWithEmail,
+        signUpWithEmail,
         signInWithCustomUser,
         loginDemoUser,
         signOutUser,

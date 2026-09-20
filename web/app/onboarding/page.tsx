@@ -32,6 +32,10 @@ import {
   Briefcase,
   Sliders,
   Cpu,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Lock,
 } from "lucide-react";
 
 interface EmployeeEntry {
@@ -55,7 +59,7 @@ const DEFAULT_POPULAR_DEPTS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, signInWithCustomUser } = useAuth();
+  const { user, signInWithCustomUser, signUpWithEmail } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { onboardCompany, joinWithCode, inviteTeammate } = useOrganization();
 
@@ -65,6 +69,9 @@ export default function OnboardingPage() {
   // Step 1: Company Profile
   const [adminName, setAdminName] = useState(user?.displayName || "Alex Vance");
   const [adminEmail, setAdminEmail] = useState(user?.email || "alex.vance@company.com");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("");
   const [teamSize, setTeamSize] = useState("11-50");
   const [slug, setSlug] = useState("");
@@ -101,6 +108,8 @@ export default function OnboardingPage() {
   const [joinCode, setJoinCode] = useState("");
   const [joinName, setJoinName] = useState(user?.displayName || "");
   const [joinEmail, setJoinEmail] = useState(user?.email || "");
+  const [joinPassword, setJoinPassword] = useState("");
+  const [showJoinPassword, setShowJoinPassword] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
 
   // GSAP Animation Refs
@@ -186,52 +195,97 @@ export default function OnboardingPage() {
     setEmployees((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const handleCreateWorkspace = () => {
+  const handleCreateWorkspace = async () => {
     if (!companyName.trim()) return;
+    setCreateError(null);
     setIsSubmitting(true);
 
-    if (!user) {
-      signInWithCustomUser(adminName.trim() || "Administrator", adminEmail.trim() || "admin@company.com");
+    try {
+      if (!user) {
+        if (adminPassword.trim()) {
+          const authRes = await signUpWithEmail(
+            adminName.trim() || "Administrator",
+            adminEmail.trim() || "admin@company.com",
+            adminPassword.trim(),
+            "Engineering",
+            "admin"
+          );
+          if (!authRes.success && authRes.error) {
+            setCreateError(authRes.error);
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          signInWithCustomUser(
+            adminName.trim() || "Administrator",
+            adminEmail.trim() || "admin@company.com",
+            "admin"
+          );
+        }
+      }
+
+      const customDepts = Array.from(new Set(employees.map((emp) => emp.department.trim()).filter(Boolean)));
+      if (customDepts.length === 0) {
+        customDepts.push("Platform Engineering", "Design Systems", "Product Management");
+      }
+
+      const { org, initialProject: proj } = await onboardCompany(
+        companyName.trim(),
+        customDepts,
+        `${companyName.trim()} Core Roadmap`
+      );
+
+      for (const emp of employees) {
+        await inviteTeammate(emp.email, emp.name, emp.role, emp.department as Department, [proj.id]);
+      }
+
+      setCreatedOrgData({ code: org.inviteCode, name: org.name });
+      setIsSubmitting(false);
+      changeStep(3, "next");
+    } catch (err: any) {
+      setCreateError(err?.message || "Failed to initialize organization workspace. Please try again.");
+      setIsSubmitting(false);
     }
-
-    const customDepts = Array.from(new Set(employees.map((emp) => emp.department.trim()).filter(Boolean)));
-    if (customDepts.length === 0) {
-      customDepts.push("Platform Engineering", "Design Systems", "Product Management");
-    }
-
-    const { org, initialProject: proj } = onboardCompany(
-      companyName.trim(),
-      customDepts,
-      `${companyName.trim()} Core Roadmap`
-    );
-
-    employees.forEach((emp) => {
-      inviteTeammate(emp.email, emp.name, emp.role, emp.department as Department, [proj.id]);
-    });
-
-    setCreatedOrgData({ code: org.inviteCode, name: org.name });
-    setIsSubmitting(false);
-    changeStep(3, "next");
   };
 
-  const handleJoinSubmit = (e: React.FormEvent) => {
+  const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinCode.trim()) return;
 
     setJoinError(null);
     setIsSubmitting(true);
 
-    if (!user && joinName.trim() && joinEmail.trim()) {
-      signInWithCustomUser(joinName.trim(), joinEmail.trim());
-    }
+    try {
+      if (!user && joinName.trim() && joinEmail.trim()) {
+        if (joinPassword.trim()) {
+          const authRes = await signUpWithEmail(
+            joinName.trim(),
+            joinEmail.trim(),
+            joinPassword.trim(),
+            "Engineering",
+            "member"
+          );
+          if (!authRes.success && authRes.error) {
+            setJoinError(authRes.error);
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          signInWithCustomUser(joinName.trim(), joinEmail.trim(), "member");
+        }
+      }
 
-    const result = joinWithCode(joinCode.trim());
-    setIsSubmitting(false);
+      const result = await joinWithCode(joinCode.trim());
+      setIsSubmitting(false);
 
-    if (result.success) {
-      router.push("/");
-    } else {
-      setJoinError(result.message);
+      if (result.success) {
+        router.push("/");
+      } else {
+        setJoinError(result.message);
+      }
+    } catch (err: any) {
+      setJoinError(err?.message || "Failed to join organization. Please verify your join code.");
+      setIsSubmitting(false);
     }
   };
 
@@ -499,6 +553,41 @@ export default function OnboardingPage() {
                         </div>
                       </div>
 
+                      <div className="pt-2">
+                        <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1.5">
+                          Administrator Account Password {!user && <span className="text-slate-400 font-normal">(Min 6 characters)</span>}
+                        </label>
+                        <div className="relative flex items-center">
+                          <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
+                          <input
+                            type={showAdminPassword ? "text" : "password"}
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            placeholder="••••••••"
+                            minLength={6}
+                            className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowAdminPassword(!showAdminPassword)}
+                            className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                            aria-label={showAdminPassword ? "Hide password" : "Show password"}
+                          >
+                            {showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                        <span className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-1 block">
+                          Provisions your persistent administrator credentials in Firebase Authentication.
+                        </span>
+                      </div>
+
+                      {createError && (
+                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{createError}</span>
+                        </div>
+                      )}
+
                       <div className="flex justify-end pt-4">
                         <button
                           type="button"
@@ -653,6 +742,13 @@ export default function OnboardingPage() {
                         </div>
                       </div>
 
+                      {createError && (
+                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{createError}</span>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B]">
                         <button
                           type="button"
@@ -665,9 +761,9 @@ export default function OnboardingPage() {
                           type="button"
                           disabled={isSubmitting}
                           onClick={handleCreateWorkspace}
-                          className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white font-semibold text-xs sm:text-sm shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
+                          className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
                         >
-                          <span>Generate Keys &amp; Activate Workspace</span>
+                          <span>{isSubmitting ? "Provisioning Workspace..." : "Generate Keys & Activate Workspace"}</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -792,7 +888,7 @@ export default function OnboardingPage() {
 
                       <div>
                         <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                          Your Work Email Address
+                          Your Work Email Address <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="email"
@@ -803,6 +899,32 @@ export default function OnboardingPage() {
                           className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3]"
                         />
                       </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
+                          Account Password <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative flex items-center">
+                          <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
+                          <input
+                            type={showJoinPassword ? "text" : "password"}
+                            required
+                            minLength={6}
+                            value={joinPassword}
+                            onChange={(e) => setJoinPassword(e.target.value)}
+                            placeholder="Min 6 characters"
+                            className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowJoinPassword(!showJoinPassword)}
+                            className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                            aria-label={showJoinPassword ? "Hide password" : "Show password"}
+                          >
+                            {showJoinPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
                     </>
                   )}
 
@@ -811,7 +933,7 @@ export default function OnboardingPage() {
                     disabled={isSubmitting || !joinCode.trim()}
                     className="w-full py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer mt-3"
                   >
-                    <span>Connect to Organization</span>
+                    <span>{isSubmitting ? "Connecting..." : "Connect to Organization"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>

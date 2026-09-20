@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Organization, OrganizationInvite, UserRole, Department, Project } from "@shared/types";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "./AuthContext";
 
 export interface OrganizationContextType {
@@ -17,15 +19,15 @@ export interface OrganizationContextType {
     departments?: Department[] | Department,
     initialProjectName?: string,
     initialProjectCode?: string
-  ) => { org: Organization; initialProject: Project };
-  joinWithCode: (codeOrOrgId: string) => { success: boolean; message: string; org?: Organization };
+  ) => Promise<{ org: Organization; initialProject: Project }>;
+  joinWithCode: (codeOrOrgId: string) => Promise<{ success: boolean; message: string; org?: Organization }>;
   inviteTeammate: (
     email: string,
     name: string,
     role: UserRole,
     department: Department,
     assignedProjectIds: string[]
-  ) => OrganizationInvite;
+  ) => Promise<OrganizationInvite>;
   switchOrganization: (orgId: string) => void;
 }
 
@@ -100,14 +102,18 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [assignedProjectForCurrentLogin, setAssignedProjectForCurrentLogin] = useState<string | null>(null);
 
-  // Load saved organizations and invites from localStorage on mount
+  // Load saved organizations and invites from localStorage and Firestore on mount
   useEffect(() => {
+    let localOrgs = [DEFAULT_CORE_ORG];
+    let localInvites = DEFAULT_INVITES;
+
     if (typeof window !== "undefined") {
       const savedOrgs = localStorage.getItem("taskpulse_organizations");
       if (savedOrgs) {
         try {
           const parsed = JSON.parse(savedOrgs);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            localOrgs = parsed;
             setOrganizations(parsed);
           }
         } catch (e) {}
@@ -118,14 +124,56 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         try {
           const parsed = JSON.parse(savedInvites);
           if (Array.isArray(parsed) && parsed.length > 0) {
+            localInvites = parsed;
             setInvites(parsed);
           }
         } catch (e) {}
       }
     }
+
+    // Attempt Firestore sync if db is initialized
+    if (db) {
+      const fetchFirestoreData = async () => {
+        try {
+          const orgsCol = collection(db!, "organizations");
+          const orgSnap = await getDocs(orgsCol);
+          if (!orgSnap.empty) {
+            const firestoreOrgs: Organization[] = [];
+            orgSnap.forEach((d) => firestoreOrgs.push(d.data() as Organization));
+            // Merge preserving uniqueness
+            const merged = [...firestoreOrgs];
+            localOrgs.forEach((lo) => {
+              if (!merged.some((m) => m.id === lo.id)) merged.push(lo);
+            });
+            setOrganizations(merged);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("taskpulse_organizations", JSON.stringify(merged));
+            }
+          }
+
+          const invitesCol = collection(db!, "invites");
+          const invSnap = await getDocs(invitesCol);
+          if (!invSnap.empty) {
+            const firestoreInvites: OrganizationInvite[] = [];
+            invSnap.forEach((d) => firestoreInvites.push(d.data() as OrganizationInvite));
+            const mergedInvites = [...firestoreInvites];
+            localInvites.forEach((li) => {
+              if (!mergedInvites.some((m) => m.id === li.id)) mergedInvites.push(li);
+            });
+            setInvites(mergedInvites);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("taskpulse_org_invites", JSON.stringify(mergedInvites));
+            }
+          }
+        } catch (err) {
+          console.warn("Firestore organization load notice:", err);
+        }
+      };
+      fetchFirestoreData();
+    }
   }, []);
 
-  // Check login and validate whether user has an invited ID or needs organization onboarding
+  // Validate user organization membership upon login
   useEffect(() => {
     if (!user || !user.email) {
       setIsOnboardingOpen(false);
@@ -156,23 +204,18 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     );
 
     if (matchingInvite) {
-      // User is logging in with an invited ID!
       const targetOrg = organizations.find((o) => o.id === matchingInvite.orgId) || DEFAULT_CORE_ORG;
       setCurrentOrg(targetOrg);
       setIsOnboardingOpen(false);
 
-      // Apply assigned role and department on initial invite or first login
       if (matchingInvite.status === "pending" || !user.role) {
         assignUserRole(email, matchingInvite.role);
       }
 
-      // If user has assigned projects, directly jump to the assigned project!
       if (matchingInvite.assignedProjectIds && matchingInvite.assignedProjectIds.length > 0) {
-        const primaryProjectId = matchingInvite.assignedProjectIds[0];
-        setAssignedProjectForCurrentLogin(primaryProjectId);
+        setAssignedProjectForCurrentLogin(matchingInvite.assignedProjectIds[0]);
       }
 
-      // Mark invite as accepted if still pending
       if (matchingInvite.status === "pending") {
         setInvites((prev) => {
           const updated = prev.map((inv) =>
@@ -180,6 +223,9 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           );
           if (typeof window !== "undefined") {
             localStorage.setItem("taskpulse_org_invites", JSON.stringify(updated));
+          }
+          if (db) {
+            setDoc(doc(db, "invites", matchingInvite.id), { status: "accepted" }, { merge: true }).catch(() => {});
           }
           return updated;
         });
@@ -194,20 +240,19 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    // 5. Authenticated user without custom organization:
-    // Seamlessly connect to the active workspace with full access so user can explore projects and tasks
-    const activeOrg = organizations[0] || DEFAULT_CORE_ORG;
-    setCurrentOrg(activeOrg);
-    setIsOnboardingOpen(false);
+    // 5. Default fallback to current or core
+    if (!currentOrg) {
+      setCurrentOrg(DEFAULT_CORE_ORG);
+    }
   }, [user?.email, organizations, invites]);
 
   // Onboard a new company as Admin
-  const onboardCompany = (
+  const onboardCompany = async (
     name: string,
     departments?: Department[] | Department,
     initialProjectName?: string,
     initialProjectCode?: string
-  ) => {
+  ): Promise<{ org: Organization; initialProject: Project }> => {
     const adminEmail = user?.email || PERMANENT_ADMIN_EMAIL;
     const orgId = `org-${Date.now()}`;
     const cleanCode = (initialProjectCode || name.slice(0, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "") || "PROJ";
@@ -248,10 +293,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setCurrentOrg(newOrg);
     setIsOnboardingOpen(false);
 
-    // Make the user Admin of their new company
     assignUserRole(adminEmail, "admin");
-
-    // Automatically set active project to their new project
     setAssignedProjectForCurrentLogin(initialProject.id);
 
     // Save to localStorage
@@ -259,7 +301,6 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       localStorage.setItem("taskpulse_organizations", JSON.stringify(updatedOrgs));
       localStorage.setItem("taskpulse_current_org_id", orgId);
 
-      // Save initial project into custom projects
       const existingProjects = JSON.parse(localStorage.getItem("taskpulse_custom_projects") || "[]");
       localStorage.setItem(
         "taskpulse_custom_projects",
@@ -267,15 +308,46 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       );
     }
 
+    // Save to Firestore if available
+    if (db) {
+      try {
+        await setDoc(doc(db, "organizations", orgId), newOrg);
+        await setDoc(doc(db, "projects", initialProject.id), initialProject);
+      } catch (err) {
+        console.warn("Firestore onboard sync warning:", err);
+      }
+    }
+
     return { org: newOrg, initialProject };
   };
 
   // Join company with invite code
-  const joinWithCode = (codeOrOrgId: string): { success: boolean; message: string; org?: Organization } => {
+  const joinWithCode = async (
+    codeOrOrgId: string
+  ): Promise<{ success: boolean; message: string; org?: Organization }> => {
     const query = codeOrOrgId.trim().toUpperCase();
-    const matched = organizations.find(
+    let matched = organizations.find(
       (o) => o.inviteCode.toUpperCase() === query || o.id.toUpperCase() === query
     );
+
+    // Query Firestore fallback if not in local memory
+    if (!matched && db) {
+      try {
+        const orgsCol = collection(db, "organizations");
+        const orgSnap = await getDocs(orgsCol);
+        orgSnap.forEach((d) => {
+          const orgData = d.data() as Organization;
+          if (orgData.inviteCode?.toUpperCase() === query || orgData.id?.toUpperCase() === query) {
+            matched = orgData;
+          }
+        });
+        if (matched) {
+          setOrganizations((prev) => [matched!, ...prev]);
+        }
+      } catch (err) {
+        console.warn("Firestore lookup error:", err);
+      }
+    }
 
     if (!matched) {
       return { success: false, message: "Invalid invite code or organization ID." };
@@ -292,13 +364,13 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   // Admin invites a teammate and assigns them to specific projects
-  const inviteTeammate = (
+  const inviteTeammate = async (
     email: string,
     name: string,
     role: UserRole,
     department: Department,
     assignedProjectIds: string[]
-  ): OrganizationInvite => {
+  ): Promise<OrganizationInvite> => {
     const newInvite: OrganizationInvite = {
       id: `inv-${Date.now()}`,
       orgId: currentOrg?.id || DEFAULT_CORE_ORG.id,
@@ -315,11 +387,18 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const updated = [newInvite, ...invites];
     setInvites(updated);
 
-    // Also register the role so it is recognized
     assignUserRole(email.trim().toLowerCase(), role);
 
     if (typeof window !== "undefined") {
       localStorage.setItem("taskpulse_org_invites", JSON.stringify(updated));
+    }
+
+    if (db) {
+      try {
+        await setDoc(doc(db, "invites", newInvite.id), newInvite);
+      } catch (err) {
+        console.warn("Firestore invite sync warning:", err);
+      }
     }
 
     return newInvite;

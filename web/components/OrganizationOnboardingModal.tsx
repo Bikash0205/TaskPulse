@@ -131,7 +131,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
     setNewEmpDept("");
   };
 
-  const handleLaunchWorkspace = (e: React.FormEvent) => {
+  const handleLaunchWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyName.trim()) return;
 
@@ -151,31 +151,35 @@ export const OrganizationOnboardingModal: React.FC = () => {
       customDepts.push("Operations", "Platform", "Product");
     }
 
-    const { org, initialProject: proj } = onboardCompany(
-      companyName.trim(),
-      customDepts,
-      `${companyName.trim()} Core Roadmap`
-    );
+    try {
+      const { org, initialProject: proj } = await onboardCompany(
+        companyName.trim(),
+        customDepts,
+        `${companyName.trim()} Core Roadmap`
+      );
 
-    // Register all invited teammates
-    employees.forEach((emp) => {
-      inviteTeammate(emp.email, emp.name, emp.role, emp.department, [proj.id]);
-    });
-
-    setIsSubmitting(false);
+      // Register all invited teammates
+      for (const emp of employees) {
+        await inviteTeammate(emp.email, emp.name, emp.role, emp.department, [proj.id]);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleJoinSubmit = (e: React.FormEvent) => {
+  const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCodeInput.trim()) return;
 
     setJoinError(null);
     setIsSubmitting(true);
-    const result = joinWithCode(inviteCodeInput.trim());
-    setIsSubmitting(false);
-
-    if (!result.success) {
-      setJoinError(result.message);
+    try {
+      const result = await joinWithCode(inviteCodeInput.trim());
+      if (!result.success) {
+        setJoinError(result.message);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

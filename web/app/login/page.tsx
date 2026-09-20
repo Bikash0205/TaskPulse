@@ -20,25 +20,25 @@ import {
   BarChart3,
   Sun,
   Moon,
-  Sparkles,
-  Users,
-  CheckCircle2,
   KeyRound,
   Smartphone,
-  Layers,
-  Activity,
-  Cpu,
   Fingerprint,
+  Eye,
+  EyeOff,
+  UserCheck,
 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signInWithGoogle, signInWithCustomUser, isLiveFirebase } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, signInWithCustomUser, isLiveFirebase } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { joinWithCode } = useOrganization();
 
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -132,7 +132,7 @@ export default function LoginPage() {
           sandboxRef.current.querySelectorAll(".sandbox-btn"),
           { y: 15, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.4, stagger: 0.08 },
-          "-=0.3"
+          "-=0.4"
         );
       }
     }, pageContainerRef);
@@ -140,47 +140,67 @@ export default function LoginPage() {
     return () => ctx.revert();
   }, []);
 
-  // GSAP Error Shake
   const triggerErrorShake = () => {
     if (cardBoxRef.current) {
       gsap.fromTo(
         cardBoxRef.current,
         { x: -10 },
         {
-          x: 10,
-          duration: 0.08,
-          repeat: 4,
-          yoyo: true,
-          ease: "power1.inOut",
-          onComplete: () => {
-            gsap.to(cardBoxRef.current, { x: 0, duration: 0.1 });
-          },
+          x: 0,
+          duration: 0.5,
+          ease: "elastic.out(1, 0.3)",
+          clearProps: "x",
         }
       );
     }
   };
 
-  const handleCustomLogin = async (e: React.FormEvent) => {
+  const handleManualAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      setError("Please provide both your full name and work email.");
-      triggerErrorShake();
-      return;
-    }
-    if (!email.includes("@")) {
-      setError("Please enter a valid work email address.");
+    setError("");
+
+    if (!email.trim() || !email.includes("@")) {
+      setError("Please provide a valid work email address.");
       triggerErrorShake();
       return;
     }
 
-    setError("");
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      triggerErrorShake();
+      return;
+    }
+
+    if (authMode === "register" && !name.trim()) {
+      setError("Please provide your full name to register.");
+      triggerErrorShake();
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      signInWithCustomUser(name.trim(), email.trim());
-      if (inviteCode.trim()) {
-        joinWithCode(inviteCode.trim());
+      if (authMode === "login") {
+        const res = await signInWithEmail(email.trim(), password);
+        if (!res.success) {
+          setError(res.error || "Authentication failed.");
+          triggerErrorShake();
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        const res = await signUpWithEmail(name.trim(), email.trim(), password);
+        if (!res.success) {
+          setError(res.error || "Registration failed.");
+          triggerErrorShake();
+          setIsSubmitting(false);
+          return;
+        }
+        if (inviteCode.trim()) {
+          await joinWithCode(inviteCode.trim());
+        }
       }
+
       router.push("/");
     } catch (err: any) {
       setError(err?.message || "Failed to authenticate. Please verify your credentials.");
@@ -263,9 +283,9 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {/* 2. Main Login Canvas */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 max-w-[1400px] w-full mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 w-full items-center">
+      {/* 2. Main Login Stage */}
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12">
+        <div className="max-w-[1240px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* LEFT COLUMN: Enterprise Value Showcase */}
           <div ref={leftColRef} className="hidden lg:flex lg:col-span-6 flex-col justify-center space-y-6 text-left pr-4">
@@ -365,21 +385,55 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Interactive Spotlight Login Card */}
+          {/* RIGHT COLUMN: Interactive Login / Register Card */}
           <div ref={rightColRef} className="lg:col-span-6 flex flex-col justify-center max-w-lg w-full mx-auto">
             <div ref={cardBoxRef}>
               <SpotlightCard className="p-6 sm:p-9 text-left">
                 {/* Card Header */}
-                <div className="mb-6">
+                <div className="mb-5">
                   <div className="w-11 h-11 rounded-2xl bg-[#F0EFFF] dark:bg-[#756EF3]/20 text-[#756EF3] flex items-center justify-center mb-3 shadow-inner">
                     <Fingerprint className="w-5 h-5" />
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-[#002055] dark:text-[#F8FAFC] tracking-tight">
-                    Sign In to Workspace
+                    {authMode === "login" ? "Sign In to Workspace" : "Create Workspace Account"}
                   </h2>
                   <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-1">
-                    Enter your organization credentials or activate a test sandbox role.
+                    {authMode === "login"
+                      ? "Enter your workspace credentials or authenticate via Google SSO."
+                      : "Register your corporate account to join your team's active workspace."}
                   </p>
+                </div>
+
+                {/* Auth Mode Toggle Pill */}
+                <div className="flex rounded-xl bg-slate-100 dark:bg-[#0B0F19] p-1 mb-5 border border-[#E9F1FF] dark:border-[#1E293B] text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("login");
+                      setError("");
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                      authMode === "login"
+                        ? "bg-white dark:bg-[#151C2C] text-[#756EF3] dark:text-[#818CF8] shadow-xs"
+                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode("register");
+                      setError("");
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                      authMode === "register"
+                        ? "bg-white dark:bg-[#151C2C] text-[#756EF3] dark:text-[#818CF8] shadow-xs"
+                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    Create Account
+                  </button>
                 </div>
 
                 {/* Error Message */}
@@ -390,7 +444,7 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {/* Google OAuth One-Tap Button */}
+                {/* Google OAuth Button */}
                 <button
                   type="button"
                   onClick={handleGoogleAuth}
@@ -415,24 +469,26 @@ export default function LoginPage() {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleCustomLogin} className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Alex Vance"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
-                    />
-                  </div>
+                <form onSubmit={handleManualAuth} className="space-y-3.5">
+                  {authMode === "register" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Alex Vance"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                      Work Email Address
+                      Work Email Address <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
@@ -445,29 +501,75 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                      Workspace Join Code <span className="font-normal text-slate-400 font-sans">(Optional)</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8]">
+                        Password <span className="text-red-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-normal">Min. 6 characters</span>
+                    </div>
                     <div className="relative flex items-center">
-                      <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
                       <input
-                        type="text"
-                        value={inviteCode}
-                        onChange={(e) => setInviteCode(e.target.value)}
-                        placeholder="e.g. TASK-9481"
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 font-mono transition-all uppercase tracking-wider"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all font-mono"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
+
+                  {authMode === "register" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
+                        Workspace Join Code <span className="font-normal text-slate-400 font-sans">(Optional)</span>
+                      </label>
+                      <div className="relative flex items-center">
+                        <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={inviteCode}
+                          onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                          placeholder="e.g. TASK-9481"
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 font-mono transition-all uppercase tracking-wider"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#756EF3]/25 hover:shadow-lg hover:shadow-[#756EF3]/35 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                    data-testid="login-submit-btn"
+                    className="w-full py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#756EF3]/25 hover:shadow-lg hover:shadow-[#756EF3]/35 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer mt-2"
                   >
-                    <span>Enter Workspace</span>
+                    <span>{authMode === "login" ? "Sign In to Workspace" : "Create Workspace Account"}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode(authMode === "login" ? "register" : "login");
+                        setError("");
+                      }}
+                      className="text-xs text-[#756EF3] dark:text-[#818CF8] hover:underline font-medium cursor-pointer"
+                    >
+                      {authMode === "login"
+                        ? "Need a workspace account? Create one"
+                        : "Already have an account? Sign In"}
+                    </button>
+                  </div>
                 </form>
 
                 {/* Instant Role Sandbox Section */}
@@ -518,20 +620,22 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => handleRoleSandbox("Zevon", PERMANENT_ADMIN_EMAIL)}
-                    className="sandbox-btn group w-full mt-2 p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/25 border border-purple-200/80 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-between shadow-xs"
+                    className="sandbox-btn w-full mt-2 p-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20 border border-purple-500/30 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-purple-600 group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-bold">Zevon (Super Administrator)</span>
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                      <span className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC]">
+                        Zevon (Super Administrator)
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono uppercase bg-purple-100 dark:bg-purple-900/60 px-2 py-0.5 rounded-full text-purple-700 dark:text-purple-300 font-semibold">
+                    <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[9px] font-bold uppercase tracking-wider font-mono">
                       Full Clearance
                     </span>
                   </button>
                 </div>
 
-                {/* Link to Onboarding */}
-                <div className="mt-5 text-center text-xs text-[#556070] dark:text-[#94A3B8]">
+                {/* Footer Link to Onboarding */}
+                <div className="pt-4 mt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] text-center text-xs text-[#556070] dark:text-[#94A3B8]">
                   <span>New organization or department? </span>
                   <Link
                     href="/onboarding"
