@@ -6,7 +6,6 @@ import { ManagerDispatcher } from "@/components/ManagerDispatcher";
 import { WorkloadMatrix } from "@/components/WorkloadMatrix";
 import { LandingPage } from "@/components/LandingPage";
 import { TaskPulseLogo } from "@/components/TaskPulseLogo";
-import { BootSplash } from "@/components/BootSplash";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
 import { MobileDeviceFrame } from "@/components/MobileDeviceFrame";
@@ -34,7 +33,6 @@ export default function TaskPulseWorkspacePage() {
   const [pulseFeed, setPulseFeed] = useState<ColleaguePulseFeedItem[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>("all");
   const [assignedBannerProject, setAssignedBannerProject] = useState<{ id: string; name: string } | null>(null);
-  const [showBootSplash, setShowBootSplash] = useState(true);
   const [viewportMode, setViewportMode] = useState<"desktop" | "mobile">("desktop");
 
   useEffect(() => {
@@ -457,7 +455,6 @@ export default function TaskPulseWorkspacePage() {
 
   return (
     <>
-      {showBootSplash && <BootSplash onComplete={() => setShowBootSplash(false)} />}
       {loading ? (
         <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19]" />
       ) : !user ? (
