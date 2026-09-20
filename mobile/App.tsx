@@ -4088,11 +4088,6 @@ export default function App() {
         onRequestClose={closeDrawer}
       >
         <Animated.View style={[styles.drawerModalOverlay, { opacity: drawerFadeAnim }]}>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={closeDrawer}
-            style={styles.drawerBackdropTap}
-          />
           <Animated.View
             style={[
               styles.drawerSheetContainer,
@@ -4102,7 +4097,12 @@ export default function App() {
             ]}
           >
             <ScrollView
-              showsVerticalScrollIndicator={false}
+              style={styles.drawerScrollView}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              bounces={true}
+              overScrollMode="always"
+              keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.drawerScrollContent}
             >
               {/* Executive Header */}
@@ -4328,6 +4328,11 @@ export default function App() {
               </View>
             </ScrollView>
           </Animated.View>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={closeDrawer}
+            style={styles.drawerBackdropTap}
+          />
         </Animated.View>
       </Modal>
 
@@ -6475,20 +6480,19 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       marginTop: 2,
     },
     drawerModalOverlay: {
-      flex: 1,
+      width: SCREEN_WIDTH,
+      height: SCREEN_HEIGHT,
       backgroundColor: "rgba(0, 0, 0, 0.65)",
       flexDirection: "row",
     },
     drawerBackdropTap: {
-      position: "absolute",
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0,
+      width: SCREEN_WIDTH * 0.18,
+      height: SCREEN_HEIGHT,
     },
     drawerSheetContainer: {
       width: SCREEN_WIDTH * 0.82,
-      height: "100%",
+      height: SCREEN_HEIGHT,
+      maxHeight: SCREEN_HEIGHT,
       backgroundColor: COLORS.card,
       borderTopRightRadius: 24,
       borderBottomRightRadius: 24,
@@ -6499,11 +6503,17 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       shadowOffset: { width: 4, height: 0 },
       shadowOpacity: 0.25,
       shadowRadius: 12,
+      overflow: "hidden",
+    },
+    drawerScrollView: {
+      flex: 1,
+      height: SCREEN_HEIGHT,
+      maxHeight: SCREEN_HEIGHT,
     },
     drawerScrollContent: {
       paddingHorizontal: 18,
       paddingTop: 44,
-      paddingBottom: 36,
+      paddingBottom: 140,
     },
     drawerHeader: {
       paddingBottom: 16,
