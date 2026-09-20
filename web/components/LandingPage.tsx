@@ -52,7 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               Platform Overview
             </a>
             <a href="#workload" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors">
-              Workload Telemetry
+              Capacity Management
             </a>
             <a href="#dispatcher" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors">
               Sprint Dispatcher
@@ -130,7 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
             >
-              Workload Telemetry
+              Capacity Management
             </a>
             <a
               href="#dispatcher"
