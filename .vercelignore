@@ -1,7 +1,7 @@
 .git
 node_modules
 */node_modules
-mobile
+/mobile
 .next
 web/.next
 *.apk
