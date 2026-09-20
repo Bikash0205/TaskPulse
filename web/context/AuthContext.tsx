@@ -46,7 +46,7 @@ export interface AuthContextType {
   loading: boolean;
   isLiveFirebase: boolean;
   teamRoles: Record<string, UserRole>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<AuthResult>;
   signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
   signUpWithEmail: (
     name: string,
@@ -239,20 +239,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (): Promise<AuthResult> => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("taskpulse_signed_out");
     }
-    if (isFirebaseConfigured && auth && googleProvider) {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (error: any) {
-        console.error("Firebase Google Sign-In error:", error);
-        throw error;
+    if (!isFirebaseConfigured || !auth || !googleProvider) {
+      return { success: false, error: "Firebase authentication is not configured." };
+    }
+
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      if (cred.user) {
+        const isPerm = isPermanentAdminEmail(cred.user.email);
+        const initialRole: UserRole = isPerm
+          ? "admin"
+          : (teamRoles[cred.user.email?.toLowerCase().trim() || ""] || "member");
+
+        if (db) {
+          try {
+            const userDocRef = doc(db, "users", cred.user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (!userDoc.exists()) {
+              await setDoc(userDocRef, {
+                uid: cred.user.uid,
+                email: cred.user.email,
+                displayName: cred.user.displayName,
+                photoURL: cred.user.photoURL,
+                role: initialRole,
+                department: "Engineering",
+                createdAt: new Date().toISOString(),
+              });
+            }
+          } catch (err) {
+            console.warn("Firestore user sync on Google sign in:", err);
+          }
+        }
+        return { success: true };
       }
-    } else {
-      // Fallback
-      signInWithCustomUser("Google Colleague", "colleague@workspace.internal");
+      return { success: true };
+    } catch (error: any) {
+      console.warn("Firebase Google Sign-In notice:", error?.code, error?.message);
+      if (error?.code === "auth/popup-closed-by-user") {
+        return { success: false, error: "Sign-in popup was closed before completing." };
+      }
+      if (error?.code === "auth/popup-blocked") {
+        return {
+          success: false,
+          error: "Sign-in popup was blocked by the browser. Please allow popups for this site.",
+        };
+      }
+      if (error?.code === "auth/unauthorized-domain") {
+        const host = typeof window !== "undefined" ? window.location.hostname : "your domain";
+        return {
+          success: false,
+          error: `Domain '${host}' is not authorized for Google Sign-In in Firebase Console (Authentication > Settings > Authorized domains).`,
+        };
+      }
+      if (error?.code === "auth/operation-not-allowed") {
+        return {
+          success: false,
+          error: "Google sign-in is not enabled in your Firebase Console. Please enable Google under Authentication > Sign-in method.",
+        };
+      }
+      return { success: false, error: error?.message || "Google authentication failed." };
     }
   };
 

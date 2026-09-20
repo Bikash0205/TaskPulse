@@ -35,13 +35,16 @@ export const GoogleSignInModal: React.FC<{ isOpen: boolean; onClose?: () => void
   };
 
   const handleGoogleClick = async () => {
-    if (isLiveFirebase) {
-      await signInWithGoogle();
-      onClose?.();
-    } else {
-      // Fallback: quick sign in with Google demo identity
-      signInWithCustomUser("Google User", "user@gmail.com");
-      onClose?.();
+    setError("");
+    try {
+      const res = await signInWithGoogle();
+      if (res.success) {
+        onClose?.();
+      } else if (res.error && res.error !== "Sign-in popup was closed before completing.") {
+        setError(res.error);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Google authentication encountered an error.");
     }
   };
 

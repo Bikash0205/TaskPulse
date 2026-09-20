@@ -11,6 +11,15 @@ export interface FirebaseCustomConfig {
   appId?: string;
 }
 
+export const DEFAULT_FIREBASE_CONFIG: FirebaseCustomConfig = {
+  apiKey: "AIzaSyBxqUn_iIBvPwc6NCmO4LAikisI0EoC7Wc",
+  authDomain: "taskpulse-app-9921.firebaseapp.com",
+  projectId: "taskpulse-app-9921",
+  storageBucket: "taskpulse-app-9921.firebasestorage.app",
+  messagingSenderId: "31759289651",
+  appId: "1:31759289651:web:02756806487c18d95bc246",
+};
+
 export const getSavedFirebaseConfig = (): FirebaseCustomConfig => {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem("taskpulse_firebase_config");
@@ -24,12 +33,12 @@ export const getSavedFirebaseConfig = (): FirebaseCustomConfig => {
     }
   }
   return {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || DEFAULT_FIREBASE_CONFIG.apiKey,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || DEFAULT_FIREBASE_CONFIG.authDomain,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_CONFIG.projectId,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || DEFAULT_FIREBASE_CONFIG.storageBucket,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || DEFAULT_FIREBASE_CONFIG.appId,
   };
 };
 

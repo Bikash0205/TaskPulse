@@ -213,14 +213,18 @@ export default function LoginPage() {
     setError("");
     setIsSubmitting(true);
     try {
-      if (isLiveFirebase) {
-        await signInWithGoogle();
+      const res = await signInWithGoogle();
+      if (res.success) {
+        router.push("/");
       } else {
-        signInWithCustomUser("Google Colleague", "colleague@workspace.internal");
+        if (res.error && res.error !== "Sign-in popup was closed before completing.") {
+          setError(res.error);
+          triggerErrorShake();
+        }
+        setIsSubmitting(false);
       }
-      router.push("/");
     } catch (err: any) {
-      setError("Google authentication was canceled or encountered an error.");
+      setError(err?.message || "Google authentication encountered an error.");
       triggerErrorShake();
       setIsSubmitting(false);
     }
