@@ -34,7 +34,16 @@ import {
   Users,
   ChevronDown,
   Trash2,
+  TrendingUp,
+  BarChart3,
+  ShieldCheck,
+  FileSpreadsheet,
 } from "lucide-react";
+import { GanttTimelineView } from "./GanttTimelineView";
+import { GovernanceGatesSection } from "./GovernanceGatesSection";
+import { EnterpriseAuditAndRbacModal } from "./EnterpriseAuditAndRbacModal";
+import { CorporateAnalyticsExportModal } from "./CorporateAnalyticsExportModal";
+import { EnterpriseThreadedDiscussionSection } from "./EnterpriseThreadedDiscussionSection";
 
 interface MobileDeviceFrameProps {
   pulseFeed?: any[];
@@ -44,6 +53,7 @@ interface MobileDeviceFrameProps {
   onToggleTaskBlocked: (taskId: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onAddTask?: (task: TaskPulseItem) => void;
+  isStandalone?: boolean;
 }
 
 // Taskcy Design Tokens from Figma (K8Kc3Vs6ikYNPdNFsKZoIS)
@@ -263,6 +273,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   onToggleTaskBlocked,
   onToggleSubtask,
   onAddTask,
+  isStandalone = false,
 }) => {
   const [internalTasks, setInternalTasks] = useState<TaskPulseItem[]>(
     propTasks.length > 0 ? propTasks : DEFAULT_TASKS
@@ -285,11 +296,29 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
   const [taskStatusFilter, setTaskStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Enterprise Suite States
+  const [isAuditRbacModalOpen, setIsAuditRbacModalOpen] = useState(false);
+  const [isCorporateAnalyticsOpen, setIsCorporateAnalyticsOpen] = useState(false);
+  const [projectViewMode, setProjectViewMode] = useState<"grid" | "timeline">("grid");
+
   // Modals & Drawers
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createType, setCreateType] = useState<"task" | "project">("task");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Viewport Responsiveness
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const check = () => setIsMobileScreen(window.innerWidth < 768);
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
+    }
+  }, []);
+
+  const renderStandalone = isStandalone || isMobileScreen;
 
   // New Task Form State
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -520,30 +549,8 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
     return true;
   });
 
-  return (
-    <div className="flex flex-col items-center select-none font-sans">
-      {/* Realistic Mobile Device Frame */}
-      <div className="relative w-[385px] h-[810px] bg-slate-900 rounded-[54px] p-3.5 shadow-2xl border-4 border-slate-700/70 ring-1 ring-white/10 overflow-hidden flex flex-col">
-        {/* Dynamic Island Pill */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 h-5 w-28 bg-black rounded-full z-50 flex items-center justify-between px-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[8px] font-mono text-slate-400">PULSE</span>
-          </div>
-        </div>
-
-        {/* Device Status Bar */}
-        <div className="pt-2 px-6 pb-2 flex items-center justify-between text-[11px] font-semibold text-slate-800 dark:text-slate-200 z-40">
-          <span>9:41</span>
-          <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-            <Wifi className="w-3 h-3" />
-            <Battery className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
-          </div>
-        </div>
-
-        {/* Taskcy Native Screen Canvas */}
-        <div className="flex-1 rounded-[40px] bg-[#F8FAFF] flex flex-col overflow-hidden relative border border-slate-100 text-[#002055]">
+  const screenContent = (
+    <div className={`flex-1 ${renderStandalone ? "w-full min-h-[calc(100dvh-70px)] sm:min-h-[820px] bg-[#F8FAFF]" : "rounded-[40px]"} bg-[#F8FAFF] flex flex-col overflow-hidden relative border border-slate-100 text-[#002055]`}>
           
           {/* Top Header Bar */}
           <div className="pt-3 px-5 pb-3 flex items-center justify-between bg-white border-b border-[#E9F1FF] shrink-0 z-20">
@@ -573,7 +580,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
           </div>
 
           {/* Main Scrollable Canvas */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 no-scrollbar pb-24">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-4 no-scrollbar pb-8">
             <AnimatePresence mode="wait">
               {/* HOME SCREEN */}
               {currentTab === "home" && (
@@ -868,17 +875,48 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                     </button>
                   </div>
 
-                  {/* Search Bar */}
-                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-[#E9F1FF] text-xs">
-                    <Search className="w-3.5 h-3.5 text-[#848A94]" />
-                    <input
-                      type="text"
-                      placeholder="Search projects..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-transparent text-xs text-[#002055] placeholder-[#848A94] focus:outline-none"
-                    />
+                  {/* 2-Way View Switcher: Projects Grid vs Gantt Roadmap */}
+                  <div className="flex items-center p-1 rounded-xl bg-[#F0EFFF] border border-[#756EF3]/20 text-xs">
+                    <button
+                      onClick={() => setProjectViewMode("grid")}
+                      className={`flex-1 py-1.5 rounded-lg font-bold text-center transition-all cursor-pointer ${
+                        projectViewMode === "grid"
+                          ? "bg-[#756EF3] text-white shadow-xs"
+                          : "text-[#848A94] hover:text-[#002055]"
+                      }`}
+                    >
+                      Projects Grid
+                    </button>
+                    <button
+                      onClick={() => setProjectViewMode("timeline")}
+                      className={`flex-1 py-1.5 rounded-lg font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        projectViewMode === "timeline"
+                          ? "bg-[#756EF3] text-white shadow-xs"
+                          : "text-[#848A94] hover:text-[#002055]"
+                      }`}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>Timeline Roadmap</span>
+                    </button>
                   </div>
+
+                  {projectViewMode === "timeline" ? (
+                    <div className="pt-1">
+                      <GanttTimelineView isDarkMode={false} />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Search Bar */}
+                      <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-[#E9F1FF] text-xs">
+                        <Search className="w-3.5 h-3.5 text-[#848A94]" />
+                        <input
+                          type="text"
+                          placeholder="Search projects..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full bg-transparent text-xs text-[#002055] placeholder-[#848A94] focus:outline-none"
+                        />
+                      </div>
 
                   {/* Category Pills */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
@@ -972,6 +1010,8 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                       );
                     })}
                   </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 
@@ -1084,8 +1124,8 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
 
                   {activeTaskObj.status === "completed" && (
                     <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-emerald-900 text-xs shadow-xs">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                        ✓
+                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                       <div className="flex-1">
                         <div className="font-bold text-[11px] text-emerald-900">Verified & Approved by Project Manager</div>
@@ -1162,44 +1202,15 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                     </div>
                   </div>
 
-                  {/* Activity & Comments Stream */}
-                  <div className="space-y-2">
-                    <h5 className="text-[11px] font-bold uppercase tracking-wider text-[#002055]">
-                      Activity & Comments
-                    </h5>
+                  {/* Phase 2: Structured Governance, Multi-Stage Sign-Off Gates & SLA */}
+                  <GovernanceGatesSection taskId={activeTaskObj.id} isDarkMode={false} />
 
-                    <div className="p-3 rounded-2xl bg-white border border-[#E9F1FF] space-y-2.5">
-                      {(comments[activeTaskObj.id] || []).map((c) => (
-                        <div key={c.id} className="text-xs space-y-0.5">
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="font-bold text-[#756EF3]">{c.user}</span>
-                            <span className="text-[#848A94]">{c.time}</span>
-                          </div>
-                          <p className="text-[11px] text-[#002055] bg-[#F8FAFF] p-2 rounded-lg border border-[#E9F1FF]">
-                            {c.text}
-                          </p>
-                        </div>
-                      ))}
-
-                      {/* Post Comment Input */}
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="text"
-                          placeholder="Write an update or comment..."
-                          value={commentInput}
-                          onChange={(e) => setCommentInput(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handlePostComment()}
-                          className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#F8FAFF] border border-[#E9F1FF] text-xs text-[#002055] placeholder-[#848A94] focus:outline-none focus:border-[#756EF3]"
-                        />
-                        <button
-                          onClick={handlePostComment}
-                          className="p-2 rounded-lg bg-[#756EF3] text-white hover:bg-[#635BEE] cursor-pointer"
-                        >
-                          <Send className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Phase 5: Threaded Discussions & Client/Guest Portal Safe Modes */}
+                  <EnterpriseThreadedDiscussionSection
+                    taskId={activeTaskObj.id}
+                    taskTitle={activeTaskObj.title}
+                    isDarkMode={false}
+                  />
                 </motion.div>
               )}
 
@@ -1316,6 +1327,29 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                           </span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Enterprise Suite & Compliance */}
+                  <div className="p-3.5 rounded-2xl bg-white border border-[#E9F1FF] space-y-2.5 shadow-xs">
+                    <span className="font-bold text-xs text-[#002055] block">Enterprise Suite & Compliance</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setIsCorporateAnalyticsOpen(true)}
+                        className="p-2.5 rounded-xl bg-[#F8FAFF] border border-[#E9F1FF] hover:border-[#756EF3]/40 text-left transition-all cursor-pointer group"
+                      >
+                        <BarChart3 className="w-4 h-4 text-[#756EF3] mb-1.5 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-[11px] text-[#002055] block">Executive Brief</span>
+                        <span className="text-[9px] text-[#848A94]">Board PDF/CSV Export</span>
+                      </button>
+                      <button
+                        onClick={() => setIsAuditRbacModalOpen(true)}
+                        className="p-2.5 rounded-xl bg-[#F8FAFF] border border-[#E9F1FF] hover:border-emerald-500/40 text-left transition-all cursor-pointer group"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 mb-1.5 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-[11px] text-[#002055] block">SOC 2 Audit</span>
+                        <span className="text-[9px] text-[#848A94]">RBAC & Merkle Root</span>
+                      </button>
                     </div>
                   </div>
 
@@ -1815,6 +1849,62 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
 
                   <div className="pt-3 border-t border-slate-100">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#848A94] block mb-2">
+                      Enterprise Suite
+                    </span>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          setIsCorporateAnalyticsOpen(true);
+                          setIsDrawerOpen(false);
+                        }}
+                        className="w-full p-2.5 rounded-xl hover:bg-slate-50 text-[#002055] font-semibold flex items-center justify-between text-xs cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4 text-[#756EF3]" />
+                          <span>Executive Analytics & Export</span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#F0EFFF] text-[#756EF3]">
+                          PDF/CSV
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsAuditRbacModalOpen(true);
+                          setIsDrawerOpen(false);
+                        }}
+                        className="w-full p-2.5 rounded-xl hover:bg-slate-50 text-[#002055] font-semibold flex items-center justify-between text-xs cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <span>SOC 2 Audit & RBAC Ledger</span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-600">
+                          SOC 2
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setCurrentTab("projects");
+                          setProjectViewMode("timeline");
+                          setIsDrawerOpen(false);
+                        }}
+                        className="w-full p-2.5 rounded-xl hover:bg-slate-50 text-[#002055] font-semibold flex items-center justify-between text-xs cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-blue-600" />
+                          <span>Portfolio Gantt Roadmap</span>
+                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-600">
+                          Roadmap
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#848A94] block mb-2">
                       Workspaces
                     </span>
                     <div className="p-2 rounded-xl border border-[#E9F1FF] flex items-center justify-between text-xs">
@@ -1831,7 +1921,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
           </AnimatePresence>
 
           {/* Taskcy Bottom Navigation Dock - Figma Node #2:17246 */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-white border-t border-[#E9F1FF] flex items-center justify-around px-4 z-30 shadow-lg">
+          <div className="sticky bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-[#E9F1FF] flex items-center justify-around px-4 z-30 shadow-lg shrink-0">
             <button
               onClick={() => setCurrentTab("home")}
               className={`flex flex-col items-center gap-0.5 transition-colors cursor-pointer ${
@@ -1875,8 +1965,56 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+  );
+
+  return (
+    <>
+      {renderStandalone ? (
+        <div className="w-full min-h-[calc(100dvh-70px)] bg-[#F8FAFF] flex flex-col items-center justify-start select-none font-sans">
+          <div className="w-full max-w-md min-h-[calc(100dvh-70px)] flex flex-col relative bg-[#F8FAFF] shadow-xs sm:border-x sm:border-[#E9F1FF]">
+            {screenContent}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center select-none font-sans">
+          {/* Realistic Mobile Device Frame */}
+          <div className="relative w-[385px] h-[810px] bg-slate-900 rounded-[54px] p-3.5 shadow-2xl border-4 border-slate-700/70 ring-1 ring-white/10 overflow-hidden flex flex-col">
+            {/* Dynamic Island Pill */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 h-5 w-28 bg-black rounded-full z-50 flex items-center justify-between px-2.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
+              <div className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[8px] font-mono text-slate-400">PULSE</span>
+              </div>
+            </div>
+
+            {/* Device Status Bar */}
+            <div className="pt-2 px-6 pb-2 flex items-center justify-between text-[11px] font-semibold text-slate-800 dark:text-slate-200 z-40">
+              <span>9:41</span>
+              <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                <Wifi className="w-3 h-3" />
+                <Battery className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
+              </div>
+            </div>
+
+            {screenContent}
+          </div>
+        </div>
+      )}
+
+      {/* Enterprise Suite Modals */}
+      <CorporateAnalyticsExportModal
+        isOpen={isCorporateAnalyticsOpen}
+        isDarkMode={false}
+        onClose={() => setIsCorporateAnalyticsOpen(false)}
+      />
+
+      <EnterpriseAuditAndRbacModal
+        isOpen={isAuditRbacModalOpen}
+        isDarkMode={false}
+        onClose={() => setIsAuditRbacModalOpen(false)}
+      />
+    </>
   );
 };
 

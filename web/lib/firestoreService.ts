@@ -82,3 +82,13 @@ export const updateTaskProgressDocument = async (
     updatedAt: serverTimestamp(),
   });
 };
+
+export const updateTaskDocument = async (task: TaskPulseItem): Promise<void> => {
+  if (!isFirebaseConfigured || !db) return;
+  const taskRef = doc(db, "tasks", task.id);
+  await setDoc(taskRef, {
+    ...task,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+};
+

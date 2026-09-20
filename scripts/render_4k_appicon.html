@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 2048px;
+    height: 2048px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  }
+  .card-container {
+    width: 1750px;
+    height: 1750px;
+    background: #0F172A;
+    border: 6px solid #1E293B;
+    border-radius: 380px;
+    box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.65),
+                0 0 120px rgba(117, 110, 243, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px;
+  }
+  .logo-svg {
+    width: 1150px;
+    height: 500px;
+  }
+  .brand-text {
+    margin-top: 55px;
+    font-size: 165px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: -0.04em;
+  }
+  .brand-pulse { color: #10B981; }
+  .brand-subtitle {
+    margin-top: 32px;
+    font-size: 34px;
+    font-weight: 700;
+    color: #38BDF8;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="card-container">
+    <svg class="logo-svg" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="emerald-glow-4k" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="3.0" result="blur" />
+          <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.062 0 0 0 0 0.725 0 0 0 0 0.505 0 0 0 0.9 0" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="pulse-blue-glow-4k" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <linearGradient id="arrow-grad-4k" x1="95" y1="25" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#34D399" />
+          <stop offset="100%" stop-color="#10B981" />
+        </linearGradient>
+        <linearGradient id="pulse-grad-4k" x1="10" y1="35" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#818CF8" />
+          <stop offset="60%" stop-color="#756EF3" />
+          <stop offset="100%" stop-color="#10B981" />
+        </linearGradient>
+      </defs>
+      <g>
+        <path d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
+          stroke="#756EF3" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"
+          opacity="0.4" filter="url(#pulse-blue-glow-4k)" />
+        <path d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
+          stroke="url(#pulse-grad-4k)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M 95 15 L 105 15 L 105 25"
+          stroke="url(#arrow-grad-4k)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"
+          filter="url(#emerald-glow-4k)" />
+        <circle cx="105" cy="15" r="4" fill="#FFFFFF" filter="url(#emerald-glow-4k)" />
+      </g>
+    </svg>
+    <div class="brand-text">Task<span class="brand-pulse">Pulse</span></div>
+    <div class="brand-subtitle">Workspace Velocity Engine</div>
+  </div>
+</body>
+</html>

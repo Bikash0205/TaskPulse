@@ -12,6 +12,8 @@ export interface ColleagueProfile {
   activeTaskCount: number;
   maxBandwidth: number;
   isOnline?: boolean;
+  isInvited?: boolean;
+  invitedEmail?: string;
 }
 
 export interface SubTask {
@@ -28,6 +30,9 @@ export interface Project {
   description?: string;
   progressPercentage: number;
   targetDate?: string;
+  folderColor?: string;
+  managerName?: string;
+  managerEmail?: string;
 }
 
 export interface TaskPulseItem {
@@ -44,6 +49,10 @@ export interface TaskPulseItem {
   subtasks?: SubTask[];
   isBlocked?: boolean;
   blockReason?: string;
+  category?: string;
+  section?: string;
+  completionNotes?: string;
+  completionScreenshot?: string;
   reviewerName?: string;
   verifiedByManager?: boolean;
   verifiedAt?: string;
@@ -87,5 +96,34 @@ export interface OrganizationInvite {
   invitedBy: string;
   invitedAt: string;
   status: "pending" | "accepted";
+}
+
+export type ProjectTabMode = "list" | "board" | "timeline";
+
+export interface Milestone {
+  id: string;
+  title: string;
+  projectId?: string;
+  projectName?: string;
+  targetDate: string;
+  status: "upcoming" | "reached" | "delayed";
+  description?: string;
+}
+
+export interface RoadmapItem {
+  id: string;
+  projectId: string;
+  projectName: string;
+  code: string;
+  department: Department;
+  startWeek: number; // 1 to 8 (offset in roadmap calendar)
+  durationWeeks: number; // number of weeks
+  progressPercentage: number;
+  status: "on_track" | "at_risk" | "delayed" | "completed";
+  leadName: string;
+  leadRole: string;
+  leadAvatar?: string;
+  dependencies?: string[];
+  milestones?: Milestone[];
 }
 

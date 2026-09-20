@@ -93,6 +93,11 @@ export const TaskPulseCard: React.FC<TaskPulseCardProps> = ({
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-50 dark:bg-[#756EF3]/15 text-[#756EF3] dark:text-[#818CF8] border border-blue-200 dark:border-[#756EF3]/30 font-mono">
               {task.projectBadge}
             </span>
+            {task.category && (
+              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                {task.category}
+              </span>
+            )}
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
               {task.department}
             </span>
@@ -101,7 +106,7 @@ export const TaskPulseCard: React.FC<TaskPulseCardProps> = ({
 
         {/* Capacity Indicator Pill */}
         <span
-          className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 self-start"
+          className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 self-start shrink-0"
           style={{
             color: statusColor,
             backgroundColor: `${statusColor}14`,
@@ -121,6 +126,23 @@ export const TaskPulseCard: React.FC<TaskPulseCardProps> = ({
       <h4 className="text-xs font-semibold text-slate-900 dark:text-slate-200 line-clamp-2 leading-relaxed">
         {task.title}
       </h4>
+
+      {/* Review Status or Verified Badge */}
+      {task.status === "in_review" && (
+        <div className="flex items-center justify-between px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="font-semibold text-[11px]">Under Review</span>
+          </div>
+          <span className="text-[10px] font-mono opacity-80">Needs Sign-Off</span>
+        </div>
+      )}
+
+      {task.verifiedByManager && (
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold font-mono">
+          <span>Sign-Off Verified</span>
+        </div>
+      )}
 
       {/* Blocker Alert Banner */}
       {task.isBlocked && (

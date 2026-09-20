@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -13,6 +13,11 @@ import {
   Modal,
   Switch,
   Vibration,
+  Animated,
+  Easing,
+  BackHandler,
+  AppRegistry,
+  Appearance,
 } from "react-native";
 import {
   HomeIcon,
@@ -38,11 +43,38 @@ import {
   UsersIcon,
   CopyIcon,
   BuildingIcon,
+  PulseIcon,
+  AnimatedAddButton,
+  AnimatedThemeToggle,
+  BoardIcon,
+  ListIcon,
+  TimelineIcon,
+  ChatBubbleIcon,
+  CheckCircleFilledIcon,
+  ActivityPulseIcon,
+  LayersIcon,
+  ShieldCheckIcon,
+  SlidersIcon,
+  InfoIcon,
+  BarChartIcon,
 } from "./components/Icons";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 import { BIKASH_AVATAR_URI } from "./assets/bikashAvatarBase64";
 import { SAMPLE_SCREENSHOT_URI } from "./assets/sampleScreenshotBase64";
+import { MobileBootSplash } from "./components/MobileBootSplash";
+import { ThemeToggleBar } from "./components/ThemeToggleBar";
+import { AnimatedTabItem } from "./components/AnimatedTabItem";
+import { AnimatedBellButton } from "./components/AnimatedBellButton";
+import { AnimatedToggleSwitch } from "./components/AnimatedToggleSwitch";
+import { GanttTimelineView } from "./components/GanttTimelineView";
+import { GovernanceGatesSection, ApprovalGate } from "./components/GovernanceGatesSection";
+import { EnterpriseAuditAndRbacModal } from "./components/EnterpriseAuditAndRbacModal";
+import { CorporateAnalyticsExportModal } from "./components/CorporateAnalyticsExportModal";
+import { EnterpriseThreadedDiscussionSection } from "./components/EnterpriseThreadedDiscussionSection";
+
+export type ProjectTabMode = "list" | "board" | "timeline";
 
 const BIKASH_AVATAR = { uri: BIKASH_AVATAR_URI };
 
@@ -175,6 +207,14 @@ const INITIAL_ONBOARDING_EMPLOYEES: OnboardingEmployee[] = [
   },
 ];
 
+export interface TaskComment {
+  id: string;
+  author: string;
+  avatarRole?: string;
+  text: string;
+  time: string;
+}
+
 interface MobileTask {
   id: string;
   title: string;
@@ -185,11 +225,15 @@ interface MobileTask {
   progress: number;
   timeAgo: string;
   subtasks: { id: string; title: string; completed: boolean }[];
+  description?: string;
+  assignee?: string;
+  comments?: TaskComment[];
   completionNotes?: string;
   completionScreenshot?: string;
   submittedAt?: string;
   reviewedBy?: string;
   reviewDate?: string;
+  approvalGates?: ApprovalGate[];
 }
 
 interface MobileProject {
@@ -294,6 +338,12 @@ const INITIAL_TASKS: MobileTask[] = [
     status: "in_review",
     progress: 80,
     timeAgo: "10 min ago",
+    assignee: "Bikash Kumar Yadav",
+    description: "Production Postgres schema with full JWT session middleware, role claims, and automated migration scripts.",
+    comments: [
+      { id: "c-1", author: "Bikash", avatarRole: "Admin", text: "Postgres schema and JWT middleware verified. Ready for sign-off.", time: "10m ago" },
+      { id: "c-2", author: "Marcus", avatarRole: "PM", text: "Reviewing the automated migration scripts now.", time: "4m ago" },
+    ],
     subtasks: [
       { id: "sub-w1", title: "Design PostgreSQL relational schema", completed: true },
       { id: "sub-w2", title: "Setup JWT & Session middleware", completed: true },
@@ -310,6 +360,11 @@ const INITIAL_TASKS: MobileTask[] = [
     status: "in_progress",
     progress: 66,
     timeAgo: "15 min ago",
+    assignee: "Elena Rostova",
+    description: "Responsive hero animation with pricing calculator and open-graph SEO meta tag support.",
+    comments: [
+      { id: "c-3", author: "Elena", avatarRole: "Member", text: "Hero animation and conversion flow is complete! Just polishing the meta tags.", time: "15m ago" },
+    ],
     subtasks: [
       { id: "sub-w5", title: "Hero animation and CTA conversion flow", completed: true },
       { id: "sub-w6", title: "Interactive feature pricing calculator", completed: true },
@@ -325,6 +380,11 @@ const INITIAL_TASKS: MobileTask[] = [
     status: "in_progress",
     progress: 66,
     timeAgo: "20 min ago",
+    assignee: "Marcus Lee",
+    description: "Meta Conversions API setup with high-converting carousel assets and lookalike audience segmentation.",
+    comments: [
+      { id: "c-4", author: "Marcus", avatarRole: "Manager", text: "CAPI installed and verified. Creative assets uploaded.", time: "20m ago" },
+    ],
     subtasks: [
       { id: "sub-m1", title: "Install Meta Conversions API (CAPI)", completed: true },
       { id: "sub-m2", title: "Upload video & carousel creative assets", completed: true },
@@ -449,7 +509,21 @@ const DAYS = [
 ];
 
 export default function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      return Appearance.getColorScheme() === "dark";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setIsDarkMode(colorScheme === "dark");
+    });
+    return () => sub.remove();
+  }, []);
+
   const COLORS = isDarkMode ? DARK_COLORS : LIGHT_COLORS;
 
   // Ultra-light, very responsive haptic tick
@@ -471,6 +545,7 @@ export default function App() {
   const [registeredAccounts, setRegisteredAccounts] = useState<UserAccount[]>(DEFAULT_ACCOUNTS);
   // Default to Super Admin so existing tests work, or user can tap Logout / Switch Account anytime
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(DEFAULT_ACCOUNTS[0]);
+  const [isBooting, setIsBooting] = useState(true);
 
   // Auth Entrance Screen State
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
@@ -506,6 +581,18 @@ export default function App() {
   const [projectTaskFilter, setProjectTaskFilter] = useState("All");
   const [taskStatusFilter, setTaskStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Premium Features State
+  const [projectTabMode, setProjectTabMode] = useState<ProjectTabMode>("list");
+  const [selectedTaskDetail, setSelectedTaskDetail] = useState<MobileTask | null>(null);
+  const [detailCommentInput, setDetailCommentInput] = useState("");
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [activityEvents, setActivityEvents] = useState([
+    { id: "act-1", user: "Bikash", role: "Admin", action: "approved", target: "Database Schema & Auth APIs", time: "5m ago", color: "#10B981" },
+    { id: "act-2", user: "Elena", role: "Member", action: "completed subtask on", target: "Landing Page & Features", time: "18m ago", color: "#3B82F6" },
+    { id: "act-3", user: "Marcus", role: "Manager", action: "submitted for review", target: "Facebook Ads Campaign", time: "42m ago", color: "#F59E0B" },
+    { id: "act-4", user: "David", role: "Viewer", action: "synced workstream", target: "Cubbles Engine", time: "1h ago", color: "#8B5CF6" },
+  ]);
 
   // Live Cloud Synchronization with Web API
   useEffect(() => {
@@ -600,6 +687,8 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
+  const [isEnterpriseAuditModalOpen, setIsEnterpriseAuditModalOpen] = useState(false);
+  const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
 
   // Task Completion Review Modal State
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -612,6 +701,10 @@ export default function App() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskProject, setNewTaskProject] = useState("Application Design");
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high" | "critical">("high");
+  const [newTaskAssignee, setNewTaskAssignee] = useState("Bikash Sharma");
+  const [isInvitingViaEmail, setIsInvitingViaEmail] = useState(false);
+  const [newTaskInviteEmail, setNewTaskInviteEmail] = useState("");
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
   const [newTaskSteps, setNewTaskSteps] = useState<string[]>([
     "Review design specs",
     "Prepare component tokens",
@@ -635,6 +728,269 @@ export default function App() {
   // Toggles
   const [pushEnabled, setPushEnabled] = useState(true);
 
+  // Navigation History Stack & Native Slide Transition
+  const [navHistory, setNavHistory] = useState<
+    {
+      tab: "home" | "projects" | "details" | "profile";
+      project?: MobileProject | null;
+      task?: MobileTask | null;
+    }[]
+  >([]);
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Drawer Animation Physics
+  const drawerSlideAnim = useRef(new Animated.Value(-SCREEN_WIDTH * 0.85)).current;
+  const drawerFadeAnim = useRef(new Animated.Value(0)).current;
+  const gridSpinAnim = useRef(new Animated.Value(0)).current;
+
+  const openDrawer = useCallback(() => {
+    triggerHaptic("selection");
+    setIsDrawerOpen(true);
+
+    Animated.sequence([
+      Animated.timing(gridSpinAnim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(gridSpinAnim, {
+        toValue: 0,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    drawerSlideAnim.setValue(-SCREEN_WIDTH * 0.85);
+    drawerFadeAnim.setValue(0);
+    Animated.parallel([
+      Animated.spring(drawerSlideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(drawerFadeAnim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [drawerSlideAnim, drawerFadeAnim, gridSpinAnim]);
+
+  const closeDrawer = useCallback(() => {
+    triggerHaptic("light");
+    Animated.parallel([
+      Animated.timing(drawerSlideAnim, {
+        toValue: -SCREEN_WIDTH * 0.85,
+        duration: 200,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(drawerFadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsDrawerOpen(false);
+      gridSpinAnim.setValue(0);
+    });
+  }, [drawerSlideAnim, drawerFadeAnim, gridSpinAnim]);
+
+  const navigateForward = useCallback(
+    (
+      newTab: "home" | "projects" | "details" | "profile",
+      options?: { project?: MobileProject | null; task?: MobileTask | null; replace?: boolean }
+    ) => {
+      if (
+        !options?.replace &&
+        currentTab === newTab &&
+        (options?.project === undefined || options?.project?.id === selectedProjectView?.id) &&
+        (options?.task === undefined || options?.task?.id === selectedTask?.id)
+      ) {
+        return;
+      }
+
+      if (!options?.replace) {
+        setNavHistory((prev) => [
+          ...prev,
+          {
+            tab: currentTab,
+            project: selectedProjectView,
+            task: selectedTask,
+          },
+        ]);
+      }
+
+      slideAnim.stopAnimation();
+      fadeAnim.stopAnimation();
+
+      // Forward Slide Animation: enters from right (+35px -> 0)
+      slideAnim.setValue(35);
+      fadeAnim.setValue(0.7);
+
+      if (options?.project !== undefined) setSelectedProjectView(options.project);
+      if (options?.task !== undefined) setSelectedTask(options.task);
+      setCurrentTab(newTab);
+
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    },
+    [currentTab, selectedProjectView, selectedTask, slideAnim, fadeAnim]
+  );
+
+  const handleGoBack = useCallback((): boolean => {
+    // 1. Dismiss any open modals first
+    if (viewingScreenshot) {
+      setViewingScreenshot(null);
+      return true;
+    }
+    if (reviewModalVisible) {
+      setReviewModalVisible(false);
+      return true;
+    }
+    if (isOnboardingModalOpen) {
+      setIsOnboardingModalOpen(false);
+      return true;
+    }
+    if (isCreateOpen) {
+      setIsCreateOpen(false);
+      return true;
+    }
+    if (isNotificationsOpen) {
+      setIsNotificationsOpen(false);
+      return true;
+    }
+    if (isDrawerOpen) {
+      closeDrawer();
+      return true;
+    }
+
+    // 2. Unauthenticated auth flow
+    if (!currentUser) {
+      if (authTab === "signup") {
+        if (onboardingStep > 1) {
+          setOnboardingStep((prev) => (prev - 1) as 1 | 2 | 3);
+          return true;
+        }
+        setAuthTab("signin");
+        return true;
+      }
+      return false;
+    }
+
+    // 3. Crisp, Single-Phase Slide-Back Transition (instant 160ms deceleration from left)
+    const executeBackTransition = (updateState: () => void) => {
+      slideAnim.stopAnimation();
+      fadeAnim.stopAnimation();
+
+      slideAnim.setValue(-35);
+      fadeAnim.setValue(0.7);
+      updateState();
+
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    };
+
+    // 4. Pop from Navigation History Stack if present
+    if (navHistory.length > 0) {
+      const prevEntry = navHistory[navHistory.length - 1];
+      setNavHistory((prev) => prev.slice(0, -1));
+      triggerHaptic("selection");
+      executeBackTransition(() => {
+        setCurrentTab(prevEntry.tab);
+        setSelectedProjectView(prevEntry.project ?? null);
+        if (prevEntry.task) setSelectedTask(prevEntry.task);
+      });
+      return true;
+    }
+
+    // 5. Logical Hierarchical Fallbacks if History is Empty
+    if (currentTab === "details") {
+      triggerHaptic("selection");
+      executeBackTransition(() => {
+        if (selectedProjectView) {
+          setCurrentTab("projects");
+        } else {
+          setCurrentTab("home");
+        }
+      });
+      return true;
+    }
+
+    if (currentTab === "projects" && selectedProjectView) {
+      triggerHaptic("selection");
+      executeBackTransition(() => {
+        setSelectedProjectView(null);
+      });
+      return true;
+    }
+
+    if (currentTab !== "home") {
+      triggerHaptic("selection");
+      executeBackTransition(() => {
+        setCurrentTab("home");
+        setSelectedProjectView(null);
+      });
+      return true;
+    }
+
+    // At root Home with zero history -> allow Android to exit app naturally
+    return false;
+  }, [
+    viewingScreenshot,
+    reviewModalVisible,
+    isOnboardingModalOpen,
+    isCreateOpen,
+    isNotificationsOpen,
+    isDrawerOpen,
+    currentUser,
+    authTab,
+    onboardingStep,
+    navHistory,
+    currentTab,
+    selectedProjectView,
+    slideAnim,
+    fadeAnim,
+  ]);
+
+  const handleGoBackRef = useRef(handleGoBack);
+  handleGoBackRef.current = handleGoBack;
+
+  useEffect(() => {
+    const onBackPress = () => {
+      return handleGoBackRef.current();
+    };
+    const subscription = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => subscription.remove();
+  }, []);
+
   // Handle Login Flow
   const handleSignIn = (emailToTest?: string) => {
     triggerHaptic("selection");
@@ -645,6 +1001,8 @@ export default function App() {
     if (matched) {
       setUninvitedWarning(null);
       setCurrentUser(matched);
+      setNavHistory([]);
+      setSelectedProjectView(null);
       setCurrentTab("home");
       triggerHaptic("success");
     } else {
@@ -694,6 +1052,8 @@ export default function App() {
     setRegisteredAccounts((prev) => [...prev, newAdminAccount, ...newTeamAccounts]);
     setCurrentUser(newAdminAccount);
     setIsOnboardingModalOpen(false);
+    setNavHistory([]);
+    setSelectedProjectView(null);
     setCurrentTab("home");
   };
 
@@ -731,10 +1091,15 @@ export default function App() {
 
         if (allCompleted && task.status !== "in_review" && task.status !== "completed") {
           targetTaskToReview = updated;
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2200);
         }
 
         if (selectedTask?.id === taskId) {
           setSelectedTask(updated);
+        }
+        if (selectedTaskDetail?.id === taskId) {
+          setSelectedTaskDetail(updated);
         }
         return updated;
       })
@@ -765,9 +1130,23 @@ export default function App() {
         };
         dispatchTaskSync(updated);
         if (selectedTask?.id === t.id) setSelectedTask(updated);
+        if (selectedTaskDetail?.id === t.id) setSelectedTaskDetail(updated);
         return updated;
       })
     );
+
+    setActivityEvents((prev) => [
+      {
+        id: `act-${Date.now()}`,
+        user: currentUser?.name.split(" ")[0] || "Member",
+        role: currentUser?.role || "Member",
+        action: "submitted for review",
+        target: reviewTaskTarget.title,
+        time: "Just now",
+        color: "#F59E0B",
+      },
+      ...prev.slice(0, 5),
+    ]);
 
     setReviewModalVisible(false);
     setReviewTaskTarget(null);
@@ -775,6 +1154,25 @@ export default function App() {
 
   const handleManagerApprove = (taskId: string) => {
     triggerHaptic("success");
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 2200);
+
+    const approvedTask = tasks.find((t) => t.id === taskId);
+    if (approvedTask) {
+      setActivityEvents((prev) => [
+        {
+          id: `act-${Date.now()}`,
+          user: currentUser?.name.split(" ")[0] || "Admin",
+          role: currentUser?.role || "Admin",
+          action: "approved & completed",
+          target: approvedTask.title,
+          time: "Just now",
+          color: "#10B981",
+        },
+        ...prev.slice(0, 5),
+      ]);
+    }
+
     setTasks((prev) =>
       prev.map((task) => {
         if (task.id !== taskId) return task;
@@ -787,7 +1185,148 @@ export default function App() {
         };
         dispatchTaskSync(updated);
         if (selectedTask?.id === taskId) setSelectedTask(updated);
+        if (selectedTaskDetail?.id === taskId) setSelectedTaskDetail(updated);
         return updated;
+      })
+    );
+  };
+
+  const handleAddCommentToDetailTask = (taskId: string) => {
+    if (!detailCommentInput.trim()) return;
+    triggerHaptic("selection");
+    const newComment: TaskComment = {
+      id: `c-${Date.now()}`,
+      author: currentUser?.name || "Bikash",
+      avatarRole: currentUser?.role?.toUpperCase() || "ADMIN",
+      text: detailCommentInput.trim(),
+      time: "Just now",
+    };
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const updated = {
+          ...t,
+          comments: [...(t.comments || []), newComment],
+        };
+        dispatchTaskSync(updated);
+        if (selectedTask?.id === taskId) setSelectedTask(updated);
+        if (selectedTaskDetail?.id === taskId) setSelectedTaskDetail(updated);
+        return updated;
+      })
+    );
+    setDetailCommentInput("");
+  };
+
+  const handleStatusChangeInDetail = (taskId: string, newStatus: "in_progress" | "in_review" | "completed") => {
+    triggerHaptic("selection");
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const newProgress = newStatus === "completed" ? 100 : newStatus === "in_review" ? 90 : Math.max(30, t.progress);
+        const updated: MobileTask = {
+          ...t,
+          status: newStatus,
+          progress: newProgress,
+          ...(newStatus === "completed" ? { reviewedBy: currentUser?.name || "Manager", reviewDate: "Just now" } : {}),
+        };
+        dispatchTaskSync(updated);
+        if (selectedTask?.id === taskId) setSelectedTask(updated);
+        if (selectedTaskDetail?.id === taskId) setSelectedTaskDetail(updated);
+        if (newStatus === "completed") {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2200);
+        }
+        return updated;
+      })
+    );
+  };
+
+  const getDefaultGatesForTask = (task: MobileTask): ApprovalGate[] => {
+    if (task.approvalGates && task.approvalGates.length > 0) {
+      return task.approvalGates;
+    }
+    const isCompleted = task.status === "completed";
+    const isInReview = task.status === "in_review";
+    return [
+      {
+        id: "gate-ux",
+        discipline: "Design QA",
+        title: "Design System & Responsive Audit",
+        requiredRole: "Staff Product Designer",
+        signedBy: isCompleted || isInReview ? "David Kim" : undefined,
+        signedAt: isCompleted || isInReview ? "Sep 19, 10:30 PM" : undefined,
+        authStamp: isCompleted || isInReview ? "AUTH-UX#882A" : undefined,
+        avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop&crop=face",
+        isSigned: isCompleted || isInReview,
+      },
+      {
+        id: "gate-eng",
+        discipline: "Engineering",
+        title: "Architecture & Security Verification",
+        requiredRole: "Tech Lead",
+        signedBy: isCompleted ? "Sarah Chen" : undefined,
+        signedAt: isCompleted ? "Sep 19, 11:15 PM" : undefined,
+        authStamp: isCompleted ? "AUTH-ENG#441F" : undefined,
+        avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=face",
+        isSigned: isCompleted,
+      },
+      {
+        id: "gate-sec",
+        discipline: "Compliance",
+        title: "SOC 2 Type II & Executive Sign-Off",
+        requiredRole: "Super Admin",
+        signedBy: isCompleted ? "Bikash Kumar Yadav" : undefined,
+        signedAt: isCompleted ? "Sep 19, 11:45 PM" : undefined,
+        authStamp: isCompleted ? "AUTH-SEC#109E" : undefined,
+        avatarUrl: BIKASH_AVATAR_URI,
+        isSigned: isCompleted,
+      },
+    ];
+  };
+
+  const handleSignApprovalGate = (taskId: string, gateId: string) => {
+    triggerHaptic("success");
+    const nowStr = "Sep 20, 12:28 AM";
+    const authStamp = "AUTH-SIG#" + Math.random().toString(16).substring(2, 6).toUpperCase();
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const currentGates = getDefaultGatesForTask(t);
+        const updatedGates = currentGates.map((g) => {
+          if (g.id === gateId) {
+            return {
+              ...g,
+              isSigned: true,
+              signedBy: "Bikash Kumar Yadav",
+              signedAt: nowStr,
+              authStamp: authStamp,
+              avatarUrl: BIKASH_AVATAR_URI,
+            };
+          }
+          return g;
+        });
+
+        const targetGate = currentGates.find((g) => g.id === gateId);
+        const auditComment: TaskComment = {
+          id: "cmt-sig-" + Date.now(),
+          author: "Bikash Kumar Yadav",
+          avatarRole: "Super Admin",
+          text: `Officially signed off governance gate: ${targetGate?.title || gateId} (${authStamp})`,
+          time: "Just now",
+        };
+        const updatedComments = [auditComment, ...(t.comments || [])];
+
+        const updatedTask = {
+          ...t,
+          approvalGates: updatedGates,
+          comments: updatedComments,
+        };
+
+        if (selectedTaskDetail?.id === taskId) {
+          setSelectedTaskDetail(updatedTask);
+        }
+        return updatedTask;
       })
     );
   };
@@ -859,6 +1398,11 @@ export default function App() {
   const handleCreateTask = () => {
     if (!newTaskTitle.trim()) return;
     triggerHaptic("success");
+
+    const finalAssignee = isInvitingViaEmail && newTaskInviteEmail.trim()
+      ? `${newTaskInviteEmail.trim().split("@")[0]} (Invited)`
+      : newTaskAssignee;
+
     const newTask: MobileTask = {
       id: `t-${Date.now()}`,
       title: newTaskTitle.trim(),
@@ -874,6 +1418,11 @@ export default function App() {
         completed: false,
       })),
     };
+
+    if (isInvitingViaEmail && newTaskInviteEmail.trim()) {
+      setInviteNotice(`Invited ${newTaskInviteEmail.trim()} to project folder!`);
+      setTimeout(() => setInviteNotice(null), 4000);
+    }
 
     setTasks((prev) => [newTask, ...prev]);
     setProjects((prev) =>
@@ -902,6 +1451,8 @@ export default function App() {
 
     setNewTaskTitle("");
     setNewTaskSteps(["Review design specs", "Prepare component tokens"]);
+    setIsInvitingViaEmail(false);
+    setNewTaskInviteEmail("");
     setIsCreateOpen(false);
   };
 
@@ -1329,31 +1880,511 @@ export default function App() {
     </View>
   );
 
+  const teamPulseData = [
+    {
+      name: "Bikash Kumar Yadav",
+      initials: "B",
+      role: "Lead Architect",
+      tasksCount: 4,
+      loadPercentage: 85,
+      statusLabel: "Optimal",
+      statusColor: "#10B981",
+      avatarBg: "#6366F1",
+    },
+    {
+      name: "Elena Rostova",
+      initials: "E",
+      role: "Frontend Engineer",
+      tasksCount: 5,
+      loadPercentage: 92,
+      statusLabel: "High Load",
+      statusColor: "#F59E0B",
+      avatarBg: "#EC4899",
+    },
+    {
+      name: "Marcus Lee",
+      initials: "M",
+      role: "Product Manager",
+      tasksCount: 2,
+      loadPercentage: 60,
+      statusLabel: "Available",
+      statusColor: "#3B82F6",
+      avatarBg: "#10B981",
+    },
+    {
+      name: "David Kim",
+      initials: "D",
+      role: "QA / Systems",
+      tasksCount: 1,
+      loadPercentage: 40,
+      statusLabel: "Available",
+      statusColor: "#10B981",
+      avatarBg: "#8B5CF6",
+    },
+  ];
+
+  const renderTeamPulseMeter = () => (
+    <View style={styles.pulseCard}>
+      <View style={styles.pulseCardHeader}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={[styles.pulseIconBadge, { backgroundColor: "rgba(117, 110, 243, 0.15)" }]}>
+            <ActivityPulseIcon size={16} color={COLORS.primary} />
+          </View>
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.pulseCardTitle}>Team Workload Pulse</Text>
+            <Text style={styles.pulseCardSubtitle}>Active capacity & bandwidth monitor</Text>
+          </View>
+        </View>
+        <View style={styles.pulseCountBadge}>
+          <Text style={styles.pulseCountBadgeText}>{teamPulseData.length} Team</Text>
+        </View>
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        {teamPulseData.map((member) => (
+          <View key={member.name} style={styles.pulseMemberRow}>
+            <View style={[styles.pulseMemberAvatar, { backgroundColor: member.avatarBg }]}>
+              <Text style={styles.pulseMemberAvatarText}>{member.initials}</Text>
+              <View style={[styles.pulseOnlineStatusDot, { backgroundColor: member.statusColor }]} />
+            </View>
+
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View>
+                  <Text style={styles.pulseMemberName}>{member.name}</Text>
+                  <Text style={styles.pulseMemberRole}>{member.role} • {member.tasksCount} active tasks</Text>
+                </View>
+                <View style={[styles.pulseLoadPill, { backgroundColor: member.statusColor + "1A" }]}>
+                  <Text style={[styles.pulseLoadPillText, { color: member.statusColor }]}>
+                    {member.statusLabel} ({member.loadPercentage}%)
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.pulseProgressBarBg}>
+                <View
+                  style={[
+                    styles.pulseProgressBarFill,
+                    {
+                      width: `${member.loadPercentage}%`,
+                      backgroundColor: member.statusColor,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderLiveActivityStream = () => (
+    <View style={styles.pulseCard}>
+      <View style={styles.pulseCardHeader}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={[styles.pulseIconBadge, { backgroundColor: "rgba(59, 130, 246, 0.15)" }]}>
+            <ClockIcon size={14} color="#3B82F6" />
+          </View>
+          <View style={{ marginLeft: 10 }}>
+            <Text style={styles.pulseCardTitle}>Live Activity Audit</Text>
+            <Text style={styles.pulseCardSubtitle}>Cloud synchronization event trail</Text>
+          </View>
+        </View>
+        <View style={styles.pulseLiveIndicator}>
+          <View style={styles.pulseLiveDot} />
+          <Text style={styles.pulseLiveText}>Live Sync</Text>
+        </View>
+      </View>
+
+      <View style={{ marginTop: 12 }}>
+        {activityEvents.map((evt, idx) => (
+          <View key={evt.id} style={[styles.activityEventRow, idx === activityEvents.length - 1 && { borderBottomWidth: 0 }]}>
+            <View style={[styles.activityAvatarBadge, { backgroundColor: evt.color }]}>
+              <Text style={styles.activityAvatarText}>{evt.user.charAt(0)}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.activityDescription}>
+                <Text style={styles.activityUserText}>{evt.user}</Text>
+                <Text style={styles.activityActionText}> {evt.action} </Text>
+                <Text style={styles.activityTargetText}>{evt.target}</Text>
+              </Text>
+              <Text style={styles.activityTimeText}>{evt.time} • {evt.role}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderKanbanBoard = () => {
+    const columns = [
+      {
+        id: "backlog",
+        title: "Backlog",
+        color: "#64748B",
+        tasks: tasks.filter((t) => t.status === "in_progress" && t.progress <= 50),
+      },
+      {
+        id: "in_progress",
+        title: "In Progress",
+        color: "#3B82F6",
+        tasks: tasks.filter((t) => t.status === "in_progress" && t.progress > 50),
+      },
+      {
+        id: "in_review",
+        title: "Under Review",
+        color: "#F59E0B",
+        tasks: tasks.filter((t) => t.status === "in_review"),
+      },
+      {
+        id: "done",
+        title: "Completed",
+        color: "#10B981",
+        tasks: tasks.filter((t) => t.status === "completed"),
+      },
+    ];
+
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.kanbanScrollContainer}
+      >
+        {columns.map((col) => (
+          <View key={col.id} style={styles.kanbanColumn}>
+            <View style={styles.kanbanColumnHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={[styles.kanbanColumnDot, { backgroundColor: col.color }]} />
+                <Text style={styles.kanbanColumnTitle}>{col.title}</Text>
+              </View>
+              <View style={[styles.kanbanCounterBadge, { backgroundColor: col.color + "20" }]}>
+                <Text style={[styles.kanbanCounterText, { color: col.color }]}>
+                  {col.tasks.length}
+                </Text>
+              </View>
+            </View>
+
+            <ScrollView
+              style={{ flex: 1 }}
+              nestedScrollEnabled={true}
+              overScrollMode="never"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 130 }}
+            >
+              {col.tasks.length === 0 ? (
+                <View style={styles.kanbanEmptyColumn}>
+                  <Text style={styles.kanbanEmptyText}>No tasks in {col.title.toLowerCase()}</Text>
+                </View>
+              ) : (
+                col.tasks.map((task) => (
+                  <TouchableOpacity
+                    key={task.id}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      setSelectedTaskDetail(task);
+                      setSelectedTask(task);
+                    }}
+                    style={styles.kanbanCard}
+                  >
+                    <View style={styles.kanbanCardHeader}>
+                      <View style={styles.kanbanProjectPill}>
+                        <Text style={styles.kanbanProjectText}>{task.project}</Text>
+                      </View>
+                      {task.priority === "critical" && (
+                        <View style={[styles.priorityDot, { backgroundColor: "#EF4444" }]} />
+                      )}
+                      {task.priority === "high" && (
+                        <View style={[styles.priorityDot, { backgroundColor: "#F59E0B" }]} />
+                      )}
+                    </View>
+
+                    <Text style={styles.kanbanCardTitle} numberOfLines={2}>
+                      {task.title}
+                    </Text>
+
+                    <View style={{ marginTop: 8 }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                        <Text style={styles.kanbanProgressLabel}>Progress</Text>
+                        <Text style={styles.kanbanProgressPercent}>{task.progress}%</Text>
+                      </View>
+                      <View style={styles.kanbanProgressBarBg}>
+                        <View
+                          style={[
+                            styles.kanbanProgressBarFill,
+                            {
+                              width: `${task.progress}%`,
+                              backgroundColor: col.color,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.kanbanCardFooter}>
+                      <Text style={styles.kanbanStepCount}>
+                        {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps
+                      </Text>
+                      <View style={[styles.kanbanAssigneeBadge, { backgroundColor: COLORS.primaryLight }]}>
+                        <Text style={[styles.kanbanAssigneeText, { color: COLORS.primary }]}>
+                          {(task.assignee || "Bikash").split(" ")[0]}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        ))}
+      </ScrollView>
+    );
+  };
+
+  const renderTaskDetailModal = () => {
+    if (!selectedTaskDetail) return null;
+
+    const completedCount = selectedTaskDetail.subtasks.filter((s) => s.completed).length;
+    const totalCount = selectedTaskDetail.subtasks.length;
+    const taskComments = selectedTaskDetail.comments || [];
+
+    return (
+      <Modal
+        visible={!!selectedTaskDetail}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedTaskDetail(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                height: SCREEN_HEIGHT * 0.88,
+                maxHeight: SCREEN_HEIGHT * 0.88,
+                padding: 0,
+                paddingHorizontal: 0,
+                overflow: "hidden",
+                backgroundColor: isDarkMode ? "#131C2E" : "#FFFFFF",
+              },
+            ]}
+          >
+            <View style={[styles.sheetHandleBar, { alignSelf: "center", marginTop: 10 }]} />
+
+            <View style={[styles.modalHeader, { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 }}>
+                <View style={styles.projectTagPill}>
+                  <Text style={styles.projectTagText}>{selectedTaskDetail.project}</Text>
+                </View>
+                <View
+                  style={[
+                    styles.detailPriorityPill,
+                    selectedTaskDetail.priority === "critical" && { backgroundColor: "rgba(239, 68, 68, 0.15)" },
+                    selectedTaskDetail.priority === "high" && { backgroundColor: "rgba(245, 158, 11, 0.15)" },
+                    selectedTaskDetail.priority === "medium" && { backgroundColor: "rgba(59, 130, 246, 0.15)" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.detailPriorityPillText,
+                      selectedTaskDetail.priority === "critical" && { color: "#EF4444" },
+                      selectedTaskDetail.priority === "high" && { color: "#F59E0B" },
+                      selectedTaskDetail.priority === "medium" && { color: "#3B82F6" },
+                    ]}
+                  >
+                    {selectedTaskDetail.priority.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("light");
+                  setSelectedTaskDetail(null);
+                }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={styles.modalCloseBtn}
+              >
+                <XIcon size={18} color={COLORS.navy} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={{ flex: 1 }}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+            >
+              <Text style={styles.taskDetailSheetTitle}>{selectedTaskDetail.title}</Text>
+
+              <Text style={[styles.inputLabel, { marginTop: 14 }]}>LIFECYCLE STATUS</Text>
+              <View style={styles.detailStatusSegmentRow}>
+                {[
+                  { key: "in_progress", label: "In Progress", color: "#3B82F6" },
+                  { key: "in_review", label: "Under Review", color: "#F59E0B" },
+                  { key: "completed", label: "Completed", color: "#10B981" },
+                ].map((st) => {
+                  const isActive = selectedTaskDetail.status === st.key;
+                  return (
+                    <TouchableOpacity
+                      key={st.key}
+                      onPress={() =>
+                        handleStatusChangeInDetail(
+                          selectedTaskDetail.id,
+                          st.key as "in_progress" | "in_review" | "completed"
+                        )
+                      }
+                      style={[
+                        styles.detailStatusSegmentBtn,
+                        isActive && { backgroundColor: st.color, borderColor: st.color },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.detailStatusSegmentText,
+                          isActive && { color: "#FFFFFF", fontWeight: "bold" },
+                        ]}
+                      >
+                        {st.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {selectedTaskDetail.description && (
+                <View style={{ marginTop: 14 }}>
+                  <Text style={styles.inputLabel}>TASK SCOPE & SPECIFICATION</Text>
+                  <View style={styles.taskDescriptionBox}>
+                    <Text style={styles.taskDescriptionText}>{selectedTaskDetail.description}</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={{ marginTop: 16 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <Text style={styles.inputLabel}>
+                    CHECKLIST ({completedCount}/{totalCount}) - TAP TO TOGGLE
+                  </Text>
+                  <Text style={styles.checklistProgressText}>{selectedTaskDetail.progress}% Complete</Text>
+                </View>
+
+                {selectedTaskDetail.subtasks.map((step) => (
+                  <TouchableOpacity
+                    key={step.id}
+                    activeOpacity={0.7}
+                    onPress={() => toggleSubtask(selectedTaskDetail.id, step.id)}
+                    style={styles.detailChecklistRow}
+                  >
+                    <View style={{ marginRight: 10 }}>
+                      {step.completed ? (
+                        <CheckCircleFilledIcon size={20} color={COLORS.accentGreen} />
+                      ) : (
+                        <View style={styles.uncheckedCircle} />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.detailChecklistText,
+                        step.completed && styles.detailChecklistTextCompleted,
+                      ]}
+                    >
+                      {step.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={{ marginTop: 16 }}>
+                <Text style={styles.inputLabel}>ASSIGNED SPECIALIST</Text>
+                <View style={styles.detailAssigneeCard}>
+                  <View style={[styles.pulseMemberAvatar, { backgroundColor: "#6366F1" }]}>
+                    <Text style={styles.pulseMemberAvatarText}>
+                      {(selectedTaskDetail.assignee || "Bikash").charAt(0)}
+                    </Text>
+                  </View>
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text style={styles.pulseMemberName}>
+                      {selectedTaskDetail.assignee || "Bikash Kumar Yadav"}
+                    </Text>
+                    <Text style={styles.pulseMemberRole}>Project Specialist • TaskPulse Core</Text>
+                  </View>
+                  <View style={styles.detailVerifiedTag}>
+                    <Text style={styles.detailVerifiedTagText}>Assigned</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Enterprise Governance Sign-Off Gates & SLA */}
+              <GovernanceGatesSection
+                priority={selectedTaskDetail.priority}
+                gates={getDefaultGatesForTask(selectedTaskDetail)}
+                isDarkMode={isDarkMode}
+                onSignGate={(gateId) => handleSignApprovalGate(selectedTaskDetail.id, gateId)}
+                triggerHaptic={triggerHaptic}
+              />
+
+              {/* Enterprise Threaded Discussions & Client/Guest Portal Safe View */}
+              <EnterpriseThreadedDiscussionSection
+                taskId={selectedTaskDetail.id}
+                taskTitle={selectedTaskDetail.title}
+                isDarkMode={isDarkMode}
+                currentUserRole={currentUser?.role === "admin" ? "Super Admin" : "Tech Lead"}
+                currentUserName={currentUser?.name || "Bikash Kumar Yadav"}
+                triggerHaptic={triggerHaptic}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const renderCelebrationModal = () => {
+    if (!showCelebration) return null;
+    return (
+      <View style={styles.celebrationToast}>
+        <View style={styles.celebrationIconWrap}>
+          <CheckCircleFilledIcon size={22} color="#10B981" />
+        </View>
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={styles.celebrationTitle}>Deliverable Completed</Text>
+          <Text style={styles.celebrationSubtitle}>
+            Synchronized with team audit stream & metrics updated
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   // AUTHENTICATION & FIRST-TIME ENTRANCE VIEW (When user is not logged in)
   if (!currentUser) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={COLORS.white} />
-        <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-          {/* Header Branding */}
-          <View style={styles.authHeaderBanner}>
-            <View style={styles.authLogoBadge}>
-              <Text style={styles.authLogoText}>TP</Text>
+      <View style={{ flex: 1, backgroundColor: isDarkMode ? "#0B0F19" : COLORS.white }}>
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={COLORS.white} />
+          <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+            {/* Header Branding */}
+            <View style={styles.authHeaderBanner}>
+              <View style={styles.authLogoBadge}>
+                <Text style={styles.authLogoText}>TP</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.authBrandTitle}>TaskPulse</Text>
+                <Text style={styles.authBrandSubtitle}>Task Synchronization & Workload Platform</Text>
+              </View>
+              <View style={[styles.authThemeToggle, isDarkMode ? styles.themeToggleDark : styles.themeToggleLight]}>
+                <AnimatedThemeToggle
+                  isDarkMode={isDarkMode}
+                  size={16}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setIsDarkMode((prev) => !prev);
+                  }}
+                />
+              </View>
             </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.authBrandTitle}>TaskPulse</Text>
-              <Text style={styles.authBrandSubtitle}>Task Synchronization & Workload Platform</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic("selection");
-                setIsDarkMode((prev) => !prev);
-              }}
-              style={styles.authThemeToggle}
-            >
-              {isDarkMode ? <SunIcon size={16} color="#F59E0B" /> : <MoonIcon size={16} color={COLORS.primary} />}
-            </TouchableOpacity>
-          </View>
 
           {/* Segmented Tab: Sign In vs Sign Up (Onboarding) */}
           <View style={styles.authSegmentedRow}>
@@ -1433,9 +2464,19 @@ export default function App() {
                 <Text style={styles.authSubmitBtnText}>Sign In</Text>
               </TouchableOpacity>
 
-              {/* 1-Tap Quick Fill Demo Accounts */}
-              <Text style={[styles.inputLabel, { marginTop: 20 }]}>QUICK DEMO ACCOUNTS (1-TAP TEST):</Text>
+              {/* Fast Switch Demo Profiles */}
+              <Text style={[styles.inputLabel, { marginTop: 20 }]}>DEMO PROFILES (FAST LOGIN):</Text>
               <View style={styles.quickAccountsRow}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setLoginEmail("zevonbcash@gmail.com");
+                    handleSignIn("zevonbcash@gmail.com");
+                  }}
+                  style={styles.quickAccountChip}
+                >
+                  <Text style={styles.quickAccountChipText}>Bikash (Admin)</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={() => {
                     setLoginEmail("marcus@taskpulse.io");
@@ -1453,27 +2494,7 @@ export default function App() {
                   }}
                   style={styles.quickAccountChip}
                 >
-                  <Text style={styles.quickAccountChipText}>Elena (Member)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setLoginEmail("zevonbcash@gmail.com");
-                    handleSignIn("zevonbcash@gmail.com");
-                  }}
-                  style={styles.quickAccountChip}
-                >
-                  <Text style={styles.quickAccountChipText}>Bikash (Admin)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setLoginEmail("someone.new@company.com");
-                    handleSignIn("someone.new@company.com");
-                  }}
-                  style={[styles.quickAccountChip, { borderColor: "#EF4444" }]}
-                >
-                  <Text style={[styles.quickAccountChipText, { color: "#EF4444" }]}>Test Uninvited User</Text>
+                  <Text style={styles.quickAccountChipText}>Elena (Specialist)</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1484,26 +2505,45 @@ export default function App() {
             </View>
           )}
         </ScrollView>
-      </SafeAreaView>
+        </SafeAreaView>
+        {isBooting && (
+          <MobileBootSplash
+            isDarkMode={isDarkMode}
+            durationMs={2600}
+            onBootComplete={() => setIsBooting(false)}
+          />
+        )}
+      </View>
     );
   }
 
   // MAIN AUTHENTICATED APP SCREEN
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={COLORS.white} />
+    <View style={{ flex: 1, backgroundColor: isDarkMode ? "#0B0F19" : COLORS.white }}>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={COLORS.white} />
 
       {/* Top Header Bar */}
       <View style={styles.topBar}>
         <TouchableOpacity
-          onPress={() => {
-            triggerHaptic("selection");
-            setIsDrawerOpen(true);
-          }}
+          onPress={openDrawer}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={styles.iconCircleButton}
         >
-          <GridIcon size={18} color={COLORS.navy} />
+          <Animated.View
+            style={{
+              transform: [
+                {
+                  rotate: gridSpinAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["0deg", "90deg"],
+                  }),
+                },
+              ],
+            }}
+          >
+            <GridIcon size={18} color={COLORS.navy} />
+          </Animated.View>
         </TouchableOpacity>
 
         <View style={styles.dateRow}>
@@ -1512,44 +2552,64 @@ export default function App() {
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {/* Dark / Light Mode Toggle Button */}
-          <TouchableOpacity
-            onPress={() => {
+          {/* Dark / Light Mode Toggle Buttons (Always on Top) */}
+          <ThemeToggleBar
+            isDarkMode={isDarkMode}
+            onToggle={() => {
               triggerHaptic("selection");
               setIsDarkMode((prev) => !prev);
             }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.iconCircleButton}
-            accessibilityLabel="Toggle Dark/Light Mode"
-          >
-            {isDarkMode ? (
-              <SunIcon size={18} color="#F59E0B" />
-            ) : (
-              <MoonIcon size={18} color={COLORS.primary} />
-            )}
-          </TouchableOpacity>
+            onSelectLight={() => {
+              triggerHaptic("selection");
+              setIsDarkMode(false);
+            }}
+            onSelectDark={() => {
+              triggerHaptic("selection");
+              setIsDarkMode(true);
+            }}
+          />
 
-          {/* Bell Notification Button */}
-          <TouchableOpacity
+          {/* Animated Notification Bell Button */}
+          <AnimatedBellButton
+            isDarkMode={isDarkMode}
+            hasUnread={true}
             onPress={() => {
               triggerHaptic("selection");
               setIsNotificationsOpen(true);
             }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.iconCircleButton}
-          >
-            <BellIcon size={18} color={COLORS.navy} />
-            <View style={styles.notificationDot} />
-          </TouchableOpacity>
+          />
         </View>
       </View>
 
       {/* Main Content Area */}
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [{ translateX: slideAnim }],
+            opacity: fadeAnim,
+          },
+        ]}
       >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={!(currentTab === "projects" && projectTabMode === "board" && !selectedProjectView)}
+        >
+        {/* Email Invitation Notice Banner */}
+        {inviteNotice && (
+          <View style={{ marginHorizontal: 20, marginTop: 10, padding: 12, borderRadius: 12, backgroundColor: "#10B981", flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+              <MailIcon size={16} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "bold", marginLeft: 8 }}>{inviteNotice}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setInviteNotice(null)}>
+              <XIcon size={14} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* HOME SCREEN */}
         {currentTab === "home" && (
           <>
@@ -1588,7 +2648,7 @@ export default function App() {
               <TouchableOpacity
                 onPress={() => {
                   triggerHaptic("selection");
-                  setCurrentTab("profile");
+                  navigateForward("profile");
                 }}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -1624,10 +2684,7 @@ export default function App() {
               activeOpacity={0.9}
               onPress={() => {
                 triggerHaptic("selection");
-                if (projects.length > 0) {
-                  setSelectedProjectView(projects[0]);
-                }
-                setCurrentTab("projects");
+                navigateForward("projects", { project: projects.length > 0 ? projects[0] : null });
               }}
               style={styles.bannerCard}
             >
@@ -1701,6 +2758,12 @@ export default function App() {
               </ScrollView>
             </View>
 
+            {/* Team Workload Pulse Meter */}
+            {renderTeamPulseMeter()}
+
+            {/* Live Sync Activity Stream */}
+            {renderLiveActivityStream()}
+
             {/* Status Filter Chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {["All", "In Progress", "Under Review", "Completed"].map((filter) => {
@@ -1751,8 +2814,8 @@ export default function App() {
                 key={task.id}
                 onPress={() => {
                   triggerHaptic("selection");
+                  setSelectedTaskDetail(task);
                   setSelectedTask(task);
-                  setCurrentTab("details");
                 }}
                 activeOpacity={0.85}
                 style={styles.taskCard}
@@ -1838,8 +2901,7 @@ export default function App() {
             <View style={styles.projectDetailTopBar}>
               <TouchableOpacity
                 onPress={() => {
-                  triggerHaptic("selection");
-                  setSelectedProjectView(null);
+                  handleGoBack();
                 }}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 style={styles.backButton}
@@ -1848,10 +2910,10 @@ export default function App() {
               </TouchableOpacity>
               <View style={{ flex: 1, marginHorizontal: 10 }}>
                 <Text style={styles.detailsHeaderTitle} numberOfLines={1}>
-                  {selectedProjectView.name}
+                  {selectedProjectView.name} Folder
                 </Text>
                 <Text style={styles.projectCategory}>
-                  {selectedProjectView.department} • {selectedProjectView.category}
+                  {selectedProjectView.department} • {selectedProjectView.code} Dossier
                 </Text>
               </View>
               <TouchableOpacity
@@ -1971,8 +3033,8 @@ export default function App() {
                   activeOpacity={0.85}
                   onPress={() => {
                     triggerHaptic("selection");
+                    setSelectedTaskDetail(task);
                     setSelectedTask(task);
-                    setCurrentTab("details");
                   }}
                   style={styles.taskCard}
                 >
@@ -2024,6 +3086,7 @@ export default function App() {
                 <Text style={styles.projectsHeaderTitle}>Projects</Text>
                 <Text style={styles.projectsHeaderSubtitle}>{projects.length} Active Workstreams</Text>
               </View>
+
               <TouchableOpacity
                 onPress={() => {
                   triggerHaptic("selection");
@@ -2038,108 +3101,170 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            {/* Search */}
-            <View style={styles.searchBar}>
-              <View style={{ marginRight: 8 }}><SearchIcon size={16} color={COLORS.muted} /></View>
-              <TextInput
-                placeholder="Search projects..."
-                placeholderTextColor={COLORS.muted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={styles.searchInput}
-              />
-            </View>
-
-            {/* Filter Pills */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {["All", "Design", "Marketing", "Engineering", "Product"].map((dep) => (
+            {/* View Mode Switcher Segment Bar */}
+            <View style={{ marginBottom: 12, paddingHorizontal: 2 }}>
+              <View style={[styles.viewModeToggleWrap, { width: "100%" }]}>
                 <TouchableOpacity
-                  key={dep}
                   onPress={() => {
                     triggerHaptic("selection");
-                    setProjectFilter(dep);
+                    setProjectTabMode("list");
                   }}
-                  hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                  style={[styles.filterChip, projectFilter === dep && styles.filterChipActive]}
+                  style={[styles.viewModeToggleBtn, { flex: 1, justifyContent: "center" }, projectTabMode === "list" && styles.viewModeToggleBtnActive]}
                 >
-                  <Text style={[styles.filterChipText, projectFilter === dep && styles.filterChipTextActive]}>
-                    {dep}
-                  </Text>
+                  <ListIcon size={14} color={projectTabMode === "list" ? "#FFFFFF" : COLORS.navy} />
+                  <Text style={[styles.viewModeToggleText, projectTabMode === "list" && styles.viewModeToggleTextActive]}>List</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                <TouchableOpacity
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setProjectTabMode("board");
+                  }}
+                  style={[styles.viewModeToggleBtn, { flex: 1, justifyContent: "center" }, projectTabMode === "board" && styles.viewModeToggleBtnActive]}
+                >
+                  <BoardIcon size={14} color={projectTabMode === "board" ? "#FFFFFF" : COLORS.navy} />
+                  <Text style={[styles.viewModeToggleText, projectTabMode === "board" && styles.viewModeToggleTextActive]}>Board</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setProjectTabMode("timeline");
+                  }}
+                  style={[styles.viewModeToggleBtn, { flex: 1, justifyContent: "center" }, projectTabMode === "timeline" && styles.viewModeToggleBtnActive]}
+                >
+                  <TimelineIcon size={14} color={projectTabMode === "timeline" ? "#FFFFFF" : COLORS.navy} />
+                  <Text style={[styles.viewModeToggleText, projectTabMode === "timeline" && styles.viewModeToggleTextActive]}>Timeline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-            {/* Interactive Projects List */}
-            {projects
-              .filter((p) => {
-                const matchesDept = projectFilter === "All" || p.department.toLowerCase() === projectFilter.toLowerCase();
-                const matchesSearch =
-                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.category.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchesDept && matchesSearch;
-              })
-              .map((proj) => {
-                const projTasks = tasks.filter((t) => t.project.toLowerCase() === proj.name.toLowerCase());
-                const completedTasks = projTasks.filter((t) => t.status === "completed");
-                const taskCountText =
-                  projTasks.length > 0
-                    ? `${completedTasks.length}/${projTasks.length} tasks`
-                    : `${proj.completed}/${proj.total} tasks`;
+            {projectTabMode === "timeline" ? (
+              <GanttTimelineView
+                isDark={isDarkMode}
+                onSelectProject={(projId) => {
+                  const found = projects.find((p) => p.id === projId);
+                  if (found) {
+                    setSelectedProjectView(found);
+                  }
+                }}
+                triggerHaptic={triggerHaptic}
+              />
+            ) : projectTabMode === "board" ? (
+              renderKanbanBoard()
+            ) : (
+              <>
+                {/* Search */}
+                <View style={styles.searchBar}>
+                  <View style={{ marginRight: 8 }}><SearchIcon size={16} color={COLORS.muted} /></View>
+                  <TextInput
+                    placeholder="Search projects..."
+                    placeholderTextColor={COLORS.muted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    style={styles.searchInput}
+                  />
+                </View>
 
-                return (
-                  <TouchableOpacity
-                    key={proj.id}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      triggerHaptic("selection");
-                      setSelectedProjectView(proj);
-                    }}
-                    style={styles.projectCard}
-                  >
-                    <View style={styles.projectCardHeader}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <View style={[styles.projectCodeBadge, { backgroundColor: proj.color + "25" }]}>
-                          <Text style={[styles.projectCodeBadgeText, { color: proj.color }]}>{proj.code}</Text>
-                        </View>
-                        <View style={{ marginLeft: 10 }}>
-                          <Text style={styles.projectName}>{proj.name}</Text>
-                          <Text style={styles.projectCategory}>{proj.category}</Text>
-                        </View>
-                      </View>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <View style={styles.taskPillBadge}>
-                          <Text style={styles.taskPillBadgeText}>{taskCountText}</Text>
-                        </View>
-                        <View style={{ marginLeft: 6 }}>
-                          <ChevronRightIcon size={14} color={COLORS.muted} />
-                        </View>
-                      </View>
-                    </View>
+                {/* Filter Pills */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+                  {["All", "Design", "Marketing", "Engineering", "Product"].map((dep) => (
+                    <TouchableOpacity
+                      key={dep}
+                      onPress={() => {
+                        triggerHaptic("selection");
+                        setProjectFilter(dep);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                      style={[styles.filterChip, projectFilter === dep && styles.filterChipActive]}
+                    >
+                      <Text style={[styles.filterChipText, projectFilter === dep && styles.filterChipTextActive]}>
+                        {dep}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
 
-                    <View style={styles.projectProgressWrap}>
-                      <View style={styles.avatarStack}>
-                        <View style={[styles.miniAvatar, { backgroundColor: "#6366F1", zIndex: 2 }]}>
-                          <Text style={styles.miniAvatarText}>B</Text>
+                {/* Interactive Projects List */}
+                {projects
+                  .filter((p) => {
+                    const matchesDept = projectFilter === "All" || p.department.toLowerCase() === projectFilter.toLowerCase();
+                    const matchesSearch =
+                      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.category.toLowerCase().includes(searchQuery.toLowerCase());
+                    return matchesDept && matchesSearch;
+                  })
+                  .map((proj) => {
+                    const projTasks = tasks.filter((t) => t.project.toLowerCase() === proj.name.toLowerCase());
+                    const completedTasks = projTasks.filter((t) => t.status === "completed");
+                    const taskCountText =
+                      projTasks.length > 0
+                        ? `${completedTasks.length}/${projTasks.length} tasks`
+                        : `${proj.completed}/${proj.total} tasks`;
+
+                    return (
+                      <View key={proj.id} style={{ marginTop: 14 }}>
+                        {/* Visual Project Folder Tab */}
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <View style={[styles.folderTabHeader, { backgroundColor: proj.color }]}>
+                            <FolderIcon size={12} color="#FFFFFF" />
+                            <Text style={styles.folderTabHeaderText}>{proj.code} FOLDER</Text>
+                          </View>
                         </View>
-                        <View style={[styles.miniAvatar, { backgroundColor: "#EC4899", zIndex: 1, marginLeft: -8 }]}>
-                          <Text style={styles.miniAvatarText}>E</Text>
-                        </View>
+
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            triggerHaptic("selection");
+                            navigateForward("projects", { project: proj });
+                          }}
+                          style={[styles.projectCard, { marginTop: 0, borderTopLeftRadius: 0 }]}
+                        >
+                          <View style={styles.projectCardHeader}>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <View style={[styles.projectCodeBadge, { backgroundColor: proj.color + "25" }]}>
+                                <Text style={[styles.projectCodeBadgeText, { color: proj.color }]}>{proj.code}</Text>
+                              </View>
+                              <View style={{ marginLeft: 10 }}>
+                                <Text style={styles.projectName}>{proj.name}</Text>
+                                <Text style={styles.projectCategory}>{proj.category} • {proj.department}</Text>
+                              </View>
+                            </View>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                              <View style={styles.taskPillBadge}>
+                                <Text style={styles.taskPillBadgeText}>{taskCountText}</Text>
+                              </View>
+                              <View style={{ marginLeft: 6 }}>
+                                <ChevronRightIcon size={14} color={COLORS.muted} />
+                              </View>
+                            </View>
+                          </View>
+
+                          <View style={styles.projectProgressWrap}>
+                            <View style={styles.avatarStack}>
+                              <View style={[styles.miniAvatar, { backgroundColor: "#6366F1", zIndex: 2 }]}>
+                                <Text style={styles.miniAvatarText}>B</Text>
+                              </View>
+                              <View style={[styles.miniAvatar, { backgroundColor: "#EC4899", zIndex: 1, marginLeft: -8 }]}>
+                                <Text style={styles.miniAvatarText}>E</Text>
+                              </View>
+                            </View>
+                            <View style={{ flex: 1, marginLeft: 14 }}>
+                              <View style={styles.progressBarBg}>
+                                <View
+                                  style={[
+                                    styles.progressBarFill,
+                                    { width: `${proj.progress}%`, backgroundColor: proj.color },
+                                  ]}
+                                />
+                              </View>
+                            </View>
+                            <Text style={styles.projectProgressPercent}>{proj.progress}%</Text>
+                          </View>
+                        </TouchableOpacity>
                       </View>
-                      <View style={{ flex: 1, marginLeft: 14 }}>
-                        <View style={styles.progressBarBg}>
-                          <View
-                            style={[
-                              styles.progressBarFill,
-                              { width: `${proj.progress}%`, backgroundColor: proj.color },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                      <Text style={styles.projectProgressPercent}>{proj.progress}%</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+                    );
+                  })}
+              </>
+            )}
           </View>
         )}
 
@@ -2149,8 +3274,7 @@ export default function App() {
             <View style={styles.detailsHeaderRow}>
               <TouchableOpacity
                 onPress={() => {
-                  triggerHaptic("selection");
-                  setCurrentTab("home");
+                  handleGoBack();
                 }}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 style={styles.backButton}
@@ -2304,32 +3428,24 @@ export default function App() {
                 </TouchableOpacity>
               )}
 
-              {/* Comments & Activity Stream */}
-              <View style={{ marginTop: 18 }}>
-                <Text style={styles.checklistTitle}>Activity & Discussion</Text>
-                {(comments[selectedTask.id] || []).map((c) => (
-                  <View key={c.id} style={styles.commentItem}>
-                    <View style={styles.commentHeader}>
-                      <Text style={styles.commentUser}>{c.user}</Text>
-                      <Text style={styles.commentTime}>{c.time}</Text>
-                    </View>
-                    <Text style={styles.commentBody}>{c.text}</Text>
-                  </View>
-                ))}
+              {/* Enterprise Governance Sign-Off Gates & SLA */}
+              <GovernanceGatesSection
+                priority={selectedTask.priority}
+                gates={getDefaultGatesForTask(selectedTask)}
+                isDarkMode={isDarkMode}
+                onSignGate={(gateId) => handleSignApprovalGate(selectedTask.id, gateId)}
+                triggerHaptic={triggerHaptic}
+              />
 
-                <View style={styles.commentInputRow}>
-                  <TextInput
-                    placeholder="Write a message or update..."
-                    placeholderTextColor={COLORS.muted}
-                    value={commentInput}
-                    onChangeText={setCommentInput}
-                    style={styles.commentTextInput}
-                  />
-                  <TouchableOpacity onPress={handlePostComment} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={styles.sendCommentBtn}>
-                    <SendIcon size={14} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
+              {/* Enterprise Threaded Discussions & Client/Guest Portal Safe View */}
+              <EnterpriseThreadedDiscussionSection
+                taskId={selectedTask.id}
+                taskTitle={selectedTask.title}
+                isDarkMode={isDarkMode}
+                currentUserRole={currentUser?.role === "admin" ? "Super Admin" : "Tech Lead"}
+                currentUserName={currentUser?.name || "Bikash Kumar Yadav"}
+                triggerHaptic={triggerHaptic}
+              />
             </View>
           </View>
         )}
@@ -2424,47 +3540,102 @@ export default function App() {
               </View>
             </View>
 
-            {/* Appearance & System Settings */}
+            {/* Enterprise Suite & Governance */}
             <View style={styles.settingsSection}>
-              <Text style={styles.settingsHeaderTitle}>Preferences & System</Text>
-              <View style={styles.settingRow}>
+              <Text style={styles.settingsHeaderTitle}>Enterprise Suite & Governance</Text>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setProjectTabMode("timeline");
+                  setCurrentTab("projects");
+                }}
+                style={styles.settingRow}
+              >
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <View style={{ marginRight: 8 }}>
-                    {isDarkMode ? <SunIcon size={18} color="#F59E0B" /> : <MoonIcon size={18} color={COLORS.primary} />}
+                    <TimelineIcon size={18} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.settingLabel}>Executive Portfolio Timeline</Text>
+                </View>
+                <ChevronRightIcon size={16} color={COLORS.muted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setIsEnterpriseAuditModalOpen(true);
+                }}
+                style={styles.settingRow}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ marginRight: 8 }}>
+                    <ShieldCheckIcon size={18} color="#10B981" />
+                  </View>
+                  <Text style={styles.settingLabel}>SOC 2 Immutable Audit & RBAC</Text>
+                </View>
+                <ChevronRightIcon size={16} color={COLORS.muted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setIsAnalyticsModalOpen(true);
+                }}
+                style={styles.settingRow}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ marginRight: 8 }}>
+                    <BarChartIcon size={18} color="#6366F1" />
+                  </View>
+                  <Text style={styles.settingLabel}>Corporate Analytics & Board Briefing</Text>
+                </View>
+                <ChevronRightIcon size={16} color={COLORS.muted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Appearance & System Preferences */}
+            <View style={[styles.settingsSection, { marginTop: 14 }]}>
+              <Text style={styles.settingsHeaderTitle}>Preferences & Controls</Text>
+
+              <View style={styles.settingRow}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={[styles.drawerIconBadge, isDarkMode ? styles.themeToggleDark : styles.themeToggleLight, { marginRight: 8 }]}>
+                    {isDarkMode ? <SunIcon size={16} color="#F59E0B" /> : <MoonIcon size={16} color="#4338CA" />}
                   </View>
                   <Text style={styles.settingLabel}>Dark Theme Mode</Text>
                 </View>
-                <Switch
+                <AnimatedToggleSwitch
                   value={isDarkMode}
                   onValueChange={(v) => {
                     triggerHaptic("selection");
                     setIsDarkMode(v);
                   }}
-                  trackColor={{ false: "#CBD5E1", true: COLORS.primary }}
-                  thumbColor="#FFFFFF"
+                  isDarkMode={isDarkMode}
+                  activeColor={COLORS.primary}
                 />
               </View>
 
               <View style={styles.settingRow}>
                 <Text style={styles.settingLabel}>Responsive Haptic Feedback</Text>
-                <Switch
+                <AnimatedToggleSwitch
                   value={true}
                   onValueChange={() => triggerHaptic("light")}
-                  trackColor={{ false: "#CBD5E1", true: COLORS.primary }}
-                  thumbColor="#FFFFFF"
+                  isDarkMode={isDarkMode}
+                  activeColor="#10B981"
                 />
               </View>
 
               <View style={styles.settingRow}>
                 <Text style={styles.settingLabel}>Push Notifications</Text>
-                <Switch
+                <AnimatedToggleSwitch
                   value={pushEnabled}
                   onValueChange={(v) => {
                     triggerHaptic("light");
                     setPushEnabled(v);
                   }}
-                  trackColor={{ false: "#CBD5E1", true: COLORS.primary }}
-                  thumbColor="#FFFFFF"
+                  isDarkMode={isDarkMode}
+                  activeColor="#10B981"
                 />
               </View>
 
@@ -2474,6 +3645,8 @@ export default function App() {
                   triggerHaptic("selection");
                   setCurrentUser(null);
                   setAuthTab("signin");
+                  setNavHistory([]);
+                  setSelectedProjectView(null);
                 }}
                 style={styles.logoutBtn}
               >
@@ -2483,59 +3656,56 @@ export default function App() {
           </View>
         )}
       </ScrollView>
+    </Animated.View>
 
-      {/* Taskcy Bottom Navigation Dock with Generous Touch Diameter */}
+      {/* Taskcy Bottom Navigation Dock with Animated Spring Tabs */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity
+        <AnimatedTabItem
+          label="Home"
+          isActive={currentTab === "home"}
+          COLORS={COLORS}
           onPress={() => {
             triggerHaptic("selection");
-            setCurrentTab("home");
+            navigateForward("home", { project: null });
           }}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          style={[styles.navItem, currentTab === "home" && styles.navItemActive]}
-        >
-          <HomeIcon size={22} color={currentTab === "home" ? COLORS.primary : COLORS.muted} />
-          <Text style={[styles.navText, currentTab === "home" && styles.navTextActive]}>Home</Text>
-        </TouchableOpacity>
+          renderIcon={(color) => <HomeIcon size={22} color={color} />}
+        />
 
-        <TouchableOpacity
+        <AnimatedTabItem
+          label="Projects"
+          isActive={currentTab === "projects"}
+          COLORS={COLORS}
           onPress={() => {
             triggerHaptic("selection");
-            setCurrentTab("projects");
+            navigateForward("projects", { project: null });
           }}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          style={[styles.navItem, currentTab === "projects" && styles.navItemActive]}
-        >
-          <FolderIcon size={22} color={currentTab === "projects" ? COLORS.primary : COLORS.muted} />
-          <Text style={[styles.navText, currentTab === "projects" && styles.navTextActive]}>Projects</Text>
-        </TouchableOpacity>
+          renderIcon={(color) => <FolderIcon size={22} color={color} />}
+        />
 
         {/* Center Floating + Button */}
         <View style={styles.centerAddButtonContainer}>
-          <TouchableOpacity
+          <AnimatedAddButton
+            size={50}
+            color="#FFFFFF"
+            bg={COLORS.primary}
             onPress={() => {
               triggerHaptic("selection");
               setCreateType("task");
               setIsCreateOpen(true);
             }}
-            hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
-            style={styles.centerAddButton}
-          >
-            <PlusIcon size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          />
         </View>
 
-        <TouchableOpacity
+        <AnimatedTabItem
+          label="Profile"
+          isActive={currentTab === "profile"}
+          COLORS={COLORS}
           onPress={() => {
             triggerHaptic("selection");
-            setCurrentTab("profile");
+            navigateForward("profile");
           }}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-          style={[styles.navItem, currentTab === "profile" && styles.navItemActive]}
-        >
-          <UserIcon size={22} color={currentTab === "profile" ? COLORS.primary : COLORS.muted} />
-          <Text style={[styles.navText, currentTab === "profile" && styles.navTextActive]}>Profile</Text>
-        </TouchableOpacity>
+          renderIcon={(color) => <UserIcon size={22} color={color} />}
+        />
       </View>
 
       {/* MODAL 1: TASK REVIEW SUBMISSION (Notes + Optional Screenshot) */}
@@ -2769,6 +3939,65 @@ export default function App() {
                   })}
                 </ScrollView>
 
+                <Text style={[styles.inputLabel, { marginTop: 12 }]}>ASSIGN TO / INVITE VIA EMAIL</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
+                  {["Bikash Sharma", "Elena Rostova", "Marcus Vance", "Sarah Chen"].map((member) => {
+                    const isSelected = !isInvitingViaEmail && newTaskAssignee === member;
+                    return (
+                      <TouchableOpacity
+                        key={member}
+                        onPress={() => {
+                          triggerHaptic("selection");
+                          setIsInvitingViaEmail(false);
+                          setNewTaskAssignee(member);
+                        }}
+                        style={[
+                          styles.filterChip,
+                          isSelected && styles.filterChipActive,
+                          { paddingHorizontal: 12, paddingVertical: 6 },
+                        ]}
+                      >
+                        <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                          {member}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      setIsInvitingViaEmail(true);
+                    }}
+                    style={[
+                      styles.filterChip,
+                      isInvitingViaEmail && styles.filterChipActive,
+                      { paddingHorizontal: 12, paddingVertical: 6, borderColor: COLORS.primary },
+                    ]}
+                  >
+                    <Text style={[styles.filterChipText, isInvitingViaEmail && styles.filterChipTextActive]}>
+                      + Invite via Email
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+
+                {isInvitingViaEmail && (
+                  <View style={{ marginVertical: 6, padding: 12, backgroundColor: COLORS.primaryLight, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary + "40" }}>
+                    <Text style={[styles.inputLabel, { color: COLORS.primary, marginBottom: 4 }]}>COLLEAGUE EMAIL ADDRESS</Text>
+                    <TextInput
+                      placeholder="e.g. alex.morgan@taskpulse.io"
+                      placeholderTextColor={COLORS.muted}
+                      value={newTaskInviteEmail}
+                      onChangeText={setNewTaskInviteEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      style={[styles.textInput, { backgroundColor: COLORS.white, height: 40, color: COLORS.navy }]}
+                    />
+                    <Text style={{ fontSize: 10, color: COLORS.primary, marginTop: 4 }}>
+                      An invitation will be dispatched with direct project folder access.
+                    </Text>
+                  </View>
+                )}
+
                 <Text style={[styles.inputLabel, { marginTop: 10 }]}>SUBTASKS / CHECKLIST</Text>
                 {newTaskSteps.map((step, idx) => (
                   <View key={idx} style={styles.stepItemRow}>
@@ -2851,67 +4080,287 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* DRAWER MENU MODAL */}
-      <Modal visible={isDrawerOpen} animationType="slide" transparent onRequestClose={() => setIsDrawerOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.drawerSheet}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <View style={styles.orgLogo}><Text style={styles.orgLogoText}>TP</Text></View>
-                <View style={{ marginLeft: 10 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "bold", color: COLORS.navy }}>{currentUser.organization}</Text>
-                  <Text style={{ fontSize: 10, color: COLORS.muted }}>{currentUser.email}</Text>
+      {/* DRAWER MENU MODAL WITH PHYSICS SLIDE-IN */}
+      <Modal
+        visible={isDrawerOpen}
+        animationType="none"
+        transparent
+        onRequestClose={closeDrawer}
+      >
+        <Animated.View style={[styles.drawerModalOverlay, { opacity: drawerFadeAnim }]}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={closeDrawer}
+            style={styles.drawerBackdropTap}
+          />
+          <Animated.View
+            style={[
+              styles.drawerSheetContainer,
+              {
+                transform: [{ translateX: drawerSlideAnim }],
+              },
+            ]}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.drawerScrollContent}
+            >
+              {/* Executive Header */}
+              <View style={styles.drawerHeader}>
+                <View style={styles.drawerUserRow}>
+                  <View style={{ position: "relative" }}>
+                    <Image source={BIKASH_AVATAR} style={styles.drawerAvatar} />
+                    <View style={styles.drawerOnlineDot} />
+                  </View>
+                  <View style={{ marginLeft: 12, flex: 1 }}>
+                    <Text style={styles.drawerUserName} numberOfLines={1}>
+                      {currentUser.name}
+                    </Text>
+                    <Text style={styles.drawerUserEmail} numberOfLines={1}>
+                      {currentUser.email}
+                    </Text>
+                    <View style={styles.drawerRolePill}>
+                      <ShieldCheckIcon size={12} color="#10B981" />
+                      <Text style={styles.drawerRolePillText}>
+                        {currentUser.role.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    onPress={closeDrawer}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    style={styles.drawerCloseButton}
+                  >
+                    <XIcon size={16} color={COLORS.navy} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Organization Dossier Badge */}
+                <View style={styles.drawerOrgCard}>
+                  <View style={styles.drawerOrgIconWrap}>
+                    <BuildingIcon size={16} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.drawerOrgTitle} numberOfLines={1}>
+                      {currentUser.organization}
+                    </Text>
+                    <Text style={styles.drawerOrgSub}>
+                      Workspace: tp-core-enterprise
+                    </Text>
+                  </View>
                 </View>
               </View>
-              <TouchableOpacity
-                onPress={() => setIsDrawerOpen(false)}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <XIcon size={18} color={COLORS.muted} />
-              </TouchableOpacity>
-            </View>
 
-            {/* Workspace Settings (Admin Only) */}
-            {currentUser.role === "admin" && (
-              <TouchableOpacity
-                onPress={() => {
-                  triggerHaptic("selection");
-                  setIsDrawerOpen(false);
-                  setOnboardingStep(2);
-                  setIsOnboardingModalOpen(true);
-                }}
-                style={styles.drawerLink}
-              >
-                <BuildingIcon size={16} color={COLORS.primary} />
-                <Text style={styles.drawerLinkText}>Workspace Settings</Text>
-              </TouchableOpacity>
-            )}
+              {/* Sprint Health & Pulse Overview */}
+              <View style={styles.drawerSection}>
+                <Text style={styles.drawerSectionLabel}>SPRINT HEALTH PULSE</Text>
+                <View style={styles.drawerMetricsRow}>
+                  <View style={styles.drawerMetricItem}>
+                    <Text style={[styles.drawerMetricNum, { color: COLORS.accentBlue }]}>
+                      {tasks.filter((t) => t.status === "in_progress").length}
+                    </Text>
+                    <Text style={styles.drawerMetricLabel}>Active</Text>
+                  </View>
+                  <View style={styles.drawerMetricDivider} />
+                  <View style={styles.drawerMetricItem}>
+                    <Text style={[styles.drawerMetricNum, { color: "#F59E0B" }]}>
+                      {tasks.filter((t) => t.status === "in_review").length}
+                    </Text>
+                    <Text style={styles.drawerMetricLabel}>Review</Text>
+                  </View>
+                  <View style={styles.drawerMetricDivider} />
+                  <View style={styles.drawerMetricItem}>
+                    <Text style={[styles.drawerMetricNum, { color: "#10B981" }]}>
+                      {tasks.filter((t) => t.status === "completed").length}
+                    </Text>
+                    <Text style={styles.drawerMetricLabel}>Done</Text>
+                  </View>
+                </View>
+              </View>
 
-            <TouchableOpacity
-              onPress={() => {
-                setIsDrawerOpen(false);
-                setIsDarkMode((prev) => !prev);
-              }}
-              style={styles.drawerLink}
-            >
-              {isDarkMode ? <SunIcon size={16} color="#F59E0B" /> : <MoonIcon size={16} color={COLORS.primary} />}
-              <Text style={styles.drawerLinkText}>Toggle Theme ({isDarkMode ? "Dark" : "Light"})</Text>
-            </TouchableOpacity>
+              {/* Enterprise Governance & Operations */}
+              <View style={styles.drawerSection}>
+                <Text style={styles.drawerSectionLabel}>ENTERPRISE SUITE</Text>
 
-            <TouchableOpacity
-              onPress={() => {
-                setIsDrawerOpen(false);
-                setCurrentUser(null);
-                setAuthTab("signin");
-              }}
-              style={styles.drawerLink}
-            >
-              <Text style={[styles.drawerLinkText, { color: "#EF4444", marginLeft: 0 }]}>Log Out / Switch User</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+                {/* Executive Portfolio Timeline */}
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    closeDrawer();
+                    setProjectTabMode("timeline");
+                    setCurrentTab("projects");
+                  }}
+                  style={styles.drawerActionCard}
+                >
+                  <View style={[styles.drawerActionIconWrap, { backgroundColor: "rgba(117, 110, 243, 0.12)" }]}>
+                    <TimelineIcon size={18} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.drawerActionTitle}>Executive Timeline</Text>
+                    <Text style={styles.drawerActionSub}>Gantt roadmap & milestones</Text>
+                  </View>
+                  <View style={styles.drawerBadgePill}>
+                    <Text style={styles.drawerBadgePillText}>Gantt</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Enterprise RBAC & SOC 2 Audit */}
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    closeDrawer();
+                    setIsEnterpriseAuditModalOpen(true);
+                  }}
+                  style={styles.drawerActionCard}
+                >
+                  <View style={[styles.drawerActionIconWrap, { backgroundColor: "rgba(16, 185, 129, 0.12)" }]}>
+                    <ShieldCheckIcon size={18} color="#10B981" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.drawerActionTitle}>Enterprise Governance</Text>
+                    <Text style={styles.drawerActionSub}>SOC 2 ledger & RBAC matrix</Text>
+                  </View>
+                  <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
+                    <Text style={[styles.drawerBadgePillText, { color: "#10B981" }]}>SOC 2</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Corporate Analytics & Board Export */}
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    closeDrawer();
+                    setIsAnalyticsModalOpen(true);
+                  }}
+                  style={styles.drawerActionCard}
+                >
+                  <View style={[styles.drawerActionIconWrap, { backgroundColor: "rgba(99, 102, 241, 0.12)" }]}>
+                    <BarChartIcon size={18} color="#6366F1" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.drawerActionTitle}>Executive Analytics</Text>
+                    <Text style={styles.drawerActionSub}>Velocity, SLA & Board export</Text>
+                  </View>
+                  <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(99, 102, 241, 0.15)" }]}>
+                    <Text style={[styles.drawerBadgePillText, { color: "#6366F1" }]}>Board PDF</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Workspace Settings */}
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    closeDrawer();
+                    setOnboardingStep(2);
+                    setIsOnboardingModalOpen(true);
+                  }}
+                  style={styles.drawerActionCard}
+                >
+                  <View style={[styles.drawerActionIconWrap, { backgroundColor: "rgba(59, 130, 246, 0.12)" }]}>
+                    <SlidersIcon size={18} color="#3B82F6" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.drawerActionTitle}>Workspace Settings</Text>
+                    <Text style={styles.drawerActionSub}>Manage team, roles & workstreams</Text>
+                  </View>
+                  <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(59, 130, 246, 0.15)" }]}>
+                    <Text style={[styles.drawerBadgePillText, { color: "#3B82F6" }]}>Admin</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Quick Jump Workstreams */}
+              <View style={styles.drawerSection}>
+                <Text style={styles.drawerSectionLabel}>QUICK WORKSTREAMS</Text>
+                {[
+                  { name: "All Projects", count: `${projects.length} streams`, dep: "All" },
+                  { name: "Engineering Core", count: "3 projects", dep: "Engineering" },
+                  { name: "Design & UX Systems", count: "2 projects", dep: "Design" },
+                  { name: "Growth & Marketing", count: "2 projects", dep: "Marketing" },
+                ].map((ws) => (
+                  <TouchableOpacity
+                    key={ws.name}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      closeDrawer();
+                      setProjectFilter(ws.dep);
+                      setCurrentTab("projects");
+                    }}
+                    style={styles.drawerWorkstreamRow}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <LayersIcon size={15} color={COLORS.muted} />
+                      <Text style={styles.drawerWorkstreamName}>{ws.name}</Text>
+                    </View>
+                    <Text style={styles.drawerWorkstreamCount}>{ws.count}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Footer & Cloud Sync Status */}
+              <View style={styles.drawerFooter}>
+                <View style={styles.drawerSyncRow}>
+                  <View style={styles.drawerSyncDot} />
+                  <Text style={styles.drawerSyncText}>Cloud Sync: Connected (Real-time)</Text>
+                </View>
+                <Text style={styles.drawerVersionText}>TaskPulse Mobile v2.4.0 • Enterprise Edition</Text>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    closeDrawer();
+                    setCurrentUser(null);
+                    setAuthTab("signin");
+                    setNavHistory([]);
+                    setSelectedProjectView(null);
+                  }}
+                  style={styles.drawerLogoutButton}
+                >
+                  <UsersIcon size={16} color="#EF4444" />
+                  <Text style={styles.drawerLogoutText}>Switch Account / Sign Out</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </Animated.View>
+        </Animated.View>
       </Modal>
-    </SafeAreaView>
+
+      {/* INTERACTIVE TASK DETAIL BOTTOM SHEET */}
+      {renderTaskDetailModal()}
+
+      {/* CELEBRATION TOAST FEEDBACK */}
+      {renderCelebrationModal()}
+
+      {/* ENTERPRISE AUDIT & RBAC MODAL */}
+      <EnterpriseAuditAndRbacModal
+        visible={isEnterpriseAuditModalOpen}
+        isDarkMode={isDarkMode}
+        onClose={() => setIsEnterpriseAuditModalOpen(false)}
+        triggerHaptic={triggerHaptic}
+      />
+
+      {/* CORPORATE ANALYTICS & BOARD EXPORT MODAL */}
+      <CorporateAnalyticsExportModal
+        visible={isAnalyticsModalOpen}
+        isDarkMode={isDarkMode}
+        onClose={() => setIsAnalyticsModalOpen(false)}
+        triggerHaptic={triggerHaptic}
+      />
+      </SafeAreaView>
+      {isBooting && (
+        <MobileBootSplash
+          isDarkMode={isDarkMode}
+          durationMs={2600}
+          onBootComplete={() => setIsBooting(false)}
+        />
+      )}
+    </View>
   );
 }
 
@@ -2943,10 +4392,37 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       height: 40,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: COLORS.border,
+      borderColor: COLORS.cardBorder,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: COLORS.card,
+      backgroundColor: COLORS.cardSecondary,
+    },
+    themeToggleLight: {
+      backgroundColor: "#F1F5F9",
+      borderColor: "#CBD5E1",
+      borderWidth: 1.2,
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    themeToggleDark: {
+      backgroundColor: "#1E293B",
+      borderColor: "#334155",
+      borderWidth: 1.2,
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    drawerIconBadge: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
     },
     notificationDot: {
       position: "absolute",
@@ -3406,6 +4882,25 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       fontSize: 11,
       fontWeight: "bold",
       color: "#FFFFFF",
+    },
+    folderTabHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderTopLeftRadius: 8,
+      borderTopRightRadius: 8,
+      alignSelf: "flex-start",
+      marginBottom: -1,
+      zIndex: 2,
+    },
+    folderTabHeaderText: {
+      fontSize: 10,
+      fontFamily: "monospace",
+      fontWeight: "700",
+      color: "#FFFFFF",
+      marginLeft: 4,
+      letterSpacing: 0.5,
     },
     projectCard: {
       backgroundColor: COLORS.card,
@@ -4979,36 +6474,815 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       color: COLORS.muted,
       marginTop: 2,
     },
-    drawerSheet: {
-      backgroundColor: COLORS.white,
-      width: "75%",
-      height: "100%",
-      padding: 20,
+    drawerModalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.65)",
+      flexDirection: "row",
     },
-    orgLogo: {
-      width: 28,
-      height: 28,
+    drawerBackdropTap: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+    drawerSheetContainer: {
+      width: SCREEN_WIDTH * 0.82,
+      height: "100%",
+      backgroundColor: COLORS.card,
+      borderTopRightRadius: 24,
+      borderBottomRightRadius: 24,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+      elevation: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 4, height: 0 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+    },
+    drawerScrollContent: {
+      paddingHorizontal: 18,
+      paddingTop: 44,
+      paddingBottom: 36,
+    },
+    drawerHeader: {
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.cardBorder,
+    },
+    drawerUserRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    drawerAvatar: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      borderWidth: 1.5,
+      borderColor: COLORS.primary,
+    },
+    drawerOnlineDot: {
+      position: "absolute",
+      bottom: 0,
+      right: 0,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: "#10B981",
+      borderWidth: 2,
+      borderColor: COLORS.card,
+    },
+    drawerUserName: {
+      fontSize: 15,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    drawerUserEmail: {
+      fontSize: 10,
+      color: COLORS.muted,
+      marginTop: 1,
+    },
+    drawerRolePill: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      backgroundColor: "rgba(16, 185, 129, 0.12)",
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginTop: 4,
+      gap: 4,
+    },
+    drawerRolePillText: {
+      fontSize: 9,
+      fontWeight: "bold",
+      color: "#10B981",
+    },
+    drawerCloseButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: COLORS.cardSecondary,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    drawerOrgCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: COLORS.cardSecondary,
+      borderRadius: 12,
+      padding: 10,
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    drawerOrgIconWrap: {
+      width: 32,
+      height: 32,
       borderRadius: 8,
-      backgroundColor: COLORS.primary,
+      backgroundColor: "rgba(117, 110, 243, 0.15)",
       alignItems: "center",
       justifyContent: "center",
     },
-    orgLogoText: {
+    drawerOrgTitle: {
       fontSize: 12,
       fontWeight: "bold",
-      color: "#FFFFFF",
+      color: COLORS.navy,
     },
-    drawerLink: {
+    drawerOrgSub: {
+      fontSize: 10,
+      color: COLORS.muted,
+      marginTop: 1,
+    },
+    drawerSection: {
+      marginTop: 18,
+    },
+    drawerSectionLabel: {
+      fontSize: 10,
+      fontWeight: "700",
+      color: COLORS.muted,
+      letterSpacing: 0.8,
+      marginBottom: 8,
+    },
+    drawerMetricsRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 12,
+      justifyContent: "space-between",
+      backgroundColor: COLORS.cardSecondary,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    drawerMetricItem: {
+      alignItems: "center",
+      flex: 1,
+    },
+    drawerMetricNum: {
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    drawerMetricLabel: {
+      fontSize: 10,
+      color: COLORS.muted,
+      marginTop: 2,
+      fontWeight: "600",
+    },
+    drawerMetricDivider: {
+      width: 1,
+      height: 24,
+      backgroundColor: COLORS.cardBorder,
+    },
+    drawerActionCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: COLORS.cardSecondary,
+      borderRadius: 12,
+      padding: 10,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    drawerActionIconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    drawerActionTitle: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    drawerActionSub: {
+      fontSize: 10,
+      color: COLORS.muted,
+      marginTop: 1,
+    },
+    drawerBadgePill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+      backgroundColor: "rgba(117, 110, 243, 0.15)",
+    },
+    drawerBadgePillText: {
+      fontSize: 9,
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    drawerThemeStatusPill: {
+      paddingHorizontal: 9,
+      paddingVertical: 3,
+      borderRadius: 8,
+    },
+    drawerThemeStatusText: {
+      fontSize: 10,
+      fontWeight: "bold",
+    },
+    drawerWorkstreamRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.cardBorder,
+    },
+    drawerWorkstreamName: {
+      fontSize: 12,
+      color: COLORS.navy,
+      marginLeft: 8,
+      fontWeight: "500",
+    },
+    drawerWorkstreamCount: {
+      fontSize: 10,
+      color: COLORS.muted,
+    },
+    drawerFooter: {
+      marginTop: 20,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: COLORS.cardBorder,
+    },
+    drawerSyncRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    drawerSyncDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "#10B981",
+      marginRight: 6,
+    },
+    drawerSyncText: {
+      fontSize: 10,
+      color: "#10B981",
+      fontWeight: "600",
+    },
+    drawerVersionText: {
+      fontSize: 9,
+      color: COLORS.muted,
+      marginBottom: 12,
+    },
+    drawerLogoutButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(239, 68, 68, 0.08)",
+      borderRadius: 10,
+      paddingVertical: 10,
+      borderWidth: 1,
+      borderColor: "rgba(239, 68, 68, 0.2)",
+      gap: 6,
+    },
+    drawerLogoutText: {
+      fontSize: 11,
+      fontWeight: "bold",
+      color: "#EF4444",
+    },
+
+    // Team Pulse Meter & Activity Feed Styles
+    pulseCard: {
+      marginHorizontal: 20,
+      marginTop: 14,
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: COLORS.card,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    pulseCardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    pulseIconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    pulseCardTitle: {
+      fontSize: 14,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    pulseCardSubtitle: {
+      fontSize: 11,
+      color: COLORS.textSecondary,
+      marginTop: 1,
+    },
+    pulseCountBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      backgroundColor: COLORS.primaryLight,
+    },
+    pulseCountBadgeText: {
+      fontSize: 10,
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    pulseLiveIndicator: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      backgroundColor: "rgba(16, 185, 129, 0.12)",
+    },
+    pulseLiveDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "#10B981",
+      marginRight: 4,
+    },
+    pulseLiveText: {
+      fontSize: 10,
+      fontWeight: "bold",
+      color: "#10B981",
+    },
+    pulseMemberRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 12,
+    },
+    pulseMemberAvatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+    },
+    pulseMemberAvatarText: {
+      color: "#FFFFFF",
+      fontWeight: "bold",
+      fontSize: 13,
+    },
+    pulseOnlineStatusDot: {
+      position: "absolute",
+      right: 0,
+      bottom: 0,
+      width: 9,
+      height: 9,
+      borderRadius: 4.5,
+      borderWidth: 1.5,
+      borderColor: COLORS.white,
+    },
+    pulseMemberName: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    pulseMemberRole: {
+      fontSize: 10,
+      color: COLORS.textSecondary,
+      marginTop: 1,
+    },
+    pulseLoadPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 10,
+    },
+    pulseLoadPillText: {
+      fontSize: 10,
+      fontWeight: "bold",
+    },
+    pulseProgressBarBg: {
+      height: 6,
+      backgroundColor: COLORS.inputBg,
+      borderRadius: 3,
+      marginTop: 6,
+      overflow: "hidden",
+    },
+    pulseProgressBarFill: {
+      height: "100%",
+      borderRadius: 3,
+    },
+    activityEventRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 10,
       borderBottomWidth: 1,
       borderBottomColor: COLORS.border,
     },
-    drawerLinkText: {
+    activityAvatarBadge: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    activityAvatarText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "bold",
+    },
+    activityDescription: {
+      fontSize: 11,
+      color: COLORS.navy,
+      lineHeight: 16,
+    },
+    activityUserText: {
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    activityActionText: {
+      color: COLORS.textSecondary,
+    },
+    activityTargetText: {
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    activityTimeText: {
+      fontSize: 10,
+      color: COLORS.muted,
+      marginTop: 2,
+    },
+
+    // Kanban Board Styles
+    viewModeToggleWrap: {
+      flexDirection: "row",
+      backgroundColor: COLORS.inputBg,
+      borderRadius: 10,
+      padding: 3,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    viewModeToggleBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 7,
+      gap: 4,
+    },
+    viewModeToggleBtnActive: {
+      backgroundColor: COLORS.primary,
+    },
+    viewModeToggleText: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: COLORS.navy,
+    },
+    viewModeToggleTextActive: {
+      color: "#FFFFFF",
+    },
+    kanbanScrollContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 12,
+    },
+    kanbanColumn: {
+      width: SCREEN_WIDTH * 0.78,
+      height: SCREEN_HEIGHT - 235,
+      backgroundColor: COLORS.cardSecondary,
+      borderRadius: 16,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    kanbanColumnHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    kanbanColumnDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      marginRight: 8,
+    },
+    kanbanColumnTitle: {
+      fontSize: 13,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    kanbanCounterBadge: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+    kanbanCounterText: {
+      fontSize: 11,
+      fontWeight: "bold",
+    },
+    kanbanEmptyColumn: {
+      paddingVertical: 32,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    kanbanEmptyText: {
+      fontSize: 11,
+      color: COLORS.muted,
+      fontStyle: "italic",
+    },
+    kanbanCard: {
+      backgroundColor: COLORS.card,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: COLORS.cardBorder,
+    },
+    kanbanCardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    kanbanProjectPill: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: COLORS.primaryLight,
+    },
+    kanbanProjectText: {
+      fontSize: 9,
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    kanbanCardTitle: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: COLORS.navy,
+      marginTop: 6,
+      lineHeight: 16,
+    },
+    kanbanProgressLabel: {
+      fontSize: 9,
+      color: COLORS.muted,
+    },
+    kanbanProgressPercent: {
+      fontSize: 9,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    kanbanProgressBarBg: {
+      height: 4,
+      backgroundColor: COLORS.inputBg,
+      borderRadius: 2,
+      overflow: "hidden",
+    },
+    kanbanProgressBarFill: {
+      height: "100%",
+      borderRadius: 2,
+    },
+    kanbanCardFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 10,
+    },
+    kanbanStepCount: {
+      fontSize: 10,
+      color: COLORS.textSecondary,
+    },
+    kanbanAssigneeBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    kanbanAssigneeText: {
+      fontSize: 9,
+      fontWeight: "bold",
+    },
+
+    // Task Detail Sheet Styles
+    sheetHandleBar: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: COLORS.border,
+      alignSelf: "center",
+      marginBottom: 12,
+    },
+    detailPriorityPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+      marginLeft: 8,
+    },
+    detailPriorityPillText: {
+      fontSize: 9,
+      fontWeight: "bold",
+    },
+    taskDetailSheetTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: COLORS.navy,
+      marginTop: 10,
+      lineHeight: 24,
+    },
+    detailStatusSegmentRow: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 6,
+    },
+    detailStatusSegmentBtn: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      backgroundColor: COLORS.inputBg,
+    },
+    detailStatusSegmentText: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: COLORS.textSecondary,
+    },
+    taskDescriptionBox: {
+      backgroundColor: COLORS.cardSecondary,
+      padding: 12,
+      borderRadius: 10,
+      marginTop: 6,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    taskDescriptionText: {
       fontSize: 12,
       color: COLORS.navy,
-      marginLeft: 10,
-      fontWeight: "600",
+      lineHeight: 18,
+    },
+    checklistProgressText: {
+      fontSize: 10,
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    detailChecklistRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 9,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.border,
+    },
+    uncheckedCircle: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: COLORS.muted,
+    },
+    detailChecklistText: {
+      fontSize: 13,
+      color: COLORS.navy,
+      flex: 1,
+    },
+    detailChecklistTextCompleted: {
+      textDecorationLine: "line-through",
+      color: COLORS.muted,
+    },
+    detailAssigneeCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: COLORS.cardSecondary,
+      padding: 10,
+      borderRadius: 10,
+      marginTop: 6,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    detailVerifiedTag: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: COLORS.primaryLight,
+    },
+    detailVerifiedTagText: {
+      fontSize: 10,
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    emptyCommentsBox: {
+      padding: 16,
+      backgroundColor: COLORS.cardSecondary,
+      borderRadius: 10,
+      alignItems: "center",
+      marginTop: 6,
+    },
+    emptyCommentsText: {
+      fontSize: 11,
+      color: COLORS.muted,
+      fontStyle: "italic",
+    },
+    detailCommentCard: {
+      backgroundColor: COLORS.cardSecondary,
+      padding: 10,
+      borderRadius: 10,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    commentAuthor: {
+      fontSize: 11,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    commentRoleTag: {
+      marginLeft: 6,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: 4,
+      backgroundColor: COLORS.primaryLight,
+    },
+    commentRoleTagText: {
+      fontSize: 8,
+      fontWeight: "bold",
+      color: COLORS.primary,
+    },
+    detailCommentTime: {
+      fontSize: 9,
+      color: COLORS.muted,
+    },
+    detailCommentBody: {
+      fontSize: 11,
+      color: COLORS.navy,
+      marginTop: 4,
+      lineHeight: 16,
+    },
+    detailCommentInputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 10,
+      gap: 8,
+    },
+    detailCommentInput: {
+      flex: 1,
+      height: 38,
+      backgroundColor: COLORS.inputBg,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      paddingHorizontal: 12,
+      fontSize: 11,
+      color: COLORS.navy,
+    },
+    detailCommentSendBtn: {
+      backgroundColor: COLORS.primary,
+      paddingHorizontal: 14,
+      height: 38,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    detailCommentSendBtnText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "bold",
+    },
+
+    // Celebration Toast Banner
+    celebrationToast: {
+      position: "absolute",
+      top: 48,
+      left: 16,
+      right: 16,
+      backgroundColor: COLORS.card,
+      borderRadius: 14,
+      padding: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1.5,
+      borderColor: "#10B981",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+      zIndex: 99999,
+    },
+    celebrationIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(16, 185, 129, 0.15)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    celebrationTitle: {
+      fontSize: 13,
+      fontWeight: "bold",
+      color: COLORS.navy,
+    },
+    celebrationSubtitle: {
+      fontSize: 10,
+      color: COLORS.textSecondary,
+      marginTop: 1,
     },
   });
+
+AppRegistry.registerComponent("main", () => App);
+

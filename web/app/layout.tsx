@@ -24,7 +24,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased min-h-screen bg-slate-50 dark:bg-[#070A13] text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-blue-500/20 selection:text-blue-600">
+      <body className="antialiased min-h-screen bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
         <ThemeProvider>
           <AuthProvider>
             <OrganizationProvider>{children}</OrganizationProvider>

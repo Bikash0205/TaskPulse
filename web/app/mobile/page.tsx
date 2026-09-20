@@ -9,13 +9,14 @@ import {
   updateTaskProgressDocument,
 } from "@/lib/firestoreService";
 import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole } from "@shared/types";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Smartphone, Monitor } from "lucide-react";
 
 export default function MobileAppDedicatedPage() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskPulseItem[]>([]);
   const [colleagues, setColleagues] = useState<ColleagueProfile[]>([]);
   const [pulseFeed, setPulseFeed] = useState<ColleaguePulseFeedItem[]>([]);
+  const [isStandalone, setIsStandalone] = useState<boolean>(true);
 
   useEffect(() => {
     let initialTasks: TaskPulseItem[] = [];
@@ -185,16 +186,17 @@ export default function MobileAppDedicatedPage() {
 
   const handleToggleTaskBlocked = (taskId: string) => {
     let modifiedTask: TaskPulseItem | null = null;
-    const updated = tasks.map((t) => {
+    const updated: TaskPulseItem[] = tasks.map((t) => {
       if (t.id === taskId) {
         const nextBlocked = !t.isBlocked;
-        modifiedTask = {
+        const updatedItem: TaskPulseItem = {
           ...t,
           isBlocked: nextBlocked,
           blockReason: nextBlocked ? "Flagged via Mobile Client" : undefined,
           updatedAt: new Date().toISOString(),
         };
-        return modifiedTask;
+        modifiedTask = updatedItem;
+        return updatedItem;
       }
       return t;
     });
@@ -233,25 +235,52 @@ export default function MobileAppDedicatedPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 dark:bg-[#070A13] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 selection:bg-blue-500/20 selection:text-blue-400">
+    <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
       {/* Top Header */}
       <Header />
 
       {/* Mobile App Dedicated Container */}
-      <main className="flex-1 p-4 md:p-6 flex flex-col items-center justify-start max-w-5xl w-full mx-auto">
+      <main className="flex-1 p-0 sm:p-4 md:p-6 flex flex-col items-center justify-start max-w-5xl w-full mx-auto">
         {/* Navigation Bar between Web and Mobile */}
-        <div className="w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="w-full flex items-center justify-between px-3 sm:px-0 py-2 sm:py-0 pb-3 mb-3 border-b border-[#E9F1FF] dark:border-[#1E293B]">
           <a
             href="/"
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors shadow-xs"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] hover:border-[#756EF3]/50 bg-white dark:bg-[#151C2C] text-xs font-semibold text-[#002055] dark:text-[#F8FAFC] hover:text-[#756EF3] transition-colors shadow-xs"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Dashboard</span>
+            <span>Desktop Workspace</span>
           </a>
 
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold text-slate-800 dark:text-slate-200">Mobile Client Route (/mobile)</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+              <button
+                onClick={() => setIsStandalone(true)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  isStandalone
+                    ? "bg-[#756EF3] text-white shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Edge-to-Edge App</span>
+              </button>
+              <button
+                onClick={() => setIsStandalone(false)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  !isStandalone
+                    ? "bg-[#756EF3] text-white shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>Simulated Bezel Frame</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200">Mobile Client Route (/mobile)</span>
+            </div>
           </div>
         </div>
 
@@ -265,6 +294,7 @@ export default function MobileAppDedicatedPage() {
             onToggleTaskBlocked={handleToggleTaskBlocked}
             onToggleSubtask={handleToggleSubtask}
             onAddTask={handleAddTask}
+            isStandalone={isStandalone}
           />
         </div>
       </main>

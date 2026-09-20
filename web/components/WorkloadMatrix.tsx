@@ -24,7 +24,7 @@ export const WorkloadMatrix: React.FC<WorkloadMatrixProps> = ({
         </div>
 
         {/* Capacity Legend */}
-        <div className="flex items-center gap-3 text-[11px] font-sans">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] font-sans">
           <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-500" /> &le; 3 Optimal
           </span>

@@ -4,6 +4,7 @@ interface TaskPulseLogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
   showText?: boolean;
+  animated?: boolean;
 }
 
 const sizeMap = {
@@ -27,14 +28,15 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
   className = "",
   size = "md",
   showText = true,
+  animated = false,
 }) => {
   const currentSize = sizeMap[size];
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={showText ? "0 0 250 60" : "0 0 120 60"}
-      width={showText ? currentSize.width * 1.15 : currentSize.height * 2}
+      viewBox={showText ? "0 0 270 60" : "0 0 120 60"}
+      width={showText ? currentSize.width * 1.25 : currentSize.height * 2}
       height={currentSize.height}
       fill="none"
       className={`select-none ${className}`}
@@ -42,6 +44,64 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
       aria-label="TaskPulse Logo"
     >
       <defs>
+        {animated && (
+          <style>{`
+            @keyframes ecgLineDraw {
+              0% {
+                stroke-dashoffset: 200;
+                opacity: 0.3;
+              }
+              50% {
+                opacity: 1;
+              }
+              100% {
+                stroke-dashoffset: 0;
+                opacity: 1;
+              }
+            }
+            @keyframes ecgArrowSurge {
+              0%, 40% {
+                stroke-dashoffset: 35;
+                opacity: 0;
+              }
+              75% {
+                stroke-dashoffset: 0;
+                opacity: 1;
+              }
+              100% {
+                stroke-dashoffset: 0;
+                opacity: 1;
+              }
+            }
+            @keyframes apexBlink {
+              0%, 50% {
+                opacity: 0;
+              }
+              75% {
+                opacity: 1;
+              }
+              100% {
+                opacity: 1;
+              }
+            }
+            @keyframes glowRadiate {
+              0%, 100% {
+                opacity: 0.25;
+              }
+              50% {
+                opacity: 0.85;
+              }
+            }
+            @keyframes logoTextReveal {
+              0%, 30% {
+                opacity: 0;
+              }
+              100% {
+                opacity: 1;
+              }
+            }
+          `}</style>
+        )}
         <filter id="emerald-glow" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feColorMatrix
@@ -51,7 +111,7 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
               0 0 0 0 0.062
               0 0 0 0 0.725
               0 0 0 0 0.505
-              0 0 0 0 0.85 0"
+              0 0 0 0.85 0"
             result="coloredBlur"
           />
           <feMerge>
@@ -82,46 +142,96 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
       </defs>
 
       <g id="pulse-mark">
-        <polyline
-          points="10,35 30,35 40,48 55,18 68,42 80,28 92,35 105,15"
+        <path
+          d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
           stroke="#756EF3"
           strokeWidth="6"
           strokeLinecap="round"
           strokeLinejoin="round"
           opacity="0.25"
           filter="url(#pulse-blue-glow)"
+          strokeDasharray="200"
+          strokeDashoffset={animated ? 200 : 0}
+          style={
+            animated
+              ? {
+                  animation:
+                    "glowRadiate 2s infinite ease-in-out, ecgLineDraw 1s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+                }
+              : undefined
+          }
         />
 
-        <polyline
-          points="10,35 30,35 40,48 55,18 68,42 80,28 92,35 105,15"
+        <path
+          d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
           stroke="url(#pulse-grad)"
           strokeWidth="4"
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeDasharray="200"
+          strokeDashoffset={animated ? 200 : 0}
+          style={
+            animated
+              ? {
+                  animation:
+                    "ecgLineDraw 1s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+                }
+              : undefined
+          }
         />
 
-        <polyline
-          points="95,15 105,15 105,25"
+        <path
+          d="M 95 15 L 105 15 L 105 25"
           stroke="url(#arrow-grad)"
           strokeWidth="4"
           strokeLinecap="round"
           strokeLinejoin="round"
           filter="url(#emerald-glow)"
+          strokeDasharray="35"
+          strokeDashoffset={animated ? 35 : 0}
+          style={
+            animated
+              ? {
+                  animation:
+                    "ecgArrowSurge 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+                }
+              : undefined
+          }
         />
 
-        <circle cx="105" cy="15" r="3" fill="#FFFFFF" filter="url(#emerald-glow)" />
+        <circle
+          cx="105"
+          cy="15"
+          r="3"
+          fill="#FFFFFF"
+          filter="url(#emerald-glow)"
+          style={
+            animated
+              ? {
+                  animation: "apexBlink 1.1s ease-out forwards",
+                }
+              : undefined
+          }
+        />
       </g>
 
       {showText && (
         <text
           x="122"
           y={currentSize.textY}
-          className="fill-slate-900 dark:fill-white transition-colors"
+          fill="currentColor"
           fontFamily="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
           fontWeight="700"
           fontSize={currentSize.fontSize}
           letterSpacing="-0.03em"
-          style={{ textRendering: "geometricPrecision" }}
+          style={
+            animated
+              ? {
+                  animation: "logoTextReveal 0.9s ease-out forwards",
+                  textRendering: "geometricPrecision",
+                }
+              : { textRendering: "geometricPrecision" }
+          }
         >
           Task<tspan fill="#10B981">Pulse</tspan>
         </text>

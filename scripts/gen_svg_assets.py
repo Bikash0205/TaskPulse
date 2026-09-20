@@ -1,0 +1,97 @@
+﻿# Generate standalone high-res SVG files
+dark_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60" width="600" height="120" fill="none">
+  <defs>
+    <filter id="emerald-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.062 0 0 0 0 0.725 0 0 0 0 0.505 0 0 0 0.85 0" result="coloredBlur" />
+      <feMerge>
+        <feMergeNode in="coloredBlur" />
+        <feMergeNode in="coloredBlur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="pulse-blue-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.0" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="arrow-grad" x1="95" y1="25" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+    <linearGradient id="pulse-grad" x1="10" y1="35" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="60%" stop-color="#756EF3" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+  </defs>
+  <g id="pulse-mark">
+    <path d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
+      stroke="#756EF3" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+      opacity="0.3" filter="url(#pulse-blue-glow)" />
+    <path d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
+      stroke="url(#pulse-grad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 95 15 L 105 15 L 105 25"
+      stroke="url(#arrow-grad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"
+      filter="url(#emerald-glow)" />
+    <circle cx="105" cy="15" r="3.5" fill="#FFFFFF" filter="url(#emerald-glow)" />
+  </g>
+  <text x="122" y="41" fill="#FFFFFF"
+    font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif"
+    font-weight="800" font-size="30" letter-spacing="-0.03em">
+    Task<tspan fill="#10B981">Pulse</tspan>
+  </text>
+</svg>"""
+
+light_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 60" width="600" height="120" fill="none">
+  <defs>
+    <filter id="emerald-glow-light" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.0" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="arrow-grad-light" x1="95" y1="25" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="pulse-grad-light" x1="10" y1="35" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="60%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+  </defs>
+  <g id="pulse-mark">
+    <path d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
+      stroke="#6366F1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"
+      opacity="0.15" />
+    <path d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
+      stroke="url(#pulse-grad-light)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 95 15 L 105 15 L 105 25"
+      stroke="url(#arrow-grad-light)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"
+      filter="url(#emerald-glow-light)" />
+    <circle cx="105" cy="15" r="3.5" fill="#FFFFFF" stroke="#059669" stroke-width="1.5" />
+  </g>
+  <text x="122" y="41" fill="#0F172A"
+    font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif"
+    font-weight="800" font-size="30" letter-spacing="-0.03em">
+    Task<tspan fill="#10B981">Pulse</tspan>
+  </text>
+</svg>"""
+
+with open("TaskPulse-Logo-Dark.svg", "w", encoding="utf-8") as f:
+    f.write(dark_svg)
+
+with open("TaskPulse-Logo-Light.svg", "w", encoding="utf-8") as f:
+    f.write(light_svg)
+
+with open("web/public/taskpulse-logo-dark.svg", "w", encoding="utf-8") as f:
+    f.write(dark_svg)
+
+with open("web/public/taskpulse-logo-light.svg", "w", encoding="utf-8") as f:
+    f.write(light_svg)
+
+print("Generated standalone SVG files successfully!")

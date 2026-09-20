@@ -6,14 +6,17 @@ import { ManagerDispatcher } from "@/components/ManagerDispatcher";
 import { WorkloadMatrix } from "@/components/WorkloadMatrix";
 import { LandingPage } from "@/components/LandingPage";
 import { TaskPulseLogo } from "@/components/TaskPulseLogo";
+import { BootSplash } from "@/components/BootSplash";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
-import { Sparkles, ArrowRight, X, Building2 } from "lucide-react";
+import { MobileDeviceFrame } from "@/components/MobileDeviceFrame";
+import { Sparkles, ArrowRight, X, Building2, Smartphone, LayoutDashboard } from "lucide-react";
 import {
   subscribeTasks,
   createTaskDocument,
   updateTaskStatusDocument,
   updateTaskProgressDocument,
+  updateTaskDocument,
 } from "@/lib/firestoreService";
 import { mockColleagues, mockTasks, mockPulseFeed, mockProjects } from "@shared/mockData";
 import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole, Project, SubTask } from "@shared/types";
@@ -31,6 +34,21 @@ export default function TaskPulseWorkspacePage() {
   const [pulseFeed, setPulseFeed] = useState<ColleaguePulseFeedItem[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>("all");
   const [assignedBannerProject, setAssignedBannerProject] = useState<{ id: string; name: string } | null>(null);
+  const [showBootSplash, setShowBootSplash] = useState(true);
+  const [viewportMode, setViewportMode] = useState<"desktop" | "mobile">("desktop");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const checkViewport = () => {
+        if (window.innerWidth < 768) {
+          setViewportMode("mobile");
+        }
+      };
+      checkViewport();
+      window.addEventListener("resize", checkViewport);
+      return () => window.removeEventListener("resize", checkViewport);
+    }
+  }, []);
 
   useEffect(() => {
     let initialTasks: TaskPulseItem[] = [];
@@ -223,7 +241,7 @@ export default function TaskPulseWorkspacePage() {
   const handleUpdateTask = async (updatedTask: TaskPulseItem) => {
     const updated = tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t));
     persistTasks(updated);
-    await updateTaskStatusDocument(updatedTask.id, updatedTask.status, updatedTask.progressPercentage);
+    await updateTaskDocument(updatedTask);
     fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -319,16 +337,17 @@ export default function TaskPulseWorkspacePage() {
   const handleToggleTaskBlocked = (taskId: string) => {
     let modifiedTask: TaskPulseItem | null = null;
     setTasks((prevTasks) => {
-      const updated = prevTasks.map((t) => {
+      const updated: TaskPulseItem[] = prevTasks.map((t) => {
         if (t.id === taskId) {
           const nextBlocked = !t.isBlocked;
-          modifiedTask = {
+          const updatedItem: TaskPulseItem = {
             ...t,
             isBlocked: nextBlocked,
             blockReason: nextBlocked ? "Flagged via Mobile Client" : undefined,
             updatedAt: new Date().toISOString(),
           };
-          return modifiedTask;
+          modifiedTask = updatedItem;
+          return updatedItem;
         }
         return t;
       });
@@ -436,38 +455,26 @@ export default function TaskPulseWorkspacePage() {
     isOnline: !!user,
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] flex flex-col items-center justify-center p-6 text-[#002055] dark:text-[#F8FAFC]">
-        <div className="flex flex-col items-center gap-4 animate-pulse">
-          <TaskPulseLogo size="lg" />
-          <div className="text-xs font-mono text-[#556070] dark:text-[#94A3B8]">
-            Initializing TaskPulse Velocity Engine...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <LandingPage
-        onEnterDemo={loginDemoUser}
-        onEnterMarcus={() => signInWithCustomUser("Marcus Vance", "marcus.vance@taskpulse.internal")}
-        onEnterAdmin={() => signInWithCustomUser("Zevon", PERMANENT_ADMIN_EMAIL)}
-      />
-    );
-  }
-
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
+    <>
+      {showBootSplash && <BootSplash onComplete={() => setShowBootSplash(false)} />}
+      {loading ? (
+        <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19]" />
+      ) : !user ? (
+        <LandingPage
+          onEnterDemo={loginDemoUser}
+          onEnterMarcus={() => signInWithCustomUser("Marcus Vance", "marcus.vance@taskpulse.internal")}
+          onEnterAdmin={() => signInWithCustomUser("Zevon", PERMANENT_ADMIN_EMAIL)}
+        />
+      ) : (
+        <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
       {/* Top Header with Light/Dark toggle, Google Auth & Organization Switcher */}
       <Header projects={projects} />
 
       {/* Main Workspace Body */}
-      <main className="flex-1 p-5 md:p-6 flex flex-col gap-5 max-w-[1720px] w-full mx-auto">
+      <main className={`flex-1 ${viewportMode === "mobile" ? "p-0" : "p-3 sm:p-5 md:p-6"} flex flex-col gap-3 sm:gap-5 max-w-[1720px] w-full mx-auto`}>
         {/* Workspace Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-[#E9F1FF] dark:border-[#1E293B]">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 sm:px-0 py-2 sm:py-0 pb-2 border-b border-[#E9F1FF] dark:border-[#1E293B]">
           <div className="flex items-center gap-2 text-xs text-[#556070] dark:text-[#94A3B8] font-sans">
             <Building2 className="w-4 h-4 text-[#756EF3]" />
             <span>Workspace: </span>
@@ -479,79 +486,126 @@ export default function TaskPulseWorkspacePage() {
             )}
           </div>
 
-          <div className="text-xs text-[#556070] dark:text-[#94A3B8] font-sans">
-            {user ? (
-              <span>Authenticated as <strong className="text-[#002055] dark:text-[#F8FAFC] font-medium">{user.email}</strong> (<span className="capitalize text-[#756EF3] dark:text-[#818CF8] font-semibold">{user.role}</span>)</span>
-            ) : (
-              <span>Session: Guest (Read-Only)</span>
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Viewport Mode Switcher */}
+            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+              <button
+                onClick={() => setViewportMode("desktop")}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  viewportMode === "desktop"
+                    ? "bg-white dark:bg-[#151C2C] text-[#002055] dark:text-white shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Desktop Suite</span>
+              </button>
+              <button
+                onClick={() => setViewportMode("mobile")}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  viewportMode === "mobile"
+                    ? "bg-[#756EF3] text-white shadow-xs font-bold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Mobile Client</span>
+              </button>
+            </div>
+
+            <div className="hidden md:block text-xs text-[#556070] dark:text-[#94A3B8] font-sans">
+              {user ? (
+                <span>Authenticated as <strong className="text-[#002055] dark:text-[#F8FAFC] font-medium">{user.email}</strong> (<span className="capitalize text-[#756EF3] dark:text-[#818CF8] font-semibold">{user.role}</span>)</span>
+              ) : (
+                <span>Session: Guest (Read-Only)</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {viewportMode === "mobile" ? (
+          <div className="w-full flex justify-center">
+            <MobileDeviceFrame
+              pulseFeed={pulseFeed}
+              tasks={tasks}
+              currentUser={currentColleagueProfile}
+              onUpdateTaskProgress={handleUpdateTaskProgress}
+              onToggleTaskBlocked={handleToggleTaskBlocked}
+              onToggleSubtask={handleToggleSubtask}
+              onAddTask={handleAddTask}
+              isStandalone={true}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Assigned Project Welcome Alert Banner */}
+            {assignedBannerProject && (
+              <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl text-xs shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/30">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      Welcome back, {user?.displayName || user?.email}!
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      You have automatically jumped into your assigned project: <span className="font-bold text-indigo-600 dark:text-indigo-400">{assignedBannerProject.name}</span>.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveProjectId("all");
+                      setAssignedBannerProject(null);
+                    }}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    View All Projects
+                  </button>
+                  <button
+                    onClick={() => setAssignedBannerProject(null)}
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    title="Dismiss"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Assigned Project Welcome Alert Banner */}
-        {assignedBannerProject && (
-          <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl text-xs shadow-sm">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/30">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-slate-100">
-                  Welcome back, {user?.displayName || user?.email}!
-                </p>
-                <p className="text-slate-600 dark:text-slate-400">
-                  You have automatically jumped into your assigned project: <span className="font-bold text-indigo-600 dark:text-indigo-400">{assignedBannerProject.name}</span>.
-                </p>
-              </div>
+            {/* Real-time Workload Matrix */}
+            <WorkloadMatrix colleagues={colleagues} />
+
+            {/* Dedicated Full-Width Manager Dispatcher Grid */}
+            <div className="w-full">
+              <ManagerDispatcher
+                tasks={tasks}
+                projects={projects}
+                colleagues={colleagues}
+                currentRole={currentRole}
+                currentUserId={currentUserId}
+                assignedProjectIds={user?.assignedProjectIds || (assignedBannerProject ? [assignedBannerProject.id] : undefined)}
+                activeProjectId={activeProjectId}
+                onSelectProject={(projId) => setActiveProjectId(projId)}
+                onUpdateTask={handleUpdateTask}
+                onAddTask={handleAddTask}
+                onAddProject={handleAddProject}
+                onAddSubtask={handleAddSubtask}
+                onDeleteSubtask={handleDeleteSubtask}
+                onUpdateTaskProgress={handleUpdateTaskProgress}
+                onToggleTaskBlocked={handleToggleTaskBlocked}
+                onToggleSubtask={handleToggleSubtask}
+                onClearTasks={handleClearTasks}
+                onResetDemoTasks={handleResetDemoTasks}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setActiveProjectId("all");
-                  setAssignedBannerProject(null);
-                }}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                View All Projects
-              </button>
-              <button
-                onClick={() => setAssignedBannerProject(null)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                title="Dismiss"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          </>
         )}
-
-        {/* Real-time Workload Matrix */}
-        <WorkloadMatrix colleagues={colleagues} />
-
-        {/* Dedicated Full-Width Manager Dispatcher Grid */}
-        <div className="w-full">
-          <ManagerDispatcher
-            tasks={tasks}
-            projects={projects}
-            colleagues={colleagues}
-            currentRole={currentRole}
-            currentUserId={currentUserId}
-            assignedProjectIds={user?.assignedProjectIds || (assignedBannerProject ? [assignedBannerProject.id] : undefined)}
-            activeProjectId={activeProjectId}
-            onSelectProject={(projId) => setActiveProjectId(projId)}
-            onUpdateTask={handleUpdateTask}
-            onAddTask={handleAddTask}
-            onAddProject={handleAddProject}
-            onAddSubtask={handleAddSubtask}
-            onDeleteSubtask={handleDeleteSubtask}
-            onUpdateTaskProgress={handleUpdateTaskProgress}
-            onToggleTaskBlocked={handleToggleTaskBlocked}
-            onToggleSubtask={handleToggleSubtask}
-            onClearTasks={handleClearTasks}
-            onResetDemoTasks={handleResetDemoTasks}
-          />
-        </div>
       </main>
     </div>
+      )}
+    </>
   );
 }

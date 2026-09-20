@@ -33,8 +33,8 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={showText ? "0 0 250 60" : "0 0 120 60"}
-      width={showText ? currentSize.width * 1.15 : currentSize.height * 2}
+      viewBox={showText ? "0 0 270 60" : "0 0 120 60"}
+      width={showText ? currentSize.width * 1.25 : currentSize.height * 2}
       height={currentSize.height}
       fill="none"
       className={`select-none ${className}`}

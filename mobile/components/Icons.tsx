@@ -1,5 +1,11 @@
-import React from "react";
-import { View, Text } from "react-native";
+import React, { useRef, useEffect } from "react";
+import { View, Text, TouchableOpacity, Animated, Easing, Image } from "react-native";
+import {
+  ICON_SUN_ACTIVE,
+  ICON_MOON_ACTIVE,
+  ICON_BELL_LIGHT,
+  ICON_BELL_RING_LIGHT,
+} from "../assets/themeIconsBase64";
 
 interface IconProps {
   size?: number;
@@ -157,55 +163,13 @@ export const UserIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", st
   );
 };
 
-export const BellIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 2 }) => {
-  const bellW = Math.round(size * 0.68);
-  const bellH = Math.round(size * 0.54);
-  const clapperW = Math.max(3, Math.round(size * 0.22));
-  const clapperH = Math.max(2, Math.round(size * 0.16));
-
+export const BellIcon: React.FC<IconProps> = ({ size = 20 }) => {
   return (
-    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
-      <View
-        style={{
-          width: 3,
-          height: 2,
-          backgroundColor: color,
-          borderRadius: 1,
-          marginBottom: 1,
-        }}
-      />
-      <View
-        style={{
-          width: bellW,
-          height: bellH,
-          borderTopLeftRadius: bellW / 2,
-          borderTopRightRadius: bellW / 2,
-          borderBottomLeftRadius: 2,
-          borderBottomRightRadius: 2,
-          borderWidth: strokeWidth,
-          borderColor: color,
-        }}
-      />
-      <View
-        style={{
-          width: bellW + 4,
-          height: strokeWidth,
-          backgroundColor: color,
-          borderRadius: strokeWidth / 2,
-          marginTop: -strokeWidth / 2,
-        }}
-      />
-      <View
-        style={{
-          width: clapperW,
-          height: clapperH,
-          borderBottomLeftRadius: clapperW / 2,
-          borderBottomRightRadius: clapperW / 2,
-          backgroundColor: color,
-          marginTop: 1,
-        }}
-      />
-    </View>
+    <Image
+      source={{ uri: ICON_BELL_LIGHT }}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 };
 
@@ -481,46 +445,23 @@ export const NativeProgressDial: React.FC<{ progress: number; size?: number; col
   );
 };
 
-export const SunIcon: React.FC<IconProps> = ({ size = 20, color = "#F59E0B" }) => {
-  const core = Math.round(size * 0.44);
-  const rayLen = Math.round(size * 0.18);
-  const rayThick = 2;
+export const SunIcon: React.FC<IconProps> = ({ size = 20 }) => {
   return (
-    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
-      <View
-        style={{
-          width: core,
-          height: core,
-          borderRadius: core / 2,
-          backgroundColor: color,
-        }}
-      />
-      {/* 4 cardinal rays */}
-      <View style={{ position: "absolute", top: 1, width: rayThick, height: rayLen, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ position: "absolute", bottom: 1, width: rayThick, height: rayLen, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ position: "absolute", left: 1, height: rayThick, width: rayLen, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ position: "absolute", right: 1, height: rayThick, width: rayLen, backgroundColor: color, borderRadius: 1 }} />
-    </View>
+    <Image
+      source={{ uri: ICON_SUN_ACTIVE }}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 };
 
-export const MoonIcon: React.FC<IconProps> = ({ size = 20, color = "#818CF8" }) => {
-  const d = Math.round(size * 0.75);
+export const MoonIcon: React.FC<IconProps> = ({ size = 20 }) => {
   return (
-    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
-      <View
-        style={{
-          width: d,
-          height: d,
-          borderRadius: d / 2,
-          borderWidth: 2.5,
-          borderColor: color,
-          borderRightColor: "transparent",
-          borderTopColor: "transparent",
-          transform: [{ rotate: "-45deg" }],
-        }}
-      />
-    </View>
+    <Image
+      source={{ uri: ICON_MOON_ACTIVE }}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 };
 
@@ -741,4 +682,470 @@ export const BuildingIcon: React.FC<IconProps> = ({ size = 20, color = "#756EF3"
     </View>
   );
 };
+
+export const BoardIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 1.5 }) => {
+  const colW = Math.max(3, Math.round(size * 0.22));
+  const gap = Math.max(2, Math.round(size * 0.1));
+  const h1 = Math.round(size * 0.75);
+  const h2 = Math.round(size * 0.55);
+  const h3 = Math.round(size * 0.65);
+  return (
+    <View style={{ width: size, height: size, flexDirection: "row", alignItems: "flex-end", justifyContent: "center", gap }}>
+      <View style={{ width: colW, height: h1, borderRadius: 2, backgroundColor: color }} />
+      <View style={{ width: colW, height: h2, borderRadius: 2, backgroundColor: color, opacity: 0.8 }} />
+      <View style={{ width: colW, height: h3, borderRadius: 2, backgroundColor: color, opacity: 0.6 }} />
+    </View>
+  );
+};
+
+export const ListIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 2 }) => {
+  const lineH = Math.max(2, strokeWidth);
+  const w = Math.round(size * 0.7);
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center", gap: 3 }}>
+      <View style={{ width: w, height: lineH, backgroundColor: color, borderRadius: 1 }} />
+      <View style={{ width: w, height: lineH, backgroundColor: color, borderRadius: 1 }} />
+      <View style={{ width: w * 0.6, height: lineH, backgroundColor: color, borderRadius: 1, alignSelf: "flex-start", marginLeft: (size - w) / 2 }} />
+    </View>
+  );
+};
+
+export const TimelineIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 2 }) => {
+  const barH = Math.max(2.5, Math.round(size * 0.16));
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "flex-start", gap: 3, paddingHorizontal: 2 }}>
+      <View style={{ width: Math.round(size * 0.55), height: barH, backgroundColor: color, borderRadius: 2, marginLeft: 1 }} />
+      <View style={{ width: Math.round(size * 0.75), height: barH, backgroundColor: color, borderRadius: 2, marginLeft: Math.round(size * 0.2) }} />
+      <View style={{ width: Math.round(size * 0.45), height: barH, backgroundColor: color, borderRadius: 2, marginLeft: Math.round(size * 0.4) }} />
+    </View>
+  );
+};
+
+export const DiamondMilestoneIcon: React.FC<IconProps> = ({ size = 16, color = "#F59E0B" }) => {
+  const d = Math.round(size * 0.65);
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          width: d,
+          height: d,
+          backgroundColor: color,
+          borderRadius: 2,
+          transform: [{ rotate: "45deg" }],
+        }}
+      />
+    </View>
+  );
+};
+
+export const ChatBubbleIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 1.5 }) => {
+  const w = Math.round(size * 0.75);
+  const h = Math.round(size * 0.6);
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          width: w,
+          height: h,
+          borderRadius: 4,
+          borderWidth: strokeWidth,
+          borderColor: color,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View style={{ width: w * 0.5, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
+      </View>
+    </View>
+  );
+};
+
+export const CheckCircleFilledIcon: React.FC<IconProps> = ({ size = 20, color = "#10B981" }) => {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: Math.round(size * 0.32),
+          height: Math.round(size * 0.52),
+          borderBottomWidth: 2,
+          borderRightWidth: 2,
+          borderColor: "#FFFFFF",
+          transform: [{ rotate: "45deg" }],
+          marginTop: -2,
+        }}
+      />
+    </View>
+  );
+};
+
+export const ActivityPulseIcon: React.FC<IconProps> = ({ size = 20, color = "#756EF3" }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: color }} />
+        <View style={{ width: 4, height: 1.5, backgroundColor: color }} />
+        <View style={{ width: 2, height: 8, backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ width: 2, height: 14, backgroundColor: color, borderRadius: 1, marginHorizontal: 1 }} />
+        <View style={{ width: 2, height: 6, backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ width: 4, height: 1.5, backgroundColor: color }} />
+        <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: color }} />
+      </View>
+    </View>
+  );
+};
+
+export const LayersIcon: React.FC<IconProps> = ({ size = 20, color = "#756EF3", strokeWidth = 1.8 }) => {
+  const w = Math.round(size * 0.72);
+  const h = Math.round(size * 0.32);
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          width: w,
+          height: h,
+          borderWidth: strokeWidth,
+          borderColor: color,
+          borderRadius: 3,
+          transform: [{ rotate: "-15deg" }],
+          position: "absolute",
+          top: 3,
+        }}
+      />
+      <View
+        style={{
+          width: w,
+          height: h,
+          borderWidth: strokeWidth,
+          borderColor: color,
+          borderRadius: 3,
+          backgroundColor: "transparent",
+          position: "absolute",
+          top: 9,
+        }}
+      />
+    </View>
+  );
+};
+
+export const ShieldCheckIcon: React.FC<IconProps> = ({ size = 20, color = "#10B981", strokeWidth = 1.8 }) => {
+  const w = Math.round(size * 0.7);
+  const h = Math.round(size * 0.82);
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          width: w,
+          height: h,
+          borderWidth: strokeWidth,
+          borderColor: color,
+          borderTopLeftRadius: 5,
+          borderTopRightRadius: 5,
+          borderBottomLeftRadius: w / 2,
+          borderBottomRightRadius: w / 2,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <View
+          style={{
+            width: Math.round(w * 0.28),
+            height: Math.round(h * 0.38),
+            borderBottomWidth: strokeWidth,
+            borderRightWidth: strokeWidth,
+            borderColor: color,
+            transform: [{ rotate: "45deg" }],
+            marginTop: -2,
+          }}
+        />
+      </View>
+    </View>
+  );
+};
+
+export const SlidersIcon: React.FC<IconProps> = ({ size = 20, color = "#756EF3", strokeWidth = 1.8 }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ width: size * 0.75, height: 2, backgroundColor: color, borderRadius: 1, marginVertical: 3 }}>
+        <View style={{ position: "absolute", left: 3, top: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+      </View>
+      <View style={{ width: size * 0.75, height: 2, backgroundColor: color, borderRadius: 1, marginVertical: 3 }}>
+        <View style={{ position: "absolute", right: 3, top: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+      </View>
+    </View>
+  );
+};
+
+export const InfoIcon: React.FC<IconProps> = ({ size = 20, color = "#64748B", strokeWidth = 1.8 }) => {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: strokeWidth,
+        borderColor: color,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View style={{ width: 2, height: 2, borderRadius: 1, backgroundColor: color, marginBottom: 2 }} />
+      <View style={{ width: 2, height: 6, borderRadius: 1, backgroundColor: color }} />
+    </View>
+  );
+};
+
+export const PulseIcon: React.FC<IconProps> = ({ size = 20, color = "#756EF3" }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View style={{ width: 2, height: 4, backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ width: 2, height: 10, backgroundColor: color, borderRadius: 1, marginHorizontal: 1 }} />
+        <View style={{ width: 2, height: 16, backgroundColor: color, borderRadius: 1, marginHorizontal: 1 }} />
+        <View style={{ width: 2, height: 6, backgroundColor: color, borderRadius: 1, marginHorizontal: 1 }} />
+        <View style={{ width: 2, height: 2, backgroundColor: color, borderRadius: 1 }} />
+      </View>
+    </View>
+  );
+};
+
+export const LockIcon: React.FC<IconProps> = ({ size = 18, color = "#64748B", strokeWidth = 1.8 }) => {
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          width: size * 0.55,
+          height: size * 0.45,
+          borderTopLeftRadius: size * 0.28,
+          borderTopRightRadius: size * 0.28,
+          borderWidth: strokeWidth,
+          borderBottomWidth: 0,
+          borderColor: color,
+        }}
+      />
+      <View
+        style={{
+          width: size * 0.75,
+          height: size * 0.5,
+          borderRadius: 3,
+          backgroundColor: color,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <View style={{ width: 2, height: 4, backgroundColor: "#FFFFFF", borderRadius: 1 }} />
+      </View>
+    </View>
+  );
+};
+
+export const AnimatedAddButton: React.FC<{
+  onPress?: () => void;
+  size?: number;
+  color?: string;
+  bg?: string;
+}> = ({ onPress, size = 56, color = "#FFFFFF", bg = "#756EF3" }) => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 250,
+        easing: Easing.out(Easing.back(1.5)),
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 0,
+        duration: 0,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    if (onPress) onPress();
+  };
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "90deg"],
+  });
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={handlePress}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: bg,
+        alignItems: "center",
+        justifyContent: "center",
+        marginTop: -22,
+        shadowColor: bg,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 6,
+      }}
+    >
+      <Animated.View
+        style={{
+          transform: [{ scale: pulseAnim }, { rotate: spin }],
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <PlusIcon size={Math.round(size * 0.48)} color={color} strokeWidth={2.5} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+export const AnimatedThemeToggle: React.FC<{
+  isDarkMode: boolean;
+  onPress?: () => void;
+  size?: number;
+}> = ({ isDarkMode, onPress, size = 18 }) => {
+  const spinAnim = useRef(new Animated.Value(isDarkMode ? 1 : 0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(spinAnim, {
+        toValue: isDarkMode ? 1 : 0,
+        duration: 380,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.25,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 4,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [isDarkMode]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  const content = (
+    <Animated.View
+      style={{
+        transform: [{ rotate: spin }, { scale: scaleAnim }],
+        justifyContent: "center",
+        alignItems: "center",
+        width: size + 6,
+        height: size + 6,
+      }}
+    >
+      {isDarkMode ? (
+        <SunIcon size={size} color="#F59E0B" />
+      ) : (
+        <MoonIcon size={size} color="#4338CA" />
+      )}
+    </Animated.View>
+  );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return content;
+};
+
+export const BarChartIcon: React.FC<IconProps> = ({ size = 20, color = "#002055" }) => {
+  const barW = Math.max(3, Math.round(size * 0.18));
+  return (
+    <View style={{ width: size, height: size, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 2 }}>
+      <View style={{ width: barW, height: "45%", backgroundColor: color, borderRadius: 1.5 }} />
+      <View style={{ width: barW, height: "80%", backgroundColor: color, borderRadius: 1.5 }} />
+      <View style={{ width: barW, height: "60%", backgroundColor: color, borderRadius: 1.5 }} />
+      <View style={{ width: barW, height: "100%", backgroundColor: color, borderRadius: 1.5 }} />
+    </View>
+  );
+};
+
+export const TrendingUpIcon: React.FC<IconProps> = ({ size = 20, color = "#10B981" }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ width: size * 0.8, height: size * 0.8, borderLeftWidth: 2, borderBottomWidth: 2, borderColor: color, position: "relative" }}>
+        <View style={{ position: "absolute", right: 0, top: 0, width: 0, height: 0, borderLeftWidth: 4, borderRightWidth: 4, borderBottomWidth: 7, borderLeftColor: "transparent", borderRightColor: "transparent", borderBottomColor: color, transform: [{ rotate: "45deg" }] }} />
+        <View style={{ position: "absolute", left: 2, bottom: 2, width: size * 0.6, height: 2, backgroundColor: color, transform: [{ rotate: "-35deg" }, { translateX: 3 }] }} />
+      </View>
+    </View>
+  );
+};
+
+export const FileTextIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 1.8 }) => {
+  const w = Math.round(size * 0.72);
+  const h = Math.round(size * 0.9);
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View style={{ width: w, height: h, borderWidth: strokeWidth, borderColor: color, borderRadius: 3, padding: 3, justifyContent: "space-evenly" }}>
+        <View style={{ height: 1.5, width: "80%", backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ height: 1.5, width: "100%", backgroundColor: color, borderRadius: 1 }} />
+        <View style={{ height: 1.5, width: "60%", backgroundColor: color, borderRadius: 1 }} />
+      </View>
+    </View>
+  );
+};
+
+export const DownloadIcon: React.FC<IconProps> = ({ size = 20, color = "#002055", strokeWidth = 2 }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      {/* Down arrow stem */}
+      <View style={{ width: strokeWidth, height: size * 0.45, backgroundColor: color }} />
+      {/* Down arrow head */}
+      <View style={{ width: 0, height: 0, borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 6, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: color, marginTop: -1 }} />
+      {/* Tray */}
+      <View style={{ width: size * 0.75, height: strokeWidth, backgroundColor: color, marginTop: 4, borderRadius: 1 }} />
+    </View>
+  );
+};
+
+
 
