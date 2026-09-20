@@ -30,7 +30,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, signInWithCustomUser, isLiveFirebase } = useAuth();
+  const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signInWithCustomUser, isLiveFirebase } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { joinWithCode } = useOrganization();
 
@@ -42,6 +42,12 @@ export default function LoginPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) {
+      window.location.href = "/";
+    }
+  }, [user, loading]);
 
   // GSAP Animation Refs
   const pageContainerRef = useRef<HTMLDivElement>(null);
@@ -201,7 +207,7 @@ export default function LoginPage() {
         }
       }
 
-      router.push("/");
+      window.location.href = "/";
     } catch (err: any) {
       setError(err?.message || "Failed to authenticate. Please verify your credentials.");
       triggerErrorShake();
@@ -215,7 +221,7 @@ export default function LoginPage() {
     try {
       const res = await signInWithGoogle();
       if (res.success) {
-        router.push("/");
+        window.location.href = "/";
       } else {
         if (res.error && res.error !== "Sign-in popup was closed before completing.") {
           setError(res.error);
@@ -232,7 +238,7 @@ export default function LoginPage() {
 
   const handleRoleSandbox = (roleName: string, roleEmail: string) => {
     signInWithCustomUser(roleName, roleEmail);
-    router.push("/");
+    window.location.href = "/";
   };
 
   return (

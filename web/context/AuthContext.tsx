@@ -124,88 +124,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 1. Check if user explicitly signed out
+    // 1. Initial local restore
     if (typeof window !== "undefined") {
       const isSignedOut = localStorage.getItem("taskpulse_signed_out") === "true";
       if (isSignedOut) {
         setUser(null);
         setLoading(false);
-        return;
-      }
-
-      // 2. Check if user logged in with a profile in this browser
-      const savedUser = localStorage.getItem("taskpulse_logged_user");
-      if (savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          if (parsed && (parsed.email || parsed.displayName)) {
-            const isPerm = isPermanentAdminEmail(parsed.email);
-            parsed.role = isPerm
-              ? "admin"
-              : (parsed.email ? (loadedRoles[parsed.email.toLowerCase().trim()] || parsed.role) : parsed.role);
-            parsed.isPermanentAdmin = isPerm;
-            setUser(parsed);
-            setLoading(false);
-            return;
+      } else {
+        const savedUser = localStorage.getItem("taskpulse_logged_user");
+        if (savedUser) {
+          try {
+            const parsed = JSON.parse(savedUser);
+            if (parsed && (parsed.email || parsed.displayName)) {
+              const isPerm = isPermanentAdminEmail(parsed.email);
+              parsed.role = isPerm
+                ? "admin"
+                : (parsed.email ? (loadedRoles[parsed.email.toLowerCase().trim()] || parsed.role) : parsed.role);
+              parsed.isPermanentAdmin = isPerm;
+              setUser(parsed);
+              setLoading(false);
+            }
+          } catch (e) {
+            console.warn("Failed to parse saved user", e);
           }
-        } catch (e) {
-          console.warn("Failed to parse saved user", e);
         }
       }
     }
 
-    // 3. If Firebase credentials exist, listen to real Firebase Auth state
+    // 2. Real Firebase Auth state synchronization
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
         if (firebaseUser) {
           const isPerm = isPermanentAdminEmail(firebaseUser.email);
-          let role: UserRole = isPerm ? "admin" : "member";
+          let role: UserRole = isPerm
+            ? "admin"
+            : (firebaseUser.email ? (loadedRoles[firebaseUser.email.toLowerCase().trim()] || "member") : "member");
           let department: Department = "Engineering";
-
-          // Read custom claims if set
-          try {
-            const idTokenResult = await firebaseUser.getIdTokenResult();
-            if (idTokenResult.claims.role && !isPerm) {
-              role = idTokenResult.claims.role as UserRole;
-            }
-            if (idTokenResult.claims.departmentId) {
-              department = idTokenResult.claims.departmentId as Department;
-            }
-          } catch (err) {
-            console.warn("Token claim error:", err);
-          }
-
-          // Check Firestore user record if available
-          if (db) {
-            try {
-              const userRef = doc(db, "users", firebaseUser.uid);
-              const userSnap = await getDoc(userRef);
-              if (userSnap.exists()) {
-                const data = userSnap.data();
-                if (data.role && !isPerm) role = data.role as UserRole;
-                if (data.department) department = data.department as Department;
-              } else {
-                await setDoc(
-                  userRef,
-                  {
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email,
-                    displayName: firebaseUser.displayName || "Workspace Member",
-                    role: isPerm ? "admin" : role,
-                    department,
-                    updatedAt: new Date().toISOString(),
-                  },
-                  { merge: true }
-                );
-              }
-            } catch (err) {
-              console.warn("Firestore user sync warning:", err);
-            }
-          }
-
-          if (!isPerm && firebaseUser.email && loadedRoles[firebaseUser.email.toLowerCase().trim()]) {
-            role = loadedRoles[firebaseUser.email.toLowerCase().trim()];
-          }
 
           const loggedInUser: AppUser = {
             uid: firebaseUser.uid,
@@ -221,20 +175,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isPermanentAdmin: isPerm,
           };
 
+          // Synchronize immediately to avoid navigation and render blocking
           setUser(loggedInUser);
           if (typeof window !== "undefined") {
             localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
             localStorage.removeItem("taskpulse_signed_out");
           }
+          setLoading(false);
+
+          // Asynchronous non-blocking Firestore & claims sync
+          (async () => {
+            try {
+              let updated = false;
+              const idTokenResult = await firebaseUser.getIdTokenResult();
+              if (idTokenResult.claims.role && !isPerm && idTokenResult.claims.role !== role) {
+                role = idTokenResult.claims.role as UserRole;
+                updated = true;
+              }
+              if (idTokenResult.claims.departmentId && idTokenResult.claims.departmentId !== department) {
+                department = idTokenResult.claims.departmentId as Department;
+                updated = true;
+              }
+
+              if (db) {
+                const userRef = doc(db, "users", firebaseUser.uid);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                  const data = userSnap.data();
+                  if (data.role && !isPerm && data.role !== role) {
+                    role = data.role as UserRole;
+                    updated = true;
+                  }
+                  if (data.department && data.department !== department) {
+                    department = data.department as Department;
+                    updated = true;
+                  }
+                } else {
+                  await setDoc(
+                    userRef,
+                    {
+                      uid: firebaseUser.uid,
+                      email: firebaseUser.email,
+                      displayName: firebaseUser.displayName || "Workspace Member",
+                      role: isPerm ? "admin" : role,
+                      department,
+                      updatedAt: new Date().toISOString(),
+                    },
+                    { merge: true }
+                  );
+                }
+              }
+
+              if (updated) {
+                const enrichedUser: AppUser = {
+                  ...loggedInUser,
+                  role: isPerm ? "admin" : role,
+                  department,
+                };
+                setUser(enrichedUser);
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("taskpulse_logged_user", JSON.stringify(enrichedUser));
+                }
+              }
+            } catch (err) {
+              console.warn("Background claim/Firestore sync notice:", err);
+            }
+          })();
         } else {
-          setUser(null);
+          // No active Firebase session
+          const isExplicitlySignedOut = typeof window !== "undefined" && localStorage.getItem("taskpulse_signed_out") === "true";
+          if (isExplicitlySignedOut) {
+            setUser(null);
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("taskpulse_logged_user");
+            }
+          }
+          setLoading(false);
         }
-        setLoading(false);
       });
 
       return () => unsubscribe();
     } else {
-      setUser(null);
       setLoading(false);
     }
   }, []);
@@ -255,25 +276,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? "admin"
           : (teamRoles[cred.user.email?.toLowerCase().trim() || ""] || "member");
 
-        if (db) {
-          try {
-            const userDocRef = doc(db, "users", cred.user.uid);
-            const userDoc = await getDoc(userDocRef);
-            if (!userDoc.exists()) {
-              await setDoc(userDocRef, {
-                uid: cred.user.uid,
-                email: cred.user.email,
-                displayName: cred.user.displayName,
-                photoURL: cred.user.photoURL,
-                role: initialRole,
-                department: "Engineering",
-                createdAt: new Date().toISOString(),
-              });
-            }
-          } catch (err) {
-            console.warn("Firestore user sync on Google sign in:", err);
-          }
+        const loggedInUser: AppUser = {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          displayName: cred.user.displayName || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
+          photoURL:
+            cred.user.photoURL ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              cred.user.displayName || "User"
+            )}&background=${isPerm ? "7C3AED" : "4285F4"}&color=fff`,
+          role: initialRole,
+          department: "Engineering",
+          isPermanentAdmin: isPerm,
+        };
+
+        setUser(loggedInUser);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+          localStorage.removeItem("taskpulse_signed_out");
         }
+
+        if (db) {
+          // Asynchronously upsert profile to Firestore without blocking return
+          setDoc(
+            doc(db, "users", cred.user.uid),
+            {
+              uid: cred.user.uid,
+              email: cred.user.email,
+              displayName: cred.user.displayName,
+              photoURL: cred.user.photoURL,
+              role: initialRole,
+              department: "Engineering",
+              lastLoginAt: new Date().toISOString(),
+            },
+            { merge: true }
+          ).catch((err) => console.warn("Background Firestore user sync:", err));
+        }
+
         return { success: true };
       }
       return { success: true };
@@ -313,7 +352,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isFirebaseConfigured && auth) {
       try {
-        await signInWithEmailAndPassword(auth, cleanEmail, password);
+        const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+        if (cred.user) {
+          const isPerm = isPermanentAdminEmail(cred.user.email);
+          const initialRole: UserRole = isPerm
+            ? "admin"
+            : (teamRoles[cleanEmail] || "member");
+
+          const loggedInUser: AppUser = {
+            uid: cred.user.uid,
+            email: cred.user.email,
+            displayName: cred.user.displayName || (isPerm ? "Zevon (Super Admin)" : cleanEmail.split("@")[0]),
+            photoURL:
+              cred.user.photoURL ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                cleanEmail.split("@")[0]
+              )}&background=${isPerm ? "7C3AED" : "756EF3"}&color=fff&size=128`,
+            role: initialRole,
+            department: "Engineering",
+            isPermanentAdmin: isPerm,
+          };
+
+          setUser(loggedInUser);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+            localStorage.removeItem("taskpulse_signed_out");
+          }
+        }
         return { success: true };
       } catch (err: any) {
         console.warn("Firebase email sign-in error:", err.code, err.message);
@@ -359,16 +424,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         if (cred.user) {
-          await updateProfile(cred.user, {
+          try {
+            await updateProfile(cred.user, {
+              displayName: cleanName,
+              photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                cleanName
+              )}&background=${isPerm ? "7C3AED" : "756EF3"}&color=fff&size=128`,
+            });
+          } catch (profileErr) {
+            console.warn("Profile update notice:", profileErr);
+          }
+
+          const loggedInUser: AppUser = {
+            uid: cred.user.uid,
+            email: cred.user.email,
             displayName: cleanName,
             photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(
               cleanName
             )}&background=${isPerm ? "7C3AED" : "756EF3"}&color=fff&size=128`,
-          });
-        }
-        if (db && cred.user) {
-          try {
-            await setDoc(
+            role: targetRole,
+            department,
+            isPermanentAdmin: isPerm,
+          };
+
+          setUser(loggedInUser);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+            localStorage.removeItem("taskpulse_signed_out");
+          }
+
+          if (db) {
+            setDoc(
               doc(db, "users", cred.user.uid),
               {
                 uid: cred.user.uid,
@@ -379,9 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 createdAt: new Date().toISOString(),
               },
               { merge: true }
-            );
-          } catch (e) {
-            console.warn("Firestore user creation sync warning:", e);
+            ).catch((e) => console.warn("Firestore user creation sync warning:", e));
           }
         }
         return { success: true };
