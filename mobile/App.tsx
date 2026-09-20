@@ -586,7 +586,6 @@ export default function App() {
   const [projectTabMode, setProjectTabMode] = useState<ProjectTabMode>("list");
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<MobileTask | null>(null);
   const [detailCommentInput, setDetailCommentInput] = useState("");
-  const [showCelebration, setShowCelebration] = useState(false);
   const [activityEvents, setActivityEvents] = useState([
     { id: "act-1", user: "Bikash", role: "Admin", action: "approved", target: "Database Schema & Auth APIs", time: "5m ago", color: "#10B981" },
     { id: "act-2", user: "Elena", role: "Member", action: "completed subtask on", target: "Landing Page & Features", time: "18m ago", color: "#3B82F6" },
@@ -615,7 +614,7 @@ export default function App() {
               priority: rt.priority || "medium",
               status: rt.status === "completed" ? "completed" : rt.status === "in_review" ? "in_review" : "in_progress",
               progress: rt.progressPercentage ?? 0,
-              timeAgo: "Live sync",
+              timeAgo: "Just now",
               subtasks: rt.subtasks?.map((st: any) => ({
                 id: st.id,
                 title: st.title,
@@ -1091,8 +1090,7 @@ export default function App() {
 
         if (allCompleted && task.status !== "in_review" && task.status !== "completed") {
           targetTaskToReview = updated;
-          setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 2200);
+          triggerHaptic("success");
         }
 
         if (selectedTask?.id === taskId) {
@@ -1154,8 +1152,6 @@ export default function App() {
 
   const handleManagerApprove = (taskId: string) => {
     triggerHaptic("success");
-    setShowCelebration(true);
-    setTimeout(() => setShowCelebration(false), 2200);
 
     const approvedTask = tasks.find((t) => t.id === taskId);
     if (approvedTask) {
@@ -1233,8 +1229,7 @@ export default function App() {
         if (selectedTask?.id === taskId) setSelectedTask(updated);
         if (selectedTaskDetail?.id === taskId) setSelectedTaskDetail(updated);
         if (newStatus === "completed") {
-          setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 2200);
+          triggerHaptic("success");
         }
         return updated;
       })
@@ -1931,12 +1926,12 @@ export default function App() {
             <ActivityPulseIcon size={16} color={COLORS.primary} />
           </View>
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.pulseCardTitle}>Team Workload Pulse</Text>
-            <Text style={styles.pulseCardSubtitle}>Active capacity & bandwidth monitor</Text>
+            <Text style={styles.pulseCardTitle}>Team Bandwidth & Allocation</Text>
+            <Text style={styles.pulseCardSubtitle}>Engineering & design sprint distribution</Text>
           </View>
         </View>
         <View style={styles.pulseCountBadge}>
-          <Text style={styles.pulseCountBadgeText}>{teamPulseData.length} Team</Text>
+          <Text style={styles.pulseCountBadgeText}>{teamPulseData.length} Members</Text>
         </View>
       </View>
 
@@ -1952,7 +1947,7 @@ export default function App() {
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <View>
                   <Text style={styles.pulseMemberName}>{member.name}</Text>
-                  <Text style={styles.pulseMemberRole}>{member.role} • {member.tasksCount} active tasks</Text>
+                  <Text style={styles.pulseMemberRole}>{member.role} · {member.tasksCount} active tasks</Text>
                 </View>
                 <View style={[styles.pulseLoadPill, { backgroundColor: member.statusColor + "1A" }]}>
                   <Text style={[styles.pulseLoadPillText, { color: member.statusColor }]}>
@@ -1987,13 +1982,9 @@ export default function App() {
             <ClockIcon size={14} color="#3B82F6" />
           </View>
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.pulseCardTitle}>Live Activity Audit</Text>
-            <Text style={styles.pulseCardSubtitle}>Cloud synchronization event trail</Text>
+            <Text style={styles.pulseCardTitle}>Activity Audit</Text>
+            <Text style={styles.pulseCardSubtitle}>Sprint log and verification ledger</Text>
           </View>
-        </View>
-        <View style={styles.pulseLiveIndicator}>
-          <View style={styles.pulseLiveDot} />
-          <Text style={styles.pulseLiveText}>Live Sync</Text>
         </View>
       </View>
 
@@ -2341,23 +2332,6 @@ export default function App() {
     );
   };
 
-  const renderCelebrationModal = () => {
-    if (!showCelebration) return null;
-    return (
-      <View style={styles.celebrationToast}>
-        <View style={styles.celebrationIconWrap}>
-          <CheckCircleFilledIcon size={22} color="#10B981" />
-        </View>
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={styles.celebrationTitle}>Deliverable Completed</Text>
-          <Text style={styles.celebrationSubtitle}>
-            Synchronized with team audit stream & metrics updated
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
   // AUTHENTICATION & FIRST-TIME ENTRANCE VIEW (When user is not logged in)
   if (!currentUser) {
     return (
@@ -2463,40 +2437,6 @@ export default function App() {
               <TouchableOpacity onPress={() => handleSignIn()} style={styles.authSubmitBtn}>
                 <Text style={styles.authSubmitBtnText}>Sign In</Text>
               </TouchableOpacity>
-
-              {/* Fast Switch Demo Profiles */}
-              <Text style={[styles.inputLabel, { marginTop: 20 }]}>DEMO PROFILES (FAST LOGIN):</Text>
-              <View style={styles.quickAccountsRow}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setLoginEmail("zevonbcash@gmail.com");
-                    handleSignIn("zevonbcash@gmail.com");
-                  }}
-                  style={styles.quickAccountChip}
-                >
-                  <Text style={styles.quickAccountChipText}>Bikash (Admin)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setLoginEmail("marcus@taskpulse.io");
-                    handleSignIn("marcus@taskpulse.io");
-                  }}
-                  style={styles.quickAccountChip}
-                >
-                  <Text style={styles.quickAccountChipText}>Marcus (Manager)</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => {
-                    setLoginEmail("elena@taskpulse.io");
-                    handleSignIn("elena@taskpulse.io");
-                  }}
-                  style={styles.quickAccountChip}
-                >
-                  <Text style={styles.quickAccountChipText}>Elena (Specialist)</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           ) : (
             /* SIGN UP / ADMIN 3-STEP ONBOARDING WIZARD */
@@ -2695,7 +2635,7 @@ export default function App() {
                   </View>
                   <View style={{ marginLeft: 10 }}>
                     <Text style={styles.bannerTitle}>{projects[0]?.name || "Application Design"}</Text>
-                    <Text style={styles.bannerSubtitle}>UI Design Kit & Task Pulse</Text>
+                    <Text style={styles.bannerSubtitle}>Active Sprint Roadmap · Core Deliverables</Text>
                   </View>
                 </View>
                 <View style={styles.featuredBadge}>
@@ -2910,10 +2850,10 @@ export default function App() {
               </TouchableOpacity>
               <View style={{ flex: 1, marginHorizontal: 10 }}>
                 <Text style={styles.detailsHeaderTitle} numberOfLines={1}>
-                  {selectedProjectView.name} Folder
+                  {selectedProjectView.name}
                 </Text>
                 <Text style={styles.projectCategory}>
-                  {selectedProjectView.department} • {selectedProjectView.code} Dossier
+                  {selectedProjectView.department} · {selectedProjectView.code}
                 </Text>
               </View>
               <TouchableOpacity
@@ -4135,7 +4075,7 @@ export default function App() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Organization Dossier Badge */}
+                {/* Organization Badge */}
                 <View style={styles.drawerOrgCard}>
                   <View style={styles.drawerOrgIconWrap}>
                     <BuildingIcon size={16} color={COLORS.primary} />
@@ -4145,15 +4085,15 @@ export default function App() {
                       {currentUser.organization}
                     </Text>
                     <Text style={styles.drawerOrgSub}>
-                      Workspace: tp-core-enterprise
+                      Enterprise Workspace · Active Sprint
                     </Text>
                   </View>
                 </View>
               </View>
 
-              {/* Sprint Health & Pulse Overview */}
+              {/* Sprint Overview */}
               <View style={styles.drawerSection}>
-                <Text style={styles.drawerSectionLabel}>SPRINT HEALTH PULSE</Text>
+                <Text style={styles.drawerSectionLabel}>SPRINT OVERVIEW</Text>
                 <View style={styles.drawerMetricsRow}>
                   <View style={styles.drawerMetricItem}>
                     <Text style={[styles.drawerMetricNum, { color: COLORS.accentBlue }]}>
@@ -4302,13 +4242,9 @@ export default function App() {
                 ))}
               </View>
 
-              {/* Footer & Cloud Sync Status */}
+              {/* Footer */}
               <View style={styles.drawerFooter}>
-                <View style={styles.drawerSyncRow}>
-                  <View style={styles.drawerSyncDot} />
-                  <Text style={styles.drawerSyncText}>Cloud Sync: Connected (Real-time)</Text>
-                </View>
-                <Text style={styles.drawerVersionText}>TaskPulse Mobile v2.4.0 • Enterprise Edition</Text>
+                <Text style={styles.drawerVersionText}>TaskPulse Mobile · v2.4 (Enterprise)</Text>
 
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -4323,7 +4259,7 @@ export default function App() {
                   style={styles.drawerLogoutButton}
                 >
                   <UsersIcon size={16} color="#EF4444" />
-                  <Text style={styles.drawerLogoutText}>Switch Account / Sign Out</Text>
+                  <Text style={styles.drawerLogoutText}>Sign Out</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -4338,9 +4274,6 @@ export default function App() {
 
       {/* INTERACTIVE TASK DETAIL BOTTOM SHEET */}
       {renderTaskDetailModal()}
-
-      {/* CELEBRATION TOAST FEEDBACK */}
-      {renderCelebrationModal()}
 
       {/* ENTERPRISE AUDIT & RBAC MODAL */}
       <EnterpriseAuditAndRbacModal
@@ -5975,25 +5908,6 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       fontWeight: "bold",
       color: "#FFFFFF",
     },
-    quickAccountsRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 6,
-      marginTop: 4,
-    },
-    quickAccountChip: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 8,
-      backgroundColor: COLORS.cardSecondary,
-      borderWidth: 1,
-      borderColor: COLORS.border,
-    },
-    quickAccountChipText: {
-      fontSize: 10,
-      color: COLORS.navy,
-      fontWeight: "600",
-    },
 
     /* 3-STEP ONBOARDING WIZARD STYLES */
     wizardContainer: {
@@ -6718,25 +6632,8 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       borderTopWidth: 1,
       borderTopColor: COLORS.cardBorder,
     },
-    drawerSyncRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 4,
-    },
-    drawerSyncDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: "#10B981",
-      marginRight: 6,
-    },
-    drawerSyncText: {
-      fontSize: 10,
-      color: "#10B981",
-      fontWeight: "600",
-    },
     drawerVersionText: {
-      fontSize: 9,
+      fontSize: 10,
       color: COLORS.muted,
       marginBottom: 12,
     },
@@ -6799,26 +6696,6 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       fontSize: 10,
       fontWeight: "bold",
       color: COLORS.primary,
-    },
-    pulseLiveIndicator: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 12,
-      backgroundColor: "rgba(16, 185, 129, 0.12)",
-    },
-    pulseLiveDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: "#10B981",
-      marginRight: 4,
-    },
-    pulseLiveText: {
-      fontSize: 10,
-      fontWeight: "bold",
-      color: "#10B981",
     },
     pulseMemberRow: {
       flexDirection: "row",
@@ -7252,45 +7129,6 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       color: "#FFFFFF",
       fontSize: 11,
       fontWeight: "bold",
-    },
-
-    // Celebration Toast Banner
-    celebrationToast: {
-      position: "absolute",
-      top: 48,
-      left: 16,
-      right: 16,
-      backgroundColor: COLORS.card,
-      borderRadius: 14,
-      padding: 14,
-      flexDirection: "row",
-      alignItems: "center",
-      borderWidth: 1.5,
-      borderColor: "#10B981",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 6,
-      zIndex: 99999,
-    },
-    celebrationIconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: "rgba(16, 185, 129, 0.15)",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    celebrationTitle: {
-      fontSize: 13,
-      fontWeight: "bold",
-      color: COLORS.navy,
-    },
-    celebrationSubtitle: {
-      fontSize: 10,
-      color: COLORS.textSecondary,
-      marginTop: 1,
     },
   });
 
