@@ -73,6 +73,7 @@ import { GovernanceGatesSection, ApprovalGate } from "./components/GovernanceGat
 import { EnterpriseAuditAndRbacModal } from "./components/EnterpriseAuditAndRbacModal";
 import { CorporateAnalyticsExportModal } from "./components/CorporateAnalyticsExportModal";
 import { EnterpriseThreadedDiscussionSection } from "./components/EnterpriseThreadedDiscussionSection";
+import { FluidPressable } from "./components/FluidPressable";
 
 export type ProjectTabMode = "list" | "board" | "timeline";
 
@@ -739,6 +740,67 @@ export default function App() {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
+  // Fluid Progress & Screen Transition Animations
+  const heroProgressAnim = useRef(new Animated.Value(0)).current;
+  const teamPulseAnim = useRef(new Animated.Value(0)).current;
+  const viewModeFadeAnim = useRef(new Animated.Value(1)).current;
+  const taskFilterFadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(heroProgressAnim, {
+        toValue: 0.625,
+        duration: 950,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: false,
+      }),
+      Animated.timing(teamPulseAnim, {
+        toValue: 1,
+        duration: 900,
+        delay: 150,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [heroProgressAnim, teamPulseAnim]);
+
+  const handleSelectDay = useCallback((date: string) => {
+    triggerHaptic("selection");
+    setSelectedDay(date);
+    taskFilterFadeAnim.setValue(0.6);
+    Animated.timing(taskFilterFadeAnim, {
+      toValue: 1,
+      duration: 180,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [taskFilterFadeAnim]);
+
+  const handleSelectFilter = useCallback((filter: string) => {
+    triggerHaptic("selection");
+    setTaskStatusFilter(filter);
+    taskFilterFadeAnim.setValue(0.6);
+    Animated.timing(taskFilterFadeAnim, {
+      toValue: 1,
+      duration: 180,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [taskFilterFadeAnim]);
+
+  const handleSwitchProjectTabMode = useCallback((mode: ProjectTabMode) => {
+    if (mode === projectTabMode) return;
+    triggerHaptic("selection");
+    viewModeFadeAnim.setValue(0.65);
+    setProjectTabMode(mode);
+    Animated.timing(viewModeFadeAnim, {
+      toValue: 1,
+      duration: 180,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      useNativeDriver: true,
+    }).start();
+  }, [projectTabMode, viewModeFadeAnim]);
+
   // Drawer Animation Physics
   const drawerSlideAnim = useRef(new Animated.Value(-SCREEN_WIDTH * 0.85)).current;
   const drawerFadeAnim = useRef(new Animated.Value(0)).current;
@@ -839,13 +901,14 @@ export default function App() {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
-          duration: 160,
-          easing: Easing.out(Easing.cubic),
+          duration: 180,
+          easing: Easing.bezier(0.16, 1, 0.3, 1),
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 160,
+          duration: 180,
+          easing: Easing.bezier(0.16, 1, 0.3, 1),
           useNativeDriver: true,
         }),
       ]).start();
@@ -905,13 +968,14 @@ export default function App() {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
-          duration: 160,
-          easing: Easing.out(Easing.cubic),
+          duration: 180,
+          easing: Easing.bezier(0.16, 1, 0.3, 1),
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 160,
+          duration: 180,
+          easing: Easing.bezier(0.16, 1, 0.3, 1),
           useNativeDriver: true,
         }),
       ]).start();
@@ -1957,11 +2021,14 @@ export default function App() {
               </View>
 
               <View style={styles.pulseProgressBarBg}>
-                <View
+                <Animated.View
                   style={[
                     styles.pulseProgressBarFill,
                     {
-                      width: `${member.loadPercentage}%`,
+                      width: teamPulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["0%", `${member.loadPercentage}%`],
+                      }),
                       backgroundColor: member.statusColor,
                     },
                   ]}
@@ -2069,9 +2136,9 @@ export default function App() {
                 </View>
               ) : (
                 col.tasks.map((task) => (
-                  <TouchableOpacity
+                  <FluidPressable
                     key={task.id}
-                    activeOpacity={0.85}
+                    targetScale={0.975}
                     onPress={() => {
                       triggerHaptic("selection");
                       setSelectedTaskDetail(task);
@@ -2123,7 +2190,7 @@ export default function App() {
                         </Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </FluidPressable>
                 ))
               )}
             </ScrollView>
@@ -2620,8 +2687,8 @@ export default function App() {
             </View>
 
             {/* Featured Hero Banner */}
-            <TouchableOpacity
-              activeOpacity={0.9}
+            <FluidPressable
+              targetScale={0.98}
               onPress={() => {
                 triggerHaptic("selection");
                 navigateForward("projects", { project: projects.length > 0 ? projects[0] : null });
@@ -2657,11 +2724,21 @@ export default function App() {
                     <Text style={styles.progressRatio}>50/80</Text>
                   </View>
                   <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: "62%" }]} />
+                    <Animated.View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          width: heroProgressAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["0%", "62.5%"],
+                          }),
+                        },
+                      ]}
+                    />
                   </View>
                 </View>
               </View>
-            </TouchableOpacity>
+            </FluidPressable>
 
             {/* Interactive Calendar Date Strip */}
             <View style={styles.calendarSection}>
@@ -2673,12 +2750,10 @@ export default function App() {
                 {DAYS.map((d) => {
                   const isSelected = selectedDay === d.date;
                   return (
-                    <TouchableOpacity
+                    <FluidPressable
                       key={d.date}
-                      onPress={() => {
-                        triggerHaptic("selection");
-                        setSelectedDay(d.date);
-                      }}
+                      targetScale={0.93}
+                      onPress={() => handleSelectDay(d.date)}
                       hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                       style={[
                         styles.dayCard,
@@ -2692,7 +2767,7 @@ export default function App() {
                         {d.day}
                       </Text>
                       {d.isToday && !isSelected && <View style={styles.todayDot} />}
-                    </TouchableOpacity>
+                    </FluidPressable>
                   );
                 })}
               </ScrollView>
@@ -2709,19 +2784,17 @@ export default function App() {
               {["All", "In Progress", "Under Review", "Completed"].map((filter) => {
                 const isActive = taskStatusFilter === filter;
                 return (
-                  <TouchableOpacity
+                  <FluidPressable
                     key={filter}
-                    onPress={() => {
-                      triggerHaptic("selection");
-                      setTaskStatusFilter(filter);
-                    }}
+                    targetScale={0.94}
+                    onPress={() => handleSelectFilter(filter)}
                     hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                     style={[styles.filterChip, isActive && styles.filterChipActive]}
                   >
                     <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
                       {filter}
                     </Text>
-                  </TouchableOpacity>
+                  </FluidPressable>
                 );
               })}
             </ScrollView>
@@ -2749,88 +2822,90 @@ export default function App() {
             </View>
 
             {/* Task Cards */}
-            {filteredTasks.map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                onPress={() => {
-                  triggerHaptic("selection");
-                  setSelectedTaskDetail(task);
-                  setSelectedTask(task);
-                }}
-                activeOpacity={0.85}
-                style={styles.taskCard}
-              >
-                <View style={styles.taskCardBody}>
-                  <View style={styles.taskBadgeRow}>
-                    <View style={styles.projectTagPill}>
-                      <Text style={styles.projectTagText}>{task.project}</Text>
+            <Animated.View style={{ opacity: taskFilterFadeAnim }}>
+              {filteredTasks.map((task) => (
+                <FluidPressable
+                  key={task.id}
+                  targetScale={0.975}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setSelectedTaskDetail(task);
+                    setSelectedTask(task);
+                  }}
+                  style={styles.taskCard}
+                >
+                  <View style={styles.taskCardBody}>
+                    <View style={styles.taskBadgeRow}>
+                      <View style={styles.projectTagPill}>
+                        <Text style={styles.projectTagText}>{task.project}</Text>
+                      </View>
+                      {task.status === "in_review" && (
+                        <View style={styles.underReviewPill}>
+                          <Text style={styles.underReviewPillText}>Under Review</Text>
+                        </View>
+                      )}
+                      {task.priority === "critical" && <View style={[styles.priorityDot, { backgroundColor: "#EF4444" }]} />}
+                      {task.priority === "high" && <View style={[styles.priorityDot, { backgroundColor: "#F59E0B" }]} />}
                     </View>
-                    {task.status === "in_review" && (
-                      <View style={styles.underReviewPill}>
-                        <Text style={styles.underReviewPillText}>Under Review</Text>
+
+                    <Text style={styles.taskTitle}>{task.title}</Text>
+
+                    {/* If task is Under Review with submitted notes */}
+                    {task.status === "in_review" && task.completionNotes && (
+                      <View style={styles.reviewSnippetBox}>
+                        <Text style={styles.reviewSnippetLabel}>Changes Submitted:</Text>
+                        <Text style={styles.reviewSnippetText} numberOfLines={2}>
+                          "{task.completionNotes}"
+                        </Text>
                       </View>
                     )}
-                    {task.priority === "critical" && <View style={[styles.priorityDot, { backgroundColor: "#EF4444" }]} />}
-                    {task.priority === "high" && <View style={[styles.priorityDot, { backgroundColor: "#F59E0B" }]} />}
-                  </View>
 
-                  <Text style={styles.taskTitle}>{task.title}</Text>
+                    {/* If task has attached screenshot */}
+                    {task.status === "in_review" && task.completionScreenshot && (
+                      <View style={styles.screenshotBadgeRow}>
+                        <ImageIcon size={14} color={COLORS.primary} />
+                        <Text style={styles.screenshotBadgeText}>1 Screenshot Attached</Text>
+                      </View>
+                    )}
 
-                  {/* If task is Under Review with submitted notes */}
-                  {task.status === "in_review" && task.completionNotes && (
-                    <View style={styles.reviewSnippetBox}>
-                      <Text style={styles.reviewSnippetLabel}>Changes Submitted:</Text>
-                      <Text style={styles.reviewSnippetText} numberOfLines={2}>
-                        "{task.completionNotes}"
+                    <View style={styles.taskFooter}>
+                      <View style={{ marginRight: 4 }}><ClockIcon size={12} color={COLORS.muted} /></View>
+                      <Text style={styles.taskTime}>{task.timeAgo}</Text>
+                      <Text style={styles.taskDot}>•</Text>
+                      <Text style={styles.taskSubtaskCount}>
+                        {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps
                       </Text>
                     </View>
-                  )}
-
-                  {/* If task has attached screenshot */}
-                  {task.status === "in_review" && task.completionScreenshot && (
-                    <View style={styles.screenshotBadgeRow}>
-                      <ImageIcon size={14} color={COLORS.primary} />
-                      <Text style={styles.screenshotBadgeText}>1 Screenshot Attached</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.taskFooter}>
-                    <View style={{ marginRight: 4 }}><ClockIcon size={12} color={COLORS.muted} /></View>
-                    <Text style={styles.taskTime}>{task.timeAgo}</Text>
-                    <Text style={styles.taskDot}>•</Text>
-                    <Text style={styles.taskSubtaskCount}>
-                      {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} steps
-                    </Text>
                   </View>
-                </View>
 
-                {/* Progress / Completion / Review Action */}
-                <View style={styles.circleProgressWrap}>
-                  {task.status === "in_review" ? (
-                    <TouchableOpacity
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleManagerApprove(task.id);
-                      }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      style={styles.quickApproveBtn}
-                    >
-                      <CheckIcon size={12} color="#FFFFFF" strokeWidth={3} />
-                      <Text style={styles.quickApproveText}>Approve</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View
-                      style={[
-                        styles.circleProgressRing,
-                        task.progress === 100 && { borderColor: "#10B981" },
-                      ]}
-                    >
-                      <Text style={styles.circleProgressText}>{task.progress}%</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
+                  {/* Progress / Completion / Review Action */}
+                  <View style={styles.circleProgressWrap}>
+                    {task.status === "in_review" ? (
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleManagerApprove(task.id);
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={styles.quickApproveBtn}
+                      >
+                        <CheckIcon size={12} color="#FFFFFF" strokeWidth={3} />
+                        <Text style={styles.quickApproveText}>Approve</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View
+                        style={[
+                          styles.circleProgressRing,
+                          task.progress === 100 && { borderColor: "#10B981" },
+                        ]}
+                      >
+                        <Text style={styles.circleProgressText}>{task.progress}%</Text>
+                      </View>
+                    )}
+                  </View>
+                </FluidPressable>
+              ))}
+            </Animated.View>
           </>
         )}
 
@@ -2968,9 +3043,9 @@ export default function App() {
               }
 
               return projTasks.map((task) => (
-                <TouchableOpacity
+                <FluidPressable
                   key={task.id}
-                  activeOpacity={0.85}
+                  targetScale={0.975}
                   onPress={() => {
                     triggerHaptic("selection");
                     setSelectedTaskDetail(task);
@@ -3015,7 +3090,7 @@ export default function App() {
                       <Text style={styles.circleProgressText}>{task.progress}%</Text>
                     </View>
                   </View>
-                </TouchableOpacity>
+                </FluidPressable>
               ));
             })()}
           </View>
@@ -3045,30 +3120,21 @@ export default function App() {
             <View style={{ marginBottom: 12, paddingHorizontal: 2 }}>
               <View style={[styles.viewModeToggleWrap, { width: "100%" }]}>
                 <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic("selection");
-                    setProjectTabMode("list");
-                  }}
+                  onPress={() => handleSwitchProjectTabMode("list")}
                   style={[styles.viewModeToggleBtn, { flex: 1, justifyContent: "center" }, projectTabMode === "list" && styles.viewModeToggleBtnActive]}
                 >
                   <ListIcon size={14} color={projectTabMode === "list" ? "#FFFFFF" : COLORS.navy} />
                   <Text style={[styles.viewModeToggleText, projectTabMode === "list" && styles.viewModeToggleTextActive]}>List</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic("selection");
-                    setProjectTabMode("board");
-                  }}
+                  onPress={() => handleSwitchProjectTabMode("board")}
                   style={[styles.viewModeToggleBtn, { flex: 1, justifyContent: "center" }, projectTabMode === "board" && styles.viewModeToggleBtnActive]}
                 >
                   <BoardIcon size={14} color={projectTabMode === "board" ? "#FFFFFF" : COLORS.navy} />
                   <Text style={[styles.viewModeToggleText, projectTabMode === "board" && styles.viewModeToggleTextActive]}>Board</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic("selection");
-                    setProjectTabMode("timeline");
-                  }}
+                  onPress={() => handleSwitchProjectTabMode("timeline")}
                   style={[styles.viewModeToggleBtn, { flex: 1, justifyContent: "center" }, projectTabMode === "timeline" && styles.viewModeToggleBtnActive]}
                 >
                   <TimelineIcon size={14} color={projectTabMode === "timeline" ? "#FFFFFF" : COLORS.navy} />
@@ -3076,6 +3142,8 @@ export default function App() {
                 </TouchableOpacity>
               </View>
             </View>
+
+            <Animated.View style={{ opacity: viewModeFadeAnim, flex: 1 }}>
 
             {projectTabMode === "timeline" ? (
               <GanttTimelineView
@@ -3150,8 +3218,8 @@ export default function App() {
                           </View>
                         </View>
 
-                        <TouchableOpacity
-                          activeOpacity={0.8}
+                        <FluidPressable
+                          targetScale={0.98}
                           onPress={() => {
                             triggerHaptic("selection");
                             navigateForward("projects", { project: proj });
@@ -3199,12 +3267,13 @@ export default function App() {
                             </View>
                             <Text style={styles.projectProgressPercent}>{proj.progress}%</Text>
                           </View>
-                        </TouchableOpacity>
+                        </FluidPressable>
                       </View>
                     );
                   })}
               </>
             )}
+            </Animated.View>
           </View>
         )}
 
@@ -4123,8 +4192,8 @@ export default function App() {
                 <Text style={styles.drawerSectionLabel}>ENTERPRISE SUITE</Text>
 
                 {/* Executive Portfolio Timeline */}
-                <TouchableOpacity
-                  activeOpacity={0.75}
+                <FluidPressable
+                  targetScale={0.98}
                   onPress={() => {
                     triggerHaptic("selection");
                     closeDrawer();
@@ -4143,11 +4212,11 @@ export default function App() {
                   <View style={styles.drawerBadgePill}>
                     <Text style={styles.drawerBadgePillText}>Gantt</Text>
                   </View>
-                </TouchableOpacity>
+                </FluidPressable>
 
                 {/* Enterprise RBAC & SOC 2 Audit */}
-                <TouchableOpacity
-                  activeOpacity={0.75}
+                <FluidPressable
+                  targetScale={0.98}
                   onPress={() => {
                     triggerHaptic("selection");
                     closeDrawer();
@@ -4165,11 +4234,11 @@ export default function App() {
                   <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
                     <Text style={[styles.drawerBadgePillText, { color: "#10B981" }]}>SOC 2</Text>
                   </View>
-                </TouchableOpacity>
+                </FluidPressable>
 
                 {/* Corporate Analytics & Board Export */}
-                <TouchableOpacity
-                  activeOpacity={0.75}
+                <FluidPressable
+                  targetScale={0.98}
                   onPress={() => {
                     triggerHaptic("selection");
                     closeDrawer();
@@ -4187,11 +4256,11 @@ export default function App() {
                   <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(99, 102, 241, 0.15)" }]}>
                     <Text style={[styles.drawerBadgePillText, { color: "#6366F1" }]}>Board PDF</Text>
                   </View>
-                </TouchableOpacity>
+                </FluidPressable>
 
                 {/* Workspace Settings */}
-                <TouchableOpacity
-                  activeOpacity={0.75}
+                <FluidPressable
+                  targetScale={0.98}
                   onPress={() => {
                     triggerHaptic("selection");
                     closeDrawer();
@@ -4210,7 +4279,7 @@ export default function App() {
                   <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(59, 130, 246, 0.15)" }]}>
                     <Text style={[styles.drawerBadgePillText, { color: "#3B82F6" }]}>Admin</Text>
                   </View>
-                </TouchableOpacity>
+                </FluidPressable>
               </View>
 
               {/* Quick Jump Workstreams */}
@@ -4222,9 +4291,9 @@ export default function App() {
                   { name: "Design & UX Systems", count: "2 projects", dep: "Design" },
                   { name: "Growth & Marketing", count: "2 projects", dep: "Marketing" },
                 ].map((ws) => (
-                  <TouchableOpacity
+                  <FluidPressable
                     key={ws.name}
-                    activeOpacity={0.7}
+                    targetScale={0.98}
                     onPress={() => {
                       triggerHaptic("selection");
                       closeDrawer();
@@ -4238,7 +4307,7 @@ export default function App() {
                       <Text style={styles.drawerWorkstreamName}>{ws.name}</Text>
                     </View>
                     <Text style={styles.drawerWorkstreamCount}>{ws.count}</Text>
-                  </TouchableOpacity>
+                  </FluidPressable>
                 ))}
               </View>
 
