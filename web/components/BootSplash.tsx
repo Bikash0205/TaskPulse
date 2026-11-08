@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import { useTheme } from "@/context/ThemeContext";
 
 interface BootSplashProps {
   onComplete?: () => void;
@@ -10,10 +10,12 @@ interface BootSplashProps {
 
 export const BootSplash: React.FC<BootSplashProps> = ({
   onComplete,
-  minDurationMs = 2180,
+  minDurationMs = 2200,
 }) => {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
+  const themeContext = useTheme();
+  const isDark = themeContext ? themeContext.theme === "dark" : true;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -21,7 +23,7 @@ export const BootSplash: React.FC<BootSplashProps> = ({
       setTimeout(() => {
         setIsMounted(false);
         onComplete?.();
-      }, 400); // fade out & glide duration
+      }, 420); // fade out & glide duration
     }, minDurationMs);
 
     return () => clearTimeout(timer);
@@ -31,20 +33,22 @@ export const BootSplash: React.FC<BootSplashProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#EAEBED] dark:bg-[#0B0F19] transition-all duration-400 select-none ${
-        isFadingOut ? "opacity-0 -translate-y-12 pointer-events-none" : "opacity-100 translate-y-0"
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0F19] transition-all duration-500 ease-out select-none ${
+        isFadingOut ? "opacity-0 -translate-y-8 pointer-events-none scale-98" : "opacity-100 translate-y-0 scale-100"
       }`}
     >
-      <div className="relative w-full h-full max-w-lg max-h-[85vh] flex items-center justify-center">
+      <div className="relative w-full h-full max-w-2xl max-h-[90vh] flex items-center justify-center p-4 sm:p-8">
         <picture className="w-full h-full flex items-center justify-center">
-          <source media="(prefers-color-scheme: dark)" srcSet="/taskpulse_boot_dark.gif" />
+          <source media="(prefers-color-scheme: dark)" srcSet="/taskpulse_animated_dark.svg" />
           <img
-            src="/taskpulse_boot_light.gif"
-            alt="TaskPulse Boot Animation"
-            className="w-full h-full object-contain"
+            src={isDark ? "/taskpulse_animated_dark.svg" : "/taskpulse_animated.svg"}
+            alt="TaskPulse Vector Boot Animation"
+            className="w-full h-auto max-h-full object-contain filter drop-shadow-2xl"
+            loading="eager"
           />
         </picture>
       </div>
     </div>
   );
 };
+

@@ -312,7 +312,7 @@ export default function LoginPage() {
             {/* Headline */}
             <h1
               ref={titleRef}
-              className="text-3xl xl:text-4.5xl font-black tracking-tight text-[#002055] dark:text-[#F8FAFC] leading-[1.18]"
+              className="text-3xl xl:text-4.5xl font-black tracking-tight text-[#0F172A] dark:text-[#FFFFFF] leading-[1.18]"
             >
               Enterprise Workload Intelligence &amp; Sprint Execution
             </h1>
@@ -320,55 +320,55 @@ export default function LoginPage() {
             {/* Subtitle */}
             <p
               ref={subtitleRef}
-              className="text-sm text-[#556070] dark:text-[#94A3B8] leading-relaxed max-w-lg font-normal"
+              className="text-sm text-[#334155] dark:text-[#CBD5E1] leading-relaxed max-w-lg font-normal"
             >
               Sign in to your corporate workspace to access sprint boards, monitor team capacity distribution, and review verified task completion logs.
             </p>
 
             {/* Feature Value Cards with Spotlight Glow */}
             <div ref={featuresRef} className="space-y-3.5 pt-1 max-w-lg">
-              <SpotlightCard className="p-4">
+              <SpotlightCard className="p-4 border-slate-200 dark:border-slate-800">
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/20 text-[#756EF3] flex items-center justify-center shrink-0 shadow-inner">
                     <BarChart3 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] tracking-tight">
+                    <h2 className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] tracking-tight">
                       Continuous Capacity Tracking
                     </h2>
-                    <p className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-0.5 leading-normal">
+                    <p className="text-[11px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 leading-normal">
                       Clear team bandwidth indicators keep managers proactive, balancing assignments effectively across active sprints.
                     </p>
                   </div>
                 </div>
               </SpotlightCard>
 
-              <SpotlightCard className="p-4">
+              <SpotlightCard className="p-4 border-slate-200 dark:border-slate-800">
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-inner">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] tracking-tight">
+                    <h2 className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] tracking-tight">
                       Enterprise Security &amp; Audit Logging
                     </h2>
-                    <p className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-0.5 leading-normal">
+                    <p className="text-[11px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 leading-normal">
                       Every task assignment, status update, and completion sign-off is preserved in the workspace audit record.
                     </p>
                   </div>
                 </div>
               </SpotlightCard>
 
-              <SpotlightCard className="p-4">
+              <SpotlightCard className="p-4 border-slate-200 dark:border-slate-800">
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-[#756EF3] flex items-center justify-center shrink-0 shadow-inner">
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] tracking-tight">
+                    <h2 className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] tracking-tight">
                       Cross-Platform Client Parity
                     </h2>
-                    <p className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-0.5 leading-normal">
+                    <p className="text-[11px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 leading-normal">
                       Consistent workflow experience across desktop browsers, native Android, and iOS mobile web.
                     </p>
                   </div>
@@ -379,17 +379,17 @@ export default function LoginPage() {
             {/* Enterprise Security & Compliance Badges */}
             <div
               ref={telemetryRef}
-              className="flex flex-wrap items-center gap-2 pt-2 text-xs text-[#556070] dark:text-[#94A3B8]"
+              className="flex flex-wrap items-center gap-2 pt-2 text-xs text-[#334155] dark:text-[#CBD5E1]"
             >
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-slate-700 dark:text-slate-300 text-[11px] font-medium shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-slate-800 text-[#0F172A] dark:text-[#F8FAFC] text-[11px] font-semibold shadow-2xs">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>SOC 2 Type II Certified</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-slate-700 dark:text-slate-300 text-[11px] font-medium shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-slate-800 text-[#0F172A] dark:text-[#F8FAFC] text-[11px] font-semibold shadow-2xs">
                 <Lock className="w-3.5 h-3.5 text-[#756EF3]" />
                 <span>End-to-End TLS 1.3</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-slate-700 dark:text-slate-300 text-[11px] font-medium shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-slate-800 text-[#0F172A] dark:text-[#F8FAFC] text-[11px] font-semibold shadow-2xs">
                 <span>AES-256 Encryption</span>
               </span>
             </div>
@@ -398,16 +398,16 @@ export default function LoginPage() {
           {/* RIGHT COLUMN: Interactive Login / Register Card */}
           <div ref={rightColRef} className="lg:col-span-6 flex flex-col justify-center max-w-lg w-full mx-auto">
             <div ref={cardBoxRef}>
-              <SpotlightCard className="p-6 sm:p-9 text-left">
+              <SpotlightCard className="p-6 sm:p-9 text-left border-slate-200 dark:border-slate-800 shadow-lg">
                 {/* Card Header */}
                 <div className="mb-5">
                   <div className="w-11 h-11 rounded-2xl bg-[#F0EFFF] dark:bg-[#756EF3]/20 text-[#756EF3] flex items-center justify-center mb-3 shadow-inner">
                     <Fingerprint className="w-5 h-5" />
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-[#002055] dark:text-[#F8FAFC] tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] dark:text-[#FFFFFF] tracking-tight">
                     {authMode === "login" ? "Sign In to Workspace" : "Create Workspace Account"}
                   </h2>
-                  <p className="text-xs sm:text-sm text-[#556070] dark:text-[#94A3B8] mt-1">
+                  <p className="text-xs sm:text-sm text-[#334155] dark:text-[#CBD5E1] mt-1 font-normal">
                     {authMode === "login"
                       ? "Enter your workspace credentials or authenticate via Google SSO."
                       : "Register your corporate account to join your team's active workspace."}
@@ -415,7 +415,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Auth Mode Toggle Pill */}
-                <div className="flex rounded-xl bg-slate-100 dark:bg-[#0B0F19] p-1 mb-5 border border-[#E9F1FF] dark:border-[#1E293B] text-xs font-semibold">
+                <div className="flex rounded-xl bg-slate-100 dark:bg-[#0B0F19] p-1 mb-5 border border-slate-200 dark:border-slate-800 text-xs font-semibold">
                   <button
                     type="button"
                     onClick={() => {
@@ -424,8 +424,8 @@ export default function LoginPage() {
                     }}
                     className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
                       authMode === "login"
-                        ? "bg-white dark:bg-[#151C2C] text-[#756EF3] dark:text-[#818CF8] shadow-xs"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                        ? "bg-white dark:bg-[#151C2C] text-[#756EF3] dark:text-[#818CF8] font-bold shadow-xs"
+                        : "text-[#475569] hover:text-[#0F172A] dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
                     Sign In
@@ -438,8 +438,8 @@ export default function LoginPage() {
                     }}
                     className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
                       authMode === "register"
-                        ? "bg-white dark:bg-[#151C2C] text-[#756EF3] dark:text-[#818CF8] shadow-xs"
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                        ? "bg-white dark:bg-[#151C2C] text-[#756EF3] dark:text-[#818CF8] font-bold shadow-xs"
+                        : "text-[#475569] hover:text-[#0F172A] dark:text-slate-400 dark:hover:text-white"
                     }`}
                   >
                     Create Account
@@ -448,7 +448,7 @@ export default function LoginPage() {
 
                 {/* Error Message */}
                 {error && (
-                  <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-shake">
+                  <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2 animate-shake">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                     <span>{error}</span>
                   </div>
@@ -459,7 +459,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={isSubmitting}
-                  className="w-full py-3 px-4 rounded-xl bg-white dark:bg-[#0B0F19] hover:bg-slate-50 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] font-semibold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs hover:border-[#756EF3] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                  className="w-full py-3 px-4 rounded-xl bg-white dark:bg-[#0B0F19] hover:bg-slate-50 dark:hover:bg-slate-800 text-[#0F172A] dark:text-[#FFFFFF] font-bold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all border border-slate-300 dark:border-slate-700 shadow-xs hover:border-[#756EF3] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -467,13 +467,13 @@ export default function LoginPage() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
-                  <span>Sign in with Google Account</span>
+                  <span>Continue with Google</span>
                 </button>
 
                 {/* Divider */}
                 <div className="relative flex items-center justify-center my-5">
-                  <div className="border-t border-[#E9F1FF] dark:border-[#1E293B] w-full" />
-                  <span className="bg-white dark:bg-[#151C2C] px-3 text-[10px] font-mono uppercase tracking-widest text-[#556070] dark:text-[#94A3B8] absolute">
+                  <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
+                  <span className="bg-white dark:bg-[#151C2C] px-3 text-[10px] font-mono uppercase tracking-widest text-[#475569] dark:text-[#94A3B8] font-medium absolute">
                     Or Corporate Email
                   </span>
                 </div>
@@ -482,7 +482,7 @@ export default function LoginPage() {
                 <form onSubmit={handleManualAuth} className="space-y-3.5">
                   {authMode === "register" && (
                     <div>
-                      <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
+                      <label className="block text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] mb-1">
                         Full Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -491,13 +491,13 @@ export default function LoginPage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Alex Vance"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-300 dark:border-slate-700 text-xs text-[#0F172A] dark:text-[#FFFFFF] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all font-medium"
                       />
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
+                    <label className="block text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] mb-1">
                       Work Email Address <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -506,16 +506,16 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="e.g. alex.vance@company.com"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-300 dark:border-slate-700 text-xs text-[#0F172A] dark:text-[#FFFFFF] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all font-medium"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8]">
+                      <label className="block text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF]">
                         Password <span className="text-red-500">*</span>
                       </label>
-                      <span className="text-[10px] text-slate-400 font-normal">Min. 6 characters</span>
+                      <span className="text-[10px] text-[#475569] dark:text-slate-400 font-medium">Min. 6 characters</span>
                     </div>
                     <div className="relative flex items-center">
                       <input
@@ -525,12 +525,12 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all font-mono"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-300 dark:border-slate-700 text-xs text-[#0F172A] dark:text-[#FFFFFF] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all font-mono font-medium"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        className="absolute right-3 text-slate-500 hover:text-[#0F172A] dark:hover:text-white cursor-pointer"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -540,8 +540,8 @@ export default function LoginPage() {
 
                   {authMode === "register" && (
                     <div>
-                      <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                        Workspace Join Code <span className="font-normal text-slate-400 font-sans">(Optional)</span>
+                      <label className="block text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] mb-1">
+                        Workspace Join Code <span className="font-normal text-[#475569] dark:text-slate-400 font-sans">(Optional)</span>
                       </label>
                       <div className="relative flex items-center">
                         <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
@@ -550,7 +550,7 @@ export default function LoginPage() {
                           value={inviteCode}
                           onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                           placeholder="e.g. TASK-9481"
-                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 font-mono transition-all uppercase tracking-wider"
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-300 dark:border-slate-700 text-xs text-[#0F172A] dark:text-[#FFFFFF] placeholder-slate-400 focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 font-mono transition-all uppercase tracking-wider font-medium"
                         />
                       </div>
                     </div>
@@ -560,7 +560,7 @@ export default function LoginPage() {
                     type="submit"
                     disabled={isSubmitting}
                     data-testid="login-submit-btn"
-                    className="w-full py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#756EF3]/25 hover:shadow-lg hover:shadow-[#756EF3]/35 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                    className="w-full py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white text-xs sm:text-sm font-bold shadow-md shadow-[#756EF3]/25 hover:shadow-lg hover:shadow-[#756EF3]/35 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer mt-2"
                   >
                     <span>{authMode === "login" ? "Sign In to Workspace" : "Create Workspace Account"}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -573,7 +573,7 @@ export default function LoginPage() {
                         setAuthMode(authMode === "login" ? "register" : "login");
                         setError("");
                       }}
-                      className="text-xs text-[#756EF3] dark:text-[#818CF8] hover:underline font-medium cursor-pointer"
+                      className="text-xs text-[#756EF3] dark:text-[#818CF8] hover:underline font-bold cursor-pointer"
                     >
                       {authMode === "login"
                         ? "Need a workspace account? Create one"
@@ -583,27 +583,27 @@ export default function LoginPage() {
                 </form>
 
                 {/* Instant Role Sandbox Section */}
-                <div ref={sandboxRef} className="pt-5 mt-5 border-t border-[#E9F1FF] dark:border-[#1E293B]">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#556070] dark:text-[#94A3B8] mb-2.5 flex items-center justify-between">
+                <div ref={sandboxRef} className="pt-5 mt-5 border-t border-slate-200 dark:border-slate-800">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#334155] dark:text-[#94A3B8] mb-2.5 flex items-center justify-between font-bold">
                     <span>1-Click Role Sandbox</span>
-                    <span className="text-[#756EF3] font-semibold">Instant Access</span>
+                    <span className="text-[#756EF3] font-bold">Instant Access</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => handleRoleSandbox("Sarah Chen", "sarah.chen@taskpulse.internal")}
-                      className="sandbox-btn group p-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] hover:border-[#756EF3] text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
+                      className="sandbox-btn group p-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 hover:border-[#756EF3] text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] group-hover:text-[#756EF3] transition-colors">
+                        <span className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] group-hover:text-[#756EF3] transition-colors">
                           Sarah Chen
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] text-[9px] font-semibold">
+                        <span className="px-1.5 py-0.5 rounded bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] text-[9px] font-bold">
                           Manager
                         </span>
                       </div>
-                      <div className="text-[10px] text-[#556070] dark:text-[#94A3B8] mt-0.5 truncate">
+                      <div className="text-[10px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 truncate font-medium">
                         Lead &bull; Dispatch &amp; approvals
                       </div>
                     </button>
@@ -611,17 +611,17 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => handleRoleSandbox("Marcus Vance", "marcus.vance@taskpulse.internal")}
-                      className="sandbox-btn group p-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] hover:border-[#756EF3] text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
+                      className="sandbox-btn group p-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 hover:border-[#756EF3] text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC] group-hover:text-[#756EF3] transition-colors">
+                        <span className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] group-hover:text-[#756EF3] transition-colors">
                           Marcus Vance
                         </span>
-                        <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[9px] font-semibold">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[9px] font-bold">
                           Member
                         </span>
                       </div>
-                      <div className="text-[10px] text-[#556070] dark:text-[#94A3B8] mt-0.5 truncate">
+                      <div className="text-[10px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 truncate font-medium">
                         Dev &bull; Tasks &amp; change logs
                       </div>
                     </button>
@@ -634,7 +634,7 @@ export default function LoginPage() {
                   >
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                      <span className="text-xs font-bold text-[#002055] dark:text-[#F8FAFC]">
+                      <span className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF]">
                         Zevon (Super Administrator)
                       </span>
                     </div>
@@ -645,11 +645,11 @@ export default function LoginPage() {
                 </div>
 
                 {/* Footer Link to Onboarding */}
-                <div className="pt-4 mt-4 border-t border-[#E9F1FF] dark:border-[#1E293B] text-center text-xs text-[#556070] dark:text-[#94A3B8]">
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-[#334155] dark:text-[#CBD5E1]">
                   <span>New organization or department? </span>
                   <Link
                     href="/onboarding"
-                    className="text-[#756EF3] dark:text-[#818CF8] font-semibold hover:underline"
+                    className="text-[#756EF3] dark:text-[#818CF8] font-bold hover:underline"
                   >
                     Start Organization Onboarding
                   </Link>
@@ -661,10 +661,10 @@ export default function LoginPage() {
       </main>
 
       {/* 3. Footer */}
-      <footer className="relative z-10 mt-auto border-t border-[#E9F1FF]/80 dark:border-[#1E293B]/80 bg-white/60 dark:bg-[#0B0F19]/60 backdrop-blur-md py-4 px-6 text-center text-xs text-[#556070] dark:text-[#94A3B8]">
+      <footer className="relative z-10 mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-md py-4 px-6 text-center text-xs text-[#334155] dark:text-[#CBD5E1]">
         <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
-          <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">
+          <span className="text-[#0F172A] dark:text-slate-300 font-semibold text-[11px]">
             Status: All Systems Operational
           </span>
         </div>

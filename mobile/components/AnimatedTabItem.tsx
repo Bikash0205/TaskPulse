@@ -23,44 +23,25 @@ export const AnimatedTabItem: React.FC<AnimatedTabItemProps> = ({
   COLORS,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pillScaleAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
   useEffect(() => {
     if (isActive) {
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.22,
-            duration: 120,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            friction: 3.5,
-            tension: 45,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.spring(pillScaleAnim, {
-          toValue: 1,
-          friction: 6,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.timing(pillScaleAnim, {
-        toValue: 0,
-        duration: 150,
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 70,
         useNativeDriver: true,
       }).start();
     }
   }, [isActive]);
 
   const handlePressIn = () => {
-    Animated.timing(scaleAnim, {
-      toValue: 0.9,
-      duration: 80,
+    // Fire tab switch and haptics instantly on touch down (0ms latency)
+    onPress();
+    Animated.spring(scaleAnim, {
+      toValue: 0.94,
+      friction: 6,
+      tension: 120,
       useNativeDriver: true,
     }).start();
   };
@@ -68,32 +49,21 @@ export const AnimatedTabItem: React.FC<AnimatedTabItemProps> = ({
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
-      friction: 4,
+      friction: 5,
+      tension: 80,
       useNativeDriver: true,
     }).start();
   };
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={undefined}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
       style={styles.navItem}
     >
       <View style={styles.tabContentContainer}>
-        {/* Animated Glowing Active Pill */}
-        <Animated.View
-          style={[
-            styles.activePillBackground,
-            {
-              backgroundColor: COLORS.primaryLight,
-              opacity: pillScaleAnim,
-              transform: [{ scale: pillScaleAnim }],
-            },
-          ]}
-        />
-
         {/* Bouncing Icon */}
         <Animated.View
           style={{
@@ -116,15 +86,7 @@ export const AnimatedTabItem: React.FC<AnimatedTabItemProps> = ({
           {label}
         </Text>
 
-        {/* Subtle Top Active Indicator Dot */}
-        {isActive && (
-          <View
-            style={[
-              styles.activeIndicatorDot,
-              { backgroundColor: COLORS.primary },
-            ]}
-          />
-        )}
+
       </View>
     </Pressable>
   );
@@ -137,6 +99,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 6,
+    backgroundColor: "transparent",
+    zIndex: 2,
   },
   tabContentContainer: {
     alignItems: "center",
@@ -144,21 +108,17 @@ const styles = StyleSheet.create({
     position: "relative",
     paddingHorizontal: 12,
     paddingVertical: 4,
-  },
-  activePillBackground: {
-    position: "absolute",
-    top: -2,
-    bottom: -2,
-    left: 4,
-    right: 4,
-    borderRadius: 16,
+    backgroundColor: "transparent",
+    zIndex: 2,
   },
   navText: {
     fontSize: 10,
     marginTop: 3,
+    backgroundColor: "transparent",
   },
   navTextActive: {
     fontWeight: "bold",
+    backgroundColor: "transparent",
   },
   activeIndicatorDot: {
     position: "absolute",

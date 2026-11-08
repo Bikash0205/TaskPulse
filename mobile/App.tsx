@@ -18,6 +18,7 @@ import {
   BackHandler,
   AppRegistry,
   Appearance,
+  PanResponder,
 } from "react-native";
 import {
   HomeIcon,
@@ -499,15 +500,21 @@ const INITIAL_TASKS: MobileTask[] = [
   },
 ];
 
-const DAYS = [
-  { date: "19", day: "Sat" },
-  { date: "20", day: "Sun" },
-  { date: "21", day: "Mon", isToday: true },
-  { date: "22", day: "Tue" },
-  { date: "23", day: "Wed" },
-  { date: "24", day: "Thu" },
-  { date: "25", day: "Fri" },
-];
+const getDynamicDays = () => {
+  const list = [];
+  const today = new Date();
+  for (let offset = -2; offset <= 4; offset++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + offset);
+    list.push({
+      date: String(d.getDate()),
+      day: new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(d),
+      isToday: offset === 0,
+      fullDate: d,
+    });
+  }
+  return list;
+};
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -573,7 +580,24 @@ export default function App() {
 
   // General App Navigation & Data State
   const [currentTab, setCurrentTab] = useState<"home" | "projects" | "details" | "profile">("home");
-  const [selectedDay, setSelectedDay] = useState("21");
+  const dynamicDays = useMemo(() => getDynamicDays(), []);
+  const todayDateStr = useMemo(() => String(new Date().getDate()), []);
+  const [selectedDay, setSelectedDay] = useState<string>(todayDateStr);
+
+  const formattedHeaderDate = useMemo(() => {
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+    }).format(new Date());
+  }, []);
+
+  const formattedMonthYear = useMemo(() => {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      year: "numeric",
+    }).format(new Date());
+  }, []);
   const [tasks, setTasks] = useState<MobileTask[]>(INITIAL_TASKS);
   const [projects, setProjects] = useState<MobileProject[]>(INITIAL_PROJECTS);
   const [selectedTask, setSelectedTask] = useState<MobileTask | null>(INITIAL_TASKS[0]);
@@ -740,6 +764,116 @@ export default function App() {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
+  // iPhone Realistic Liquid Glass Dynamic Indicator with Liquidizing Physics
+  const navSlideAnim = useRef(
+    new Animated.Value(currentTab === "projects" || currentTab === "details" ? 1 : currentTab === "profile" ? 2 : 0)
+  ).current;
+  const navStretchXAnim = useRef(new Animated.Value(1)).current;
+  const navSquashYAnim = useRef(new Animated.Value(1)).current;
+  const navWobbleAnim = useRef(new Animated.Value(0)).current;
+  const prevTabIdx = useRef(currentTab === "projects" || currentTab === "details" ? 1 : currentTab === "profile" ? 2 : 0);
+
+  const centerBtnWidth = 64;
+  const tabWidth = ((SCREEN_WIDTH - 24) - centerBtnWidth) / 3;
+  const liquidGlassWidth = Math.round(tabWidth - 12);
+
+  useEffect(() => {
+    let target = 0;
+    if (currentTab === "projects" || currentTab === "details") {
+      target = 1;
+    } else if (currentTab === "profile") {
+      target = 2;
+    }
+
+    const prev = prevTabIdx.current;
+    const distance = Math.abs(target - prev);
+    const direction = target > prev ? 1 : -1;
+    prevTabIdx.current = target;
+
+    if (distance === 0) return;
+
+    // Fluid viscosity parameters: larger travel = more liquid elongation & squish
+    const maxStretch = distance > 1 ? 1.42 : 1.28;
+    const maxSquashY = distance > 1 ? 0.74 : 0.82;
+    const wobbleTilt = direction * (distance > 1 ? 4 : 2.5);
+
+    // Realistic Liquidizing Fluid Dynamics (incompressible fluid volume conservation)
+    Animated.parallel([
+      // 1. Butter-smooth liquid sliding glide
+      Animated.spring(navSlideAnim, {
+        toValue: target,
+        friction: 7,
+        tension: 55,
+        useNativeDriver: true,
+      }),
+      // 2. Liquidizing horizontal elongation & viscous bounce
+      Animated.sequence([
+        Animated.timing(navStretchXAnim, {
+          toValue: maxStretch,
+          duration: 130,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(navStretchXAnim, {
+          toValue: 0.88,
+          friction: 4,
+          tension: 90,
+          useNativeDriver: true,
+        }),
+        Animated.spring(navStretchXAnim, {
+          toValue: 1.0,
+          friction: 5,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]),
+      // 3. Liquidizing vertical compression & rebound (volume conservation)
+      Animated.sequence([
+        Animated.timing(navSquashYAnim, {
+          toValue: maxSquashY,
+          duration: 130,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(navSquashYAnim, {
+          toValue: 1.12,
+          friction: 4,
+          tension: 90,
+          useNativeDriver: true,
+        }),
+        Animated.spring(navSquashYAnim, {
+          toValue: 1.0,
+          friction: 5,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]),
+      // 4. Liquid surface momentum wave / wobble
+      Animated.sequence([
+        Animated.timing(navWobbleAnim, {
+          toValue: wobbleTilt,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.spring(navWobbleAnim, {
+          toValue: 0,
+          friction: 4,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [currentTab, navSlideAnim, navStretchXAnim, navSquashYAnim, navWobbleAnim]);
+
+  const navGlassTranslateX = navSlideAnim.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: [
+      12 + 0.5 * tabWidth - liquidGlassWidth / 2,
+      12 + 1.5 * tabWidth - liquidGlassWidth / 2,
+      12 + 2.5 * tabWidth + centerBtnWidth - liquidGlassWidth / 2,
+    ],
+  });
+
   // Fluid Progress & Screen Transition Animations
   const heroProgressAnim = useRef(new Animated.Value(0)).current;
   const teamPulseAnim = useRef(new Animated.Value(0)).current;
@@ -865,7 +999,13 @@ export default function App() {
   const navigateForward = useCallback(
     (
       newTab: "home" | "projects" | "details" | "profile",
-      options?: { project?: MobileProject | null; task?: MobileTask | null; replace?: boolean }
+      options?: {
+        project?: MobileProject | null;
+        task?: MobileTask | null;
+        replace?: boolean;
+        direction?: "left" | "right";
+        instant?: boolean;
+      }
     ) => {
       if (
         !options?.replace &&
@@ -890,31 +1030,190 @@ export default function App() {
       slideAnim.stopAnimation();
       fadeAnim.stopAnimation();
 
-      // Forward Slide Animation: enters from right (+35px -> 0)
-      slideAnim.setValue(35);
-      fadeAnim.setValue(0.7);
-
       if (options?.project !== undefined) setSelectedProjectView(options.project);
       if (options?.task !== undefined) setSelectedTask(options.task);
       setCurrentTab(newTab);
 
+      if (options?.instant) {
+        slideAnim.setValue(0);
+        fadeAnim.setValue(1);
+        return;
+      }
+
+      // Smooth Liquid Glass Slide: enters from right (+45px) if forward, or from left (-45px) if backward
+      const tabOrder: Record<string, number> = { home: 0, projects: 1, details: 1, profile: 2 };
+      const prevIndex = tabOrder[currentTab] ?? 0;
+      const nextIndex = tabOrder[newTab] ?? 0;
+      const computedDirection = options?.direction || (nextIndex >= prevIndex ? "left" : "right");
+      const initialOffset = computedDirection === "right" ? -45 : 45;
+      slideAnim.setValue(initialOffset);
+      fadeAnim.setValue(0.85);
+
       Animated.parallel([
-        Animated.timing(slideAnim, {
+        Animated.spring(slideAnim, {
           toValue: 0,
-          duration: 180,
-          easing: Easing.bezier(0.16, 1, 0.3, 1),
+          friction: 7,
+          tension: 50,
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 180,
-          easing: Easing.bezier(0.16, 1, 0.3, 1),
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
       ]).start();
     },
     [currentTab, selectedProjectView, selectedTask, slideAnim, fadeAnim]
   );
+
+  // -------------------------------------------------------------------------
+  // Touch-Controllable Interactive Drag-to-Dismiss with Crosshair Threshold
+  // -------------------------------------------------------------------------
+  const createSheetPanY = useRef(new Animated.Value(0)).current;
+  const createSheetPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 3,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          createSheetPanY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // Crosshair dismissal threshold: > 95px downwards or fast velocity swipe
+        if (gestureState.dy > 95 || gestureState.vy > 0.45) {
+          triggerHaptic("selection");
+          Animated.timing(createSheetPanY, {
+            toValue: 700,
+            duration: 170,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }).start(() => {
+            setIsCreateOpen(false);
+            createSheetPanY.setValue(0);
+          });
+        } else {
+          // Snap back elastically to zero
+          Animated.spring(createSheetPanY, {
+            toValue: 0,
+            friction: 5.5,
+            tension: 85,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const detailSheetPanY = useRef(new Animated.Value(0)).current;
+  const detailSheetPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 3,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          detailSheetPanY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 95 || gestureState.vy > 0.45) {
+          triggerHaptic("selection");
+          Animated.timing(detailSheetPanY, {
+            toValue: 750,
+            duration: 170,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }).start(() => {
+            setSelectedTaskDetail(null);
+            detailSheetPanY.setValue(0);
+          });
+        } else {
+          Animated.spring(detailSheetPanY, {
+            toValue: 0,
+            friction: 5.5,
+            tension: 85,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // -------------------------------------------------------------------------
+  // Swipe-to-Switch Tabs PanResponder (Home <-> Projects <-> Profile)
+  // -------------------------------------------------------------------------
+  const tabSwipePanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        // Capture horizontal swipes over ScrollView child when movement is predominantly horizontal
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.8;
+        const isSignificant = Math.abs(gestureState.dx) > 22;
+        if (currentTab === "projects" && projectTabMode === "board" && !selectedProjectView) {
+          return false;
+        }
+        if (isDrawerOpen || !!selectedTaskDetail || isCreateOpen || reviewModalVisible || isNotificationsOpen) {
+          return false;
+        }
+        return isHorizontal && isSignificant;
+      },
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.8;
+        const isSignificant = Math.abs(gestureState.dx) > 22;
+        if (currentTab === "projects" && projectTabMode === "board" && !selectedProjectView) {
+          return false;
+        }
+        if (isDrawerOpen || !!selectedTaskDetail || isCreateOpen || reviewModalVisible || isNotificationsOpen) {
+          return false;
+        }
+        return isHorizontal && isSignificant;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx, vx } = gestureState;
+        const swipeDistance = 45;
+        const swipeSpeed = 0.25;
+
+        // Swipe Left (finger moves left) -> Move Forward to next tab
+        if (dx < -swipeDistance || vx < -swipeSpeed) {
+          if (currentTab === "home") {
+            triggerHaptic("selection");
+            navigateForward("projects", { project: null, direction: "left" });
+          } else if (currentTab === "projects" && !selectedProjectView) {
+            triggerHaptic("selection");
+            navigateForward("profile", { direction: "left" });
+          }
+        }
+        // Swipe Right (finger moves right) -> Move Backward to previous tab
+        else if (dx > swipeDistance || vx > swipeSpeed) {
+          if (currentTab === "profile") {
+            triggerHaptic("selection");
+            navigateForward("projects", { project: null, direction: "right" });
+          } else if (currentTab === "projects" && !selectedProjectView) {
+            triggerHaptic("selection");
+            navigateForward("home", { project: null, direction: "right" });
+          } else if (currentTab === "details" || (currentTab === "projects" && selectedProjectView)) {
+            triggerHaptic("selection");
+            handleGoBack();
+          }
+        }
+      },
+    })
+  ).current;
+
+  // -------------------------------------------------------------------------
+  // Swipe-to-Dismiss Bottom Sheet PanResponder helper
+  // -------------------------------------------------------------------------
+  const createDismissPanResponder = (onDismiss: () => void) =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 8,
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 45 || gestureState.vy > 0.3) {
+          triggerHaptic("selection");
+          onDismiss();
+        }
+      },
+    });
 
   const handleGoBack = useCallback((): boolean => {
     // 1. Dismiss any open modals first
@@ -1568,7 +1867,7 @@ export default function App() {
     return true;
   });
 
-  const styles = useMemo(() => getStyles(COLORS), [COLORS]);
+  const styles = useMemo(() => getStyles(COLORS, isDarkMode), [COLORS, isDarkMode]);
 
   // RENDER STEPPER WIZARD CONTENT (Reusable for Auth Screen & In-App Modal)
   const renderOnboardingWizard = () => (
@@ -2210,12 +2509,21 @@ export default function App() {
     return (
       <Modal
         visible={!!selectedTaskDetail}
-        animationType="slide"
+        animationType="fade"
         transparent
         onRequestClose={() => setSelectedTaskDetail(null)}
       >
         <View style={styles.modalOverlay}>
-          <View
+          {/* Backdrop Tap to Dismiss */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+              triggerHaptic("light");
+              setSelectedTaskDetail(null);
+            }}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <Animated.View
             style={[
               styles.modalSheet,
               {
@@ -2225,10 +2533,14 @@ export default function App() {
                 paddingHorizontal: 0,
                 overflow: "hidden",
                 backgroundColor: isDarkMode ? "#131C2E" : "#FFFFFF",
+                transform: [{ translateY: detailSheetPanY }],
               },
             ]}
           >
-            <View style={[styles.sheetHandleBar, { alignSelf: "center", marginTop: 10 }]} />
+            {/* Top Interactive Drag Handle Zone */}
+            <View style={styles.sheetDragHandleZone} {...detailSheetPanResponder.panHandlers}>
+              <View style={styles.sheetDragPill} />
+            </View>
 
             <View style={[styles.modalHeader, { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10 }]}>
               <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 }}>
@@ -2393,7 +2705,7 @@ export default function App() {
                 triggerHaptic={triggerHaptic}
               />
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     );
@@ -2555,7 +2867,7 @@ export default function App() {
 
         <View style={styles.dateRow}>
           <View style={{ marginRight: 5 }}><CalendarIcon size={13} color={COLORS.primary} /></View>
-          <Text style={styles.dateTitle}>Friday, 26 Sep</Text>
+          <Text style={styles.dateTitle}>{formattedHeaderDate}</Text>
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -2588,7 +2900,7 @@ export default function App() {
         </View>
       </View>
 
-      {/* Main Content Area */}
+      {/* Main Content Area with Fluid Swipe Gestures */}
       <Animated.View
         style={[
           styles.container,
@@ -2597,6 +2909,7 @@ export default function App() {
             opacity: fadeAnim,
           },
         ]}
+        {...tabSwipePanResponder.panHandlers}
       >
         <ScrollView
           style={{ flex: 1 }}
@@ -2617,9 +2930,8 @@ export default function App() {
           </View>
         )}
 
-        {/* HOME SCREEN */}
-        {currentTab === "home" && (
-          <>
+        {/* PERSISTENT HOME SCREEN PANE */}
+        <View style={currentTab === "home" ? styles.tabPaneActive : styles.tabPaneHidden}>
             {/* Hero Greeting */}
             <View style={styles.heroSection}>
               <View>
@@ -2743,11 +3055,13 @@ export default function App() {
             {/* Interactive Calendar Date Strip */}
             <View style={styles.calendarSection}>
               <View style={styles.calendarHeader}>
-                <Text style={styles.calendarMonth}>September 2026</Text>
-                <Text style={styles.calendarToday}>Today</Text>
+                <Text style={styles.calendarMonth}>{formattedMonthYear}</Text>
+                <TouchableOpacity onPress={() => handleSelectDay(todayDateStr)}>
+                  <Text style={styles.calendarToday}>Today</Text>
+                </TouchableOpacity>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.daysScroll}>
-                {DAYS.map((d) => {
+                {dynamicDays.map((d) => {
                   const isSelected = selectedDay === d.date;
                   return (
                     <FluidPressable
@@ -2781,7 +3095,12 @@ export default function App() {
 
             {/* Status Filter Chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {["All", "In Progress", "Under Review", "Completed"].map((filter) => {
+              {[
+                { name: "All", count: tasks.length },
+                { name: "In Progress", count: tasks.filter((t) => t.status === "in_progress").length },
+                { name: "Under Review", count: tasks.filter((t) => t.status === "in_review").length },
+                { name: "Completed", count: tasks.filter((t) => t.status === "completed").length },
+              ].map(({ name: filter, count }) => {
                 const isActive = taskStatusFilter === filter;
                 return (
                   <FluidPressable
@@ -2789,11 +3108,30 @@ export default function App() {
                     targetScale={0.94}
                     onPress={() => handleSelectFilter(filter)}
                     hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                    style={[styles.filterChip, isActive && styles.filterChipActive]}
+                    style={[
+                      styles.filterChip,
+                      isActive && styles.filterChipActive,
+                      { flexDirection: "row", alignItems: "center" }
+                    ]}
                   >
                     <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
                       {filter}
                     </Text>
+                    <View style={{
+                      marginLeft: 6,
+                      backgroundColor: isActive ? "rgba(255,255,255,0.25)" : (isDarkMode ? "rgba(255,255,255,0.12)" : "#E2E8F0"),
+                      paddingHorizontal: 6,
+                      paddingVertical: 1,
+                      borderRadius: 8,
+                    }}>
+                      <Text style={{
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: isActive ? "#FFFFFF" : COLORS.textSecondary
+                      }}>
+                        {count}
+                      </Text>
+                    </View>
                   </FluidPressable>
                 );
               })}
@@ -2906,11 +3244,11 @@ export default function App() {
                 </FluidPressable>
               ))}
             </Animated.View>
-          </>
-        )}
+        </View>
 
-        {/* PROJECTS SCREEN */}
-        {currentTab === "projects" && selectedProjectView ? (
+        {/* PERSISTENT PROJECTS SCREEN PANE */}
+        <View style={currentTab === "projects" ? styles.tabPaneActive : styles.tabPaneHidden}>
+        {selectedProjectView ? (
           <View style={styles.projectsContainer}>
             {/* Project Details Header */}
             <View style={styles.projectDetailTopBar}>
@@ -3094,7 +3432,7 @@ export default function App() {
               ));
             })()}
           </View>
-        ) : currentTab === "projects" && (
+        ) : (
           <View style={styles.projectsContainer}>
             <View style={styles.projectsHeaderRow}>
               <View>
@@ -3276,6 +3614,7 @@ export default function App() {
             </Animated.View>
           </View>
         )}
+        </View>
 
         {/* TASK DETAILS SCREEN */}
         {currentTab === "details" && selectedTask && (
@@ -3459,8 +3798,8 @@ export default function App() {
           </View>
         )}
 
-        {/* PROFILE SCREEN */}
-        {currentTab === "profile" && (
+        {/* PERSISTENT PROFILE SCREEN PANE */}
+        <View style={currentTab === "profile" ? styles.tabPaneActive : styles.tabPaneHidden}>
           <View style={styles.profileContainer}>
             {/* User Profile Card */}
             <View style={styles.profileHeroCard}>
@@ -3663,12 +4002,34 @@ export default function App() {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        </View>
       </ScrollView>
     </Animated.View>
 
       {/* Taskcy Bottom Navigation Dock with Animated Spring Tabs */}
       <View style={styles.bottomNav}>
+        {/* iPhone Realistic Liquid Crystal Glass Morphing Droplet */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.navLiquidGlassPill,
+            {
+              width: liquidGlassWidth,
+              transform: [
+                { translateX: navGlassTranslateX },
+                { scaleX: navStretchXAnim },
+                { scaleY: navSquashYAnim },
+                {
+                  rotate: navWobbleAnim.interpolate({
+                    inputRange: [-10, 0, 10],
+                    outputRange: ["-10deg", "0deg", "10deg"],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+
         <AnimatedTabItem
           label="Home"
           isActive={currentTab === "home"}
@@ -3694,7 +4055,7 @@ export default function App() {
         {/* Center Floating + Button */}
         <View style={styles.centerAddButtonContainer}>
           <AnimatedAddButton
-            size={50}
+            size={44}
             color="#FFFFFF"
             bg={COLORS.primary}
             onPress={() => {
@@ -3871,184 +4232,295 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* CREATE MODAL (New Task / New Project) */}
-      <Modal visible={isCreateOpen} animationType="slide" transparent onRequestClose={() => setIsCreateOpen(false)}>
+      {/* CREATE MODAL (New Task / New Project) with Interactive Touch Control */}
+      <Modal visible={isCreateOpen} animationType="fade" transparent onRequestClose={() => setIsCreateOpen(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: "row" }}>
-                <TouchableOpacity
+          {/* Backdrop Tap to Dismiss */}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+              triggerHaptic("light");
+              setIsCreateOpen(false);
+            }}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <Animated.View
+            style={[
+              styles.modalSheet,
+              {
+                transform: [{ translateY: createSheetPanY }],
+              },
+            ]}
+          >
+            {/* Top Interactive Drag Handle Zone */}
+            <View style={styles.sheetDragHandleZone} {...createSheetPanResponder.panHandlers}>
+              <View style={styles.sheetDragPill} />
+            </View>
+            <View style={styles.modalHeader} {...createSheetPanResponder.panHandlers}>
+              <View style={{
+                flexDirection: "row",
+                backgroundColor: isDarkMode ? "rgba(255,255,255,0.06)" : "#F1F5F9",
+                borderRadius: 14,
+                padding: 3,
+                borderWidth: 1,
+                borderColor: isDarkMode ? "rgba(255,255,255,0.1)" : "#E2E8F0"
+              }}>
+                <FluidPressable
+                  targetScale={0.95}
                   onPress={() => {
                     triggerHaptic("selection");
                     setCreateType("task");
                   }}
-                  style={[styles.modalTab, createType === "task" && styles.modalTabActive]}
+                  style={[
+                    styles.modalTab,
+                    createType === "task" && styles.modalTabActive,
+                    { borderRadius: 11, paddingHorizontal: 16, paddingVertical: 6 }
+                  ]}
                 >
                   <Text style={[styles.modalTabText, createType === "task" && styles.modalTabTextActive]}>
                     New Task
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </FluidPressable>
+                <FluidPressable
+                  targetScale={0.95}
                   onPress={() => {
                     triggerHaptic("selection");
                     setCreateType("project");
                   }}
-                  style={[styles.modalTab, createType === "project" && styles.modalTabActive]}
+                  style={[
+                    styles.modalTab,
+                    createType === "project" && styles.modalTabActive,
+                    { borderRadius: 11, paddingHorizontal: 16, paddingVertical: 6 }
+                  ]}
                 >
                   <Text style={[styles.modalTabText, createType === "project" && styles.modalTabTextActive]}>
                     New Project
                   </Text>
-                </TouchableOpacity>
+                </FluidPressable>
               </View>
-              <TouchableOpacity
+              <FluidPressable
+                targetScale={0.9}
                 onPress={() => {
                   triggerHaptic("light");
                   setIsCreateOpen(false);
                 }}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={styles.modalCloseBtn}
+                style={[styles.modalCloseBtn, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.08)" : "#F1F5F9", borderRadius: 16, width: 32, height: 32, alignItems: "center", justifyContent: "center" }]}
               >
-                <XIcon size={18} color={COLORS.muted} />
-              </TouchableOpacity>
+                <XIcon size={16} color={COLORS.muted} />
+              </FluidPressable>
             </View>
 
             {createType === "task" ? (
-              <View style={styles.formContainer}>
-                <Text style={styles.inputLabel}>TASK TITLE</Text>
-                <TextInput
-                  placeholder="e.g. Design Onboarding Screens"
-                  placeholderTextColor={COLORS.muted}
-                  value={newTaskTitle}
-                  onChangeText={setNewTaskTitle}
-                  style={styles.textInput}
-                />
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+                <View style={styles.formContainer}>
+                  <Text style={styles.inputLabel}>TASK TITLE</Text>
+                  <TextInput
+                    placeholder="e.g. Design Onboarding Screens"
+                    placeholderTextColor={COLORS.muted}
+                    value={newTaskTitle}
+                    onChangeText={setNewTaskTitle}
+                    style={styles.textInput}
+                  />
 
-                <Text style={[styles.inputLabel, { marginTop: 10 }]}>ASSIGN TO PROJECT</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
-                  {projects.map((p) => {
-                    const isSelected = newTaskProject.toLowerCase() === p.name.toLowerCase();
-                    return (
-                      <TouchableOpacity
-                        key={p.id}
-                        onPress={() => {
-                          triggerHaptic("selection");
-                          setNewTaskProject(p.name);
-                        }}
-                        style={[
-                          styles.filterChip,
-                          isSelected && styles.filterChipActive,
-                          { paddingHorizontal: 12, paddingVertical: 6 },
-                        ]}
-                      >
-                        <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                          {p.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-
-                <Text style={[styles.inputLabel, { marginTop: 12 }]}>ASSIGN TO / INVITE VIA EMAIL</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
-                  {["Bikash Sharma", "Elena Rostova", "Marcus Vance", "Sarah Chen"].map((member) => {
-                    const isSelected = !isInvitingViaEmail && newTaskAssignee === member;
-                    return (
-                      <TouchableOpacity
-                        key={member}
-                        onPress={() => {
-                          triggerHaptic("selection");
-                          setIsInvitingViaEmail(false);
-                          setNewTaskAssignee(member);
-                        }}
-                        style={[
-                          styles.filterChip,
-                          isSelected && styles.filterChipActive,
-                          { paddingHorizontal: 12, paddingVertical: 6 },
-                        ]}
-                      >
-                        <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                          {member}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                  <TouchableOpacity
-                    onPress={() => {
-                      triggerHaptic("selection");
-                      setIsInvitingViaEmail(true);
-                    }}
-                    style={[
-                      styles.filterChip,
-                      isInvitingViaEmail && styles.filterChipActive,
-                      { paddingHorizontal: 12, paddingVertical: 6, borderColor: COLORS.primary },
-                    ]}
-                  >
-                    <Text style={[styles.filterChipText, isInvitingViaEmail && styles.filterChipTextActive]}>
-                      + Invite via Email
-                    </Text>
-                  </TouchableOpacity>
-                </ScrollView>
-
-                {isInvitingViaEmail && (
-                  <View style={{ marginVertical: 6, padding: 12, backgroundColor: COLORS.primaryLight, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary + "40" }}>
-                    <Text style={[styles.inputLabel, { color: COLORS.primary, marginBottom: 4 }]}>COLLEAGUE EMAIL ADDRESS</Text>
-                    <TextInput
-                      placeholder="e.g. alex.morgan@taskpulse.io"
-                      placeholderTextColor={COLORS.muted}
-                      value={newTaskInviteEmail}
-                      onChangeText={setNewTaskInviteEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      style={[styles.textInput, { backgroundColor: COLORS.white, height: 40, color: COLORS.navy }]}
-                    />
-                    <Text style={{ fontSize: 10, color: COLORS.primary, marginTop: 4 }}>
-                      An invitation will be dispatched with direct project folder access.
-                    </Text>
+                  {/* Tactile Priority Level Selector */}
+                  <Text style={[styles.inputLabel, { marginTop: 12 }]}>PRIORITY LEVEL</Text>
+                  <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
+                    {[
+                      { id: "low", label: "Low", color: "#10B981" },
+                      { id: "medium", label: "Medium", color: "#F59E0B" },
+                      { id: "high", label: "High", color: "#EF4444" },
+                      { id: "critical", label: "Urgent", color: "#8B5CF6" },
+                    ].map((p) => {
+                      const isSelected = newTaskPriority === p.id;
+                      return (
+                        <FluidPressable
+                          key={p.id}
+                          targetScale={0.92}
+                          onPress={() => {
+                            triggerHaptic("selection");
+                            setNewTaskPriority(p.id as any);
+                          }}
+                          style={[
+                            styles.filterChip,
+                            {
+                              flex: 1,
+                              alignItems: "center",
+                              justifyContent: "center",
+                              paddingVertical: 7,
+                              paddingHorizontal: 4,
+                              backgroundColor: isSelected ? p.color : (isDarkMode ? "rgba(255,255,255,0.05)" : "#F8FAFC"),
+                              borderColor: isSelected ? p.color : (isDarkMode ? "rgba(255,255,255,0.1)" : "#E2E8F0"),
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.filterChipText,
+                              {
+                                color: isSelected ? "#FFFFFF" : COLORS.textSecondary,
+                                fontWeight: isSelected ? "bold" : "600",
+                                fontSize: 11,
+                              },
+                            ]}
+                          >
+                            {p.label}
+                          </Text>
+                        </FluidPressable>
+                      );
+                    })}
                   </View>
-                )}
 
-                <Text style={[styles.inputLabel, { marginTop: 10 }]}>SUBTASKS / CHECKLIST</Text>
-                {newTaskSteps.map((step, idx) => (
-                  <View key={idx} style={styles.stepItemRow}>
-                    <Text style={styles.stepItemText}>{step}</Text>
-                    <TouchableOpacity
+                  <Text style={[styles.inputLabel, { marginTop: 12 }]}>ASSIGN TO PROJECT</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
+                    {projects.map((p) => {
+                      const isSelected = newTaskProject.toLowerCase() === p.name.toLowerCase();
+                      return (
+                        <FluidPressable
+                          key={p.id}
+                          targetScale={0.94}
+                          onPress={() => {
+                            triggerHaptic("selection");
+                            setNewTaskProject(p.name);
+                          }}
+                          style={[
+                            styles.filterChip,
+                            isSelected && styles.filterChipActive,
+                            { paddingHorizontal: 12, paddingVertical: 6 },
+                          ]}
+                        >
+                          <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                            {p.name}
+                          </Text>
+                        </FluidPressable>
+                      );
+                    })}
+                  </ScrollView>
+
+                  <Text style={[styles.inputLabel, { marginTop: 12 }]}>ASSIGN TO / INVITE VIA EMAIL</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
+                    {["Bikash Sharma", "Elena Rostova", "Marcus Vance", "Sarah Chen"].map((member) => {
+                      const isSelected = !isInvitingViaEmail && newTaskAssignee === member;
+                      return (
+                        <FluidPressable
+                          key={member}
+                          targetScale={0.94}
+                          onPress={() => {
+                            triggerHaptic("selection");
+                            setIsInvitingViaEmail(false);
+                            setNewTaskAssignee(member);
+                          }}
+                          style={[
+                            styles.filterChip,
+                            isSelected && styles.filterChipActive,
+                            { paddingHorizontal: 12, paddingVertical: 6 },
+                          ]}
+                        >
+                          <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                            {member}
+                          </Text>
+                        </FluidPressable>
+                      );
+                    })}
+                    <FluidPressable
+                      targetScale={0.94}
                       onPress={() => {
+                        triggerHaptic("selection");
+                        setIsInvitingViaEmail(true);
+                      }}
+                      style={[
+                        styles.filterChip,
+                        isInvitingViaEmail && styles.filterChipActive,
+                        { paddingHorizontal: 12, paddingVertical: 6, borderColor: COLORS.primary },
+                      ]}
+                    >
+                      <Text style={[styles.filterChipText, isInvitingViaEmail && styles.filterChipTextActive]}>
+                        + Invite via Email
+                      </Text>
+                    </FluidPressable>
+                  </ScrollView>
+
+                  {isInvitingViaEmail && (
+                    <View style={{ marginVertical: 6, padding: 12, backgroundColor: COLORS.primaryLight, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary + "40" }}>
+                      <Text style={[styles.inputLabel, { color: COLORS.primary, marginBottom: 4 }]}>COLLEAGUE EMAIL ADDRESS</Text>
+                      <TextInput
+                        placeholder="e.g. alex.morgan@taskpulse.io"
+                        placeholderTextColor={COLORS.muted}
+                        value={newTaskInviteEmail}
+                        onChangeText={setNewTaskInviteEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        style={[styles.textInput, { backgroundColor: COLORS.white, height: 40, color: COLORS.navy }]}
+                      />
+                      <Text style={{ fontSize: 10, color: COLORS.primary, marginTop: 4 }}>
+                        An invitation will be dispatched with direct project folder access.
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                    <Text style={styles.inputLabel}>SUBTASKS / CHECKLIST</Text>
+                    <Text style={{ fontSize: 10, color: COLORS.muted, fontWeight: "600" }}>{newTaskSteps.length} steps</Text>
+                  </View>
+                  {newTaskSteps.map((step, idx) => (
+                    <View key={idx} style={styles.stepItemRow}>
+                      <Text style={styles.stepItemText}>{step}</Text>
+                      <FluidPressable
+                        targetScale={0.88}
+                        onPress={() => {
+                          triggerHaptic("light");
+                          setNewTaskSteps((prev) => prev.filter((_, i) => i !== idx));
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <XIcon size={14} color="#EF4444" />
+                      </FluidPressable>
+                    </View>
+                  ))}
+
+                  <View style={styles.stepInputRow}>
+                    <TextInput
+                      placeholder="Add step..."
+                      placeholderTextColor={COLORS.muted}
+                      value={stepDraft}
+                      onChangeText={setStepDraft}
+                      style={styles.stepTextInput}
+                    />
+                    <FluidPressable
+                      targetScale={0.92}
+                      onPress={() => {
+                        if (!stepDraft.trim()) return;
                         triggerHaptic("light");
-                        setNewTaskSteps((prev) => prev.filter((_, i) => i !== idx));
+                        setNewTaskSteps((prev) => [...prev, stepDraft.trim()]);
+                        setStepDraft("");
                       }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={styles.addStepButton}
                     >
-                      <XIcon size={14} color="#EF4444" />
-                    </TouchableOpacity>
+                      <Text style={styles.addStepButtonText}>+ Step</Text>
+                    </FluidPressable>
                   </View>
-                ))}
 
-                <View style={styles.stepInputRow}>
-                  <TextInput
-                    placeholder="Add step..."
-                    placeholderTextColor={COLORS.muted}
-                    value={stepDraft}
-                    onChangeText={setStepDraft}
-                    style={styles.stepTextInput}
-                  />
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (!stepDraft.trim()) return;
-                      triggerHaptic("light");
-                      setNewTaskSteps((prev) => [...prev, stepDraft.trim()]);
-                      setStepDraft("");
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={styles.addStepButton}
+                  <FluidPressable
+                    targetScale={0.96}
+                    onPress={handleCreateTask}
+                    style={[
+                      styles.createTaskButton,
+                      {
+                        opacity: newTaskTitle.trim() ? 1 : 0.65,
+                        shadowColor: COLORS.primary,
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: newTaskTitle.trim() ? 0.35 : 0.1,
+                        shadowRadius: 8,
+                      }
+                    ]}
                   >
-                    <Text style={styles.addStepButtonText}>+ Step</Text>
-                  </TouchableOpacity>
+                    <Text style={styles.createTaskButtonText}>
+                      {newTaskTitle.trim() ? "Create Task" : "Enter Title to Create"}
+                    </Text>
+                  </FluidPressable>
                 </View>
-
-                <TouchableOpacity onPress={handleCreateTask} style={styles.createTaskButton}>
-                  <Text style={styles.createTaskButtonText}>Create Task</Text>
-                </TouchableOpacity>
-              </View>
+              </ScrollView>
             ) : (
               <View style={styles.formContainer}>
                 <Text style={styles.inputLabel}>PROJECT NAME</Text>
@@ -4059,12 +4531,16 @@ export default function App() {
                   onChangeText={setNewProjectName}
                   style={styles.textInput}
                 />
-                <TouchableOpacity onPress={handleCreateProject} style={styles.createTaskButton}>
+                <FluidPressable
+                  targetScale={0.96}
+                  onPress={handleCreateProject}
+                  style={styles.createTaskButton}
+                >
                   <Text style={styles.createTaskButtonText}>Create Project</Text>
-                </TouchableOpacity>
+                </FluidPressable>
               </View>
             )}
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -4164,26 +4640,50 @@ export default function App() {
               <View style={styles.drawerSection}>
                 <Text style={styles.drawerSectionLabel}>SPRINT OVERVIEW</Text>
                 <View style={styles.drawerMetricsRow}>
-                  <View style={styles.drawerMetricItem}>
+                  <FluidPressable
+                    targetScale={0.92}
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      closeDrawer();
+                      handleSelectFilter("In Progress");
+                    }}
+                    style={styles.drawerMetricItem}
+                  >
                     <Text style={[styles.drawerMetricNum, { color: COLORS.accentBlue }]}>
                       {tasks.filter((t) => t.status === "in_progress").length}
                     </Text>
                     <Text style={styles.drawerMetricLabel}>Active</Text>
-                  </View>
+                  </FluidPressable>
                   <View style={styles.drawerMetricDivider} />
-                  <View style={styles.drawerMetricItem}>
+                  <FluidPressable
+                    targetScale={0.92}
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      closeDrawer();
+                      handleSelectFilter("Under Review");
+                    }}
+                    style={styles.drawerMetricItem}
+                  >
                     <Text style={[styles.drawerMetricNum, { color: "#F59E0B" }]}>
                       {tasks.filter((t) => t.status === "in_review").length}
                     </Text>
                     <Text style={styles.drawerMetricLabel}>Review</Text>
-                  </View>
+                  </FluidPressable>
                   <View style={styles.drawerMetricDivider} />
-                  <View style={styles.drawerMetricItem}>
+                  <FluidPressable
+                    targetScale={0.92}
+                    onPress={() => {
+                      triggerHaptic("selection");
+                      closeDrawer();
+                      handleSelectFilter("Completed");
+                    }}
+                    style={styles.drawerMetricItem}
+                  >
                     <Text style={[styles.drawerMetricNum, { color: "#10B981" }]}>
                       {tasks.filter((t) => t.status === "completed").length}
                     </Text>
                     <Text style={styles.drawerMetricLabel}>Done</Text>
-                  </View>
+                  </FluidPressable>
                 </View>
               </View>
 
@@ -4371,7 +4871,7 @@ export default function App() {
   );
 }
 
-const getStyles = (COLORS: typeof LIGHT_COLORS) =>
+const getStyles = (COLORS: typeof LIGHT_COLORS, isDarkMode: boolean = false) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -4380,6 +4880,12 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
     container: {
       flex: 1,
       backgroundColor: COLORS.background,
+    },
+    tabPaneActive: {
+      width: "100%",
+    },
+    tabPaneHidden: {
+      display: "none",
     },
     scrollContent: {
       paddingBottom: 110,
@@ -4607,7 +5113,7 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       overflow: "hidden",
     },
     progressBarFill: {
-      height: "100%",
+      height: 72,
       backgroundColor: "#FFFFFF",
       borderRadius: 3,
     },
@@ -5242,7 +5748,7 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       marginTop: 6,
     },
     detailsProgressBarFill: {
-      height: "100%",
+      height: 72,
       backgroundColor: COLORS.primary,
       borderRadius: 3,
     },
@@ -5613,9 +6119,23 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       shadowOpacity: 0.06,
       shadowRadius: 6,
     },
+    navLiquidGlassPill: {
+      position: "absolute",
+      top: 10,
+      height: 52,
+      borderRadius: 18,
+      backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.09)" : "rgba(255, 255, 255, 0.75)",
+      borderWidth: 1,
+      borderColor: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(117, 110, 243, 0.18)",
+      shadowColor: isDarkMode ? "#000000" : COLORS.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDarkMode ? 0.35 : 0.10,
+      shadowRadius: 8,
+      zIndex: 1,
+    },
     navItem: {
       flex: 1,
-      height: "100%",
+      height: 72,
       alignItems: "center",
       justifyContent: "center",
       paddingVertical: 6,
@@ -5632,7 +6152,7 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
     },
     centerAddButtonContainer: {
       width: 64,
-      height: "100%",
+      height: 72,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -5643,7 +6163,7 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       backgroundColor: COLORS.primary,
       alignItems: "center",
       justifyContent: "center",
-      marginTop: -22,
+      marginTop: 0,
       shadowColor: COLORS.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.4,
@@ -5656,6 +6176,20 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       flex: 1,
       backgroundColor: "rgba(0, 0, 0, 0.55)",
       justifyContent: "flex-end",
+    },
+    sheetDragHandleZone: {
+      width: "100%",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 10,
+      marginTop: -6,
+      marginBottom: 4,
+    },
+    sheetDragPill: {
+      width: 44,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.16)",
     },
     modalSheet: {
       backgroundColor: COLORS.white,
@@ -6821,7 +7355,7 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       overflow: "hidden",
     },
     pulseProgressBarFill: {
-      height: "100%",
+      height: 72,
       borderRadius: 3,
     },
     activityEventRow: {
@@ -6991,7 +7525,7 @@ const getStyles = (COLORS: typeof LIGHT_COLORS) =>
       overflow: "hidden",
     },
     kanbanProgressBarFill: {
-      height: "100%",
+      height: 72,
       borderRadius: 2,
     },
     kanbanCardFooter: {

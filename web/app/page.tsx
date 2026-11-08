@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { BootSplash } from "@/components/BootSplash";
 import { Header } from "@/components/Header";
 import { ManagerDispatcher } from "@/components/ManagerDispatcher";
 import { WorkloadMatrix } from "@/components/WorkloadMatrix";
@@ -34,6 +35,7 @@ export default function TaskPulseWorkspacePage() {
   const [activeProjectId, setActiveProjectId] = useState<string>("all");
   const [assignedBannerProject, setAssignedBannerProject] = useState<{ id: string; name: string } | null>(null);
   const [viewportMode, setViewportMode] = useState<"desktop" | "mobile">("desktop");
+  const [bootSplashComplete, setBootSplashComplete] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -455,6 +457,9 @@ export default function TaskPulseWorkspacePage() {
 
   return (
     <>
+      {!bootSplashComplete && (
+        <BootSplash onComplete={() => setBootSplashComplete(true)} />
+      )}
       {loading ? (
         <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19]" />
       ) : !user ? (

@@ -14,25 +14,26 @@ interface IconProps {
 }
 
 export const HomeIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", strokeWidth = 2 }) => {
-  const roofW = Math.round(size * 0.85);
-  const bodyW = Math.round(size * 0.62);
+  const roofSize = Math.round(size * 0.52);
+  const bodyW = Math.round(size * 0.64);
   const bodyH = Math.round(size * 0.44);
-  const doorW = Math.round(bodyW * 0.38);
-  const doorH = Math.round(bodyH * 0.58);
+  const doorW = Math.round(bodyW * 0.36);
+  const doorH = Math.round(bodyH * 0.55);
 
   return (
-    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
-      {/* Roof */}
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center", backgroundColor: "transparent" }}>
+      {/* Pristine Peak Roof using 45-deg angled view - Zero Transparent Border Hack, Zero Box Gap */}
       <View
         style={{
-          width: 0,
-          height: 0,
-          borderLeftWidth: roofW / 2,
-          borderRightWidth: roofW / 2,
-          borderBottomWidth: Math.round(roofW * 0.44),
-          borderLeftColor: "transparent",
-          borderRightColor: "transparent",
-          borderBottomColor: color,
+          width: roofSize,
+          height: roofSize,
+          borderTopWidth: strokeWidth,
+          borderLeftWidth: strokeWidth,
+          borderColor: color,
+          transform: [{ rotate: "45deg" }],
+          marginBottom: -Math.round(roofSize * 0.42),
+          borderRadius: 1,
+          backgroundColor: "transparent",
         }}
       />
       {/* House Body */}
@@ -48,6 +49,7 @@ export const HomeIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", st
           borderBottomRightRadius: 2,
           alignItems: "center",
           justifyContent: "flex-end",
+          backgroundColor: "transparent",
         }}
       >
         {/* Door cutout */}
@@ -61,6 +63,7 @@ export const HomeIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", st
             borderLeftWidth: strokeWidth,
             borderRightWidth: strokeWidth,
             borderColor: color,
+            backgroundColor: "transparent",
           }}
         />
       </View>
@@ -75,8 +78,8 @@ export const FolderIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", 
   const tabH = Math.max(3, Math.round(h * 0.28));
 
   return (
-    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
-      <View style={{ width: w }}>
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center", backgroundColor: "transparent" }}>
+      <View style={{ width: w, backgroundColor: "transparent" }}>
         <View
           style={{
             width: tabW,
@@ -88,6 +91,7 @@ export const FolderIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", 
             borderRightWidth: strokeWidth,
             borderColor: color,
             marginBottom: -strokeWidth,
+            backgroundColor: "transparent",
           }}
         />
         <View
@@ -97,6 +101,7 @@ export const FolderIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", 
             borderRadius: 3,
             borderWidth: strokeWidth,
             borderColor: color,
+            backgroundColor: "transparent",
           }}
         />
       </View>
@@ -136,7 +141,7 @@ export const UserIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", st
   const bodyH = Math.round(size * 0.36);
 
   return (
-    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center", backgroundColor: "transparent" }}>
       <View
         style={{
           width: headSize,
@@ -145,6 +150,7 @@ export const UserIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", st
           borderWidth: strokeWidth,
           borderColor: color,
           marginBottom: 2,
+          backgroundColor: "transparent",
         }}
       />
       <View
@@ -157,6 +163,7 @@ export const UserIcon: React.FC<IconProps> = ({ size = 22, color = "#002055", st
           borderLeftWidth: strokeWidth,
           borderRightWidth: strokeWidth,
           borderColor: color,
+          backgroundColor: "transparent",
         }}
       />
     </View>
@@ -952,7 +959,7 @@ export const AnimatedAddButton: React.FC<{
   size?: number;
   color?: string;
   bg?: string;
-}> = ({ onPress, size = 56, color = "#FFFFFF", bg = "#756EF3" }) => {
+}> = ({ onPress, size = 46, color = "#FFFFFF", bg = "#756EF3" }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -960,14 +967,14 @@ export const AnimatedAddButton: React.FC<{
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
+          toValue: 1.04,
+          duration: 1600,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 1500,
+          duration: 1600,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -981,7 +988,7 @@ export const AnimatedAddButton: React.FC<{
     Animated.sequence([
       Animated.timing(rotateAnim, {
         toValue: 1,
-        duration: 250,
+        duration: 220,
         easing: Easing.out(Easing.back(1.5)),
         useNativeDriver: true,
       }),
@@ -1003,6 +1010,7 @@ export const AnimatedAddButton: React.FC<{
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={handlePress}
+      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
       style={{
         width: size,
         height: size,
@@ -1010,7 +1018,7 @@ export const AnimatedAddButton: React.FC<{
         backgroundColor: bg,
         alignItems: "center",
         justifyContent: "center",
-        marginTop: -22,
+        marginTop: 0,
         shadowColor: bg,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4,

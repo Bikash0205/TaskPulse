@@ -126,7 +126,7 @@
     }
   </style>
 
-  <g transform="translate(48, 40)">
+  <g transform="translate(8, 30)">
     <!-- Dynamically Drawn Pulse Line -->
     <path class="tp-anim-line" d="M 60,195 L 205,195 L 275,285 L 385,75 L 475,250 L 560,150 L 640,205 L 725,65" />
 
@@ -138,10 +138,10 @@
 
     <!-- Popping Bullseye Target Ring -->
     <circle class="tp-anim-ring" cx="725" cy="65" r="24" />
+  </g>
 
-    <!-- Smoothly Revealed Typography -->
-    <g class="tp-anim-typography" transform="translate(42, 485)">
-      <text class="tp-text-task" x="50" y="0">Task<tspan class="tp-text-pulse">Pulse</tspan></text>
-    </g>
+  <!-- Perfectly Centered Revealed Typography -->
+  <g class="tp-anim-typography">
+    <text class="tp-text-task" x="400" y="525" text-anchor="middle">Task<tspan class="tp-text-pulse">Pulse</tspan></text>
   </g>
 </svg>

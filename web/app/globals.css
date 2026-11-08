@@ -9,7 +9,7 @@
   }
 
   .dark {
-    --background: #0B0F19;
+    --background: #070B14;
     --foreground: #F8FAFC;
   }
   
@@ -19,6 +19,127 @@
     font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow-x: hidden;
   }
+}
+
+/* Fluid Keyframe Animations for Motion Graphics */
+@keyframes meshDrift1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(80px, -60px) scale(1.15);
+  }
+  66% {
+    transform: translate(-50px, 40px) scale(0.92);
+  }
+}
+
+@keyframes meshDrift2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-70px, 50px) scale(1.2);
+  }
+  66% {
+    transform: translate(60px, -40px) scale(0.88);
+  }
+}
+
+@keyframes meshDrift3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(50px, 60px) scale(1.1);
+  }
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(1.5deg);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(10px) rotate(-1.5deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.4;
+    filter: drop-shadow(0 0 15px rgba(117, 110, 243, 0.4));
+  }
+  50% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 35px rgba(6, 182, 212, 0.8));
+  }
+}
+
+@keyframes shimmerBorder {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.anim-mesh-1 {
+  animation: meshDrift1 18s ease-in-out infinite;
+}
+
+.anim-mesh-2 {
+  animation: meshDrift2 22s ease-in-out infinite;
+}
+
+.anim-mesh-3 {
+  animation: meshDrift3 15s ease-in-out infinite;
+}
+
+.anim-float-1 {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.anim-float-2 {
+  animation: floatReverse 7s ease-in-out infinite;
+}
+
+.anim-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Glowing Neon Gradients */
+.gradient-border-glow {
+  position: relative;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+}
+
+.gradient-border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #756EF3, #06B6D4, #10B981, #F43F5E);
+  background-size: 300% 300%;
+  animation: shimmerBorder 8s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 /* Tier 3 Glass Acrylic Panel Utility */
@@ -31,9 +152,9 @@
 }
 
 .dark .glass-tier3 {
-  background: rgba(21, 28, 44, 0.75);
-  border: 1px solid rgba(30, 41, 59, 0.8);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
 .glass-tier3-elevated {
@@ -45,9 +166,9 @@
 }
 
 .dark .glass-tier3-elevated {
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  background: rgba(21, 28, 44, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
 }
 
 /* Hide scrollbar for clean dashboard aesthetic while retaining smooth scroll */

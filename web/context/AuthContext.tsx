@@ -210,6 +210,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     department = data.department as Department;
                     updated = true;
                   }
+                  if (data.displayName && data.displayName !== loggedInUser.displayName) {
+                    loggedInUser.displayName = data.displayName;
+                    updated = true;
+                  }
                 } else {
                   await setDoc(
                     userRef,
