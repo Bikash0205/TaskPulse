@@ -10,6 +10,7 @@ import { TaskPulseLogo } from "@/components/TaskPulseLogo";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
 import { MobileDeviceFrame } from "@/components/MobileDeviceFrame";
+import { LiveMultiplayerPresenceCanvas } from "@/components/LiveMultiplayerPresenceCanvas";
 import { Sparkles, ArrowRight, X, Building2, Smartphone, LayoutDashboard } from "lucide-react";
 import {
   subscribeTasks,
@@ -469,7 +470,10 @@ export default function TaskPulseWorkspacePage() {
           onEnterAdmin={() => signInWithCustomUser("Zevon", PERMANENT_ADMIN_EMAIL)}
         />
       ) : (
-        <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
+        <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
+      {/* Real-Time Multiplayer Presence Cursors & Live War Room Canvas */}
+      <LiveMultiplayerPresenceCanvas currentUser={user} />
+
       {/* Top Header with Light/Dark toggle, Google Auth & Organization Switcher */}
       <Header projects={projects} />
 
