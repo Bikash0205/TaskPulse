@@ -60,7 +60,7 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(activeConfig);
     auth = getAuth(app);
-    db = getFirestore(app);
+    db = getFirestore(app, "default");
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({ prompt: "select_account" });
   } catch (error) {
