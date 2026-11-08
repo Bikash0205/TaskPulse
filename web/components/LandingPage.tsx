@@ -9,6 +9,7 @@ import { PricingTiersSection } from "./PricingTiersSection";
 import { InteractiveProductShowcase } from "./InteractiveProductShowcase";
 import { HeroMotionGraphic } from "./HeroMotionGraphic";
 import { ScrollMotionGraphics } from "./ScrollMotionGraphics";
+import { FluidNeumorphicThemeToggle } from "./FluidNeumorphicThemeToggle";
 import {
   ShieldCheck,
   Zap,
@@ -82,19 +83,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#0F172A] dark:text-white transition-colors cursor-pointer shadow-xs"
-            aria-label="Toggle Theme"
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-[#756EF3]" />
-            )}
-          </button>
+          {/* Fluid Neumorphic Light / Dark Mode Toggle */}
+          <FluidNeumorphicThemeToggle size="sm" />
 
           {/* Dedicated Sign In Link */}
           <Link

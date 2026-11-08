@@ -21,6 +21,7 @@ import {
 import GoogleSignInModal from "./GoogleSignInModal";
 import RoleManagementModal from "./RoleManagementModal";
 import { OrganizationOnboardingModal } from "./OrganizationOnboardingModal";
+import { FluidNeumorphicThemeToggle } from "./FluidNeumorphicThemeToggle";
 
 interface HeaderProps {
   projects?: Project[];
@@ -76,19 +77,8 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
             </button>
           )}
 
-          {/* Light / Dark Mode Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-colors cursor-pointer"
-            aria-label="Toggle Theme"
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-[#756EF3]" />
-            )}
-          </button>
+          {/* Fluid Neumorphic Light / Dark Mode Toggle */}
+          <FluidNeumorphicThemeToggle size="sm" />
 
           {user ? (
             <>
