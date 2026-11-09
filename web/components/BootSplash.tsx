@@ -31,6 +31,8 @@ export const BootSplash: React.FC<BootSplashProps> = ({
 
   if (!isMounted) return null;
 
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
   return (
     <div
       className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0F19] transition-all duration-500 ease-out select-none ${
@@ -39,9 +41,9 @@ export const BootSplash: React.FC<BootSplashProps> = ({
     >
       <div className="relative w-full h-full max-w-2xl max-h-[90vh] flex items-center justify-center p-4 sm:p-8">
         <picture className="w-full h-full flex items-center justify-center">
-          <source media="(prefers-color-scheme: dark)" srcSet="/taskpulse_animated_dark.svg" />
+          <source media="(prefers-color-scheme: dark)" srcSet={`${basePath}/taskpulse_animated_dark.svg`} />
           <img
-            src={isDark ? "/taskpulse_animated_dark.svg" : "/taskpulse_animated.svg"}
+            src={isDark ? `${basePath}/taskpulse_animated_dark.svg` : `${basePath}/taskpulse_animated.svg`}
             alt="TaskPulse Vector Boot Animation"
             className="w-full h-auto max-h-full object-contain filter drop-shadow-2xl"
             loading="eager"
