@@ -7,10 +7,10 @@ import { useGSAP } from "@gsap/react";
 import {
   Sparkles,
   Calendar,
-  Users,
-  ArrowRight,
   Activity,
   ShieldCheck,
+  CheckCircle2,
+  GitBranch,
 } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -21,31 +21,60 @@ interface StageNode {
   title: string;
   description: string;
   icon: React.ReactNode;
-  accentGradient: string;
   metric: string;
 }
+
+const STAGES: StageNode[] = [
+  {
+    id: "triage",
+    step: "01",
+    title: "Structured Intake & Triage",
+    description:
+      "Natural-language work requests convert into priority-scored tasks with subtask checkpoints and owners.",
+    icon: <Sparkles className="w-4 h-4" />,
+    metric: "< 800ms",
+  },
+  {
+    id: "gantt",
+    step: "02",
+    title: "Critical-Path Gantt Graph",
+    description:
+      "Multi-lane dependency scheduling highlights slack, blockers, and release milestones automatically.",
+    icon: <Calendar className="w-4 h-4" />,
+    metric: "60fps",
+  },
+  {
+    id: "sync",
+    step: "03",
+    title: "Hybrid Cross-Platform Sync",
+    description:
+      "Plan entitlements, tasks, and bandwidth heatmaps synchronize live across Desktop Web and Android.",
+    icon: <Activity className="w-4 h-4" />,
+    metric: "Sub-85ms",
+  },
+  {
+    id: "audit",
+    step: "04",
+    title: "Manager Verification Gate",
+    description:
+      "Deliverables require evidence-backed review before closing, generating a clean compliance audit trail.",
+    icon: <ShieldCheck className="w-4 h-4" />,
+    metric: "100% Audit",
+  },
+];
 
 export const ScrollMotionGraphics: React.FC = () => {
   const [activeStage, setActiveStage] = useState<number>(0);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const beamRef = useRef<HTMLDivElement>(null);
-  const packetRef = useRef<HTMLDivElement>(null);
+  const spineFillRef = useRef<HTMLDivElement>(null);
+  const previewStageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setActiveStage((prev) => (prev + 1) % 4);
-    }, 3200);
+      setActiveStage((prev) => (prev + 1) % STAGES.length);
+    }, 4000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (!packetRef.current) return;
-    gsap.to(packetRef.current, {
-      left: `${activeStage * 25 + 12.5}%`,
-      duration: 0.6,
-      ease: "power3.out",
-    });
-  }, [activeStage]);
 
   useGSAP(
     () => {
@@ -54,198 +83,320 @@ export const ScrollMotionGraphics: React.FC = () => {
         gsap.from(".smg-heading", {
           y: 22,
           opacity: 0,
-          duration: 0.65,
+          duration: 0.6,
           ease: "power3.out",
           immediateRender: false,
           clearProps: "transform,opacity",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 88%",
-            once: true,
-          },
+          scrollTrigger: { trigger: sectionRef.current, start: "top 86%", once: true },
         });
 
-        gsap.from(".smg-card", {
-          y: 28,
+        gsap.from(".smg-step-btn", {
+          x: -18,
           opacity: 0,
-          scale: 0.98,
-          stagger: 0.1,
-          duration: 0.65,
+          stagger: 0.08,
+          duration: 0.55,
           ease: "power3.out",
           immediateRender: false,
           clearProps: "transform,opacity",
-          scrollTrigger: {
-            trigger: ".smg-grid",
-            start: "top 88%",
-            once: true,
-          },
+          scrollTrigger: { trigger: ".smg-container", start: "top 86%", once: true },
         });
 
-        if (beamRef.current) {
+        if (spineFillRef.current) {
           gsap.fromTo(
-            beamRef.current,
-            { scaleX: 0 },
+            spineFillRef.current,
+            { scaleY: 0 },
             {
-              scaleX: 1,
+              scaleY: 1,
               ease: "none",
               scrollTrigger: {
-                trigger: ".smg-grid",
-                start: "top 85%",
-                end: "bottom 55%",
-                scrub: 0.8,
+                trigger: ".smg-container",
+                start: "top 78%",
+                end: "bottom 52%",
+                scrub: 0.6,
               },
             }
           );
         }
-
-        setTimeout(() => ScrollTrigger.refresh(), 300);
       });
     },
     { scope: sectionRef }
   );
 
-  const stages: StageNode[] = [
-    {
-      id: "ai",
-      step: "STAGE 01",
-      title: "AI Natural Triage",
-      description:
-        "Type requirements in plain English. TaskPulse AI extracts deadlines, priority, and subtasks cleanly.",
-      icon: <Sparkles className="w-5 h-5" />,
-      accentGradient: "from-[#5D55D6] to-[#7C73E6]",
-      metric: "< 800ms parsing",
+  // Animate internal diagram elements cleanly whenever activeStage changes
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          ".smg-anim-item",
+          { y: 12, opacity: 0 },
+          { y: 0, opacity: 1, stagger: 0.07, duration: 0.42, ease: "power3.out", clearProps: "transform,opacity" }
+        );
+        gsap.fromTo(
+          ".smg-anim-bar",
+          { scaleX: 0 },
+          {
+            scaleX: 1,
+            transformOrigin: "left center",
+            stagger: 0.09,
+            duration: 0.65,
+            ease: "power3.out",
+            clearProps: "transform",
+          }
+        );
+        const paths = previewStageRef.current?.querySelectorAll(".smg-draw-path");
+        paths?.forEach((p) => {
+          const el = p as SVGPathElement;
+          const len = el.getTotalLength();
+          gsap.set(el, { strokeDasharray: len, strokeDashoffset: len });
+          gsap.to(el, { strokeDashoffset: 0, duration: 0.85, ease: "power2.out" });
+        });
+      });
     },
-    {
-      id: "gantt",
-      step: "STAGE 02",
-      title: "60fps Interactive Timeline",
-      description:
-        "Fluid multi-lane Gantt view with automatic slack calculation and dependency tracking.",
-      icon: <Calendar className="w-5 h-5" />,
-      accentGradient: "from-[#0284C7] to-[#0EA5E9]",
-      metric: "60fps GPU Canvas",
-    },
-    {
-      id: "sync",
-      step: "STAGE 03",
-      title: "Balanced Team Dispatch",
-      description:
-        "Real-time bandwidth indicators balance workloads across engineers with zero surprise overloads.",
-      icon: <Users className="w-5 h-5" />,
-      accentGradient: "from-[#0F8C65] to-[#10B981]",
-      metric: "< 85ms Cloud Sync",
-    },
-    {
-      id: "verify",
-      step: "STAGE 04",
-      title: "Verified Delivery & Sign-Off",
-      description:
-        "Completion notes, screenshot attachments, and manager sign-off maintain an auditable log.",
-      icon: <ShieldCheck className="w-5 h-5" />,
-      accentGradient: "from-[#B45309] to-[#D97706]",
-      metric: "SOC 2 Type II Ready",
-    },
-  ];
+    { scope: previewStageRef, dependencies: [activeStage] }
+  );
 
   return (
     <section
       ref={sectionRef}
-      className="relative w-full max-w-6xl mx-auto my-14 sm:my-24 px-4"
+      className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1360px] w-full mx-auto relative overflow-hidden border-t border-[#DDD8CE] dark:border-white/[0.08]"
     >
-      {/* Section Header */}
-      <div className="smg-heading text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[#5D55D6] dark:text-[#818CF8] text-xs font-mono font-semibold mb-3">
-          <Activity className="w-3.5 h-3.5" />
-          <span>CONTINUOUS DELIVERY PIPELINE</span>
+      <div className="smg-heading text-left max-w-2xl mb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#5D55D6]/15 border border-[#D4D0F0] dark:border-[#5D55D6]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] font-mono font-bold tracking-wider uppercase mb-3">
+          <GitBranch className="w-3.5 h-3.5" />
+          <span>EXECUTION ARCHITECTURE</span>
         </div>
-        <h2 className="text-2xl sm:text-4xl font-extrabold text-[#1E222D] dark:text-[#F8FAFC] tracking-tight">
-          How Work Flows From Idea to Verified Sign-Off
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-[#1E222D] dark:text-white tracking-[-0.02em]">
+          How Teams Ship Without Status Meetings
         </h2>
-        <p className="text-xs sm:text-sm text-[#4E5565] dark:text-[#94A3B8] mt-2.5">
-          Scroll-choreographed workflow telemetry from natural language triage to manager verification.
+        <p className="text-xs sm:text-sm md:text-base text-[#4E5565] dark:text-slate-300 mt-2.5 leading-relaxed">
+          Inspect each phase of the TaskPulse lifecycle—from structured intake to verified release sign-off.
         </p>
       </div>
 
-      {/* Warm-Paper / Obsidian Pipeline Container */}
-      <div className="smg-grid relative rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1322] border border-[#DDD8CE] dark:border-white/10 p-5 sm:p-9 shadow-xl shadow-[#1E222D]/[0.04] dark:shadow-black/50 overflow-hidden">
-        {/* Scroll-Scrubbed Conduit Progress Rail + Live Stage Packet */}
-        <div className="hidden lg:block relative h-2 mb-7 rounded-full bg-[#EAE6DC] dark:bg-white/10 overflow-visible">
-          <div className="h-full w-full rounded-full overflow-hidden">
+      {/* Asymmetric Split Enterprise Pipeline */}
+      <div className="smg-container grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Left 5 Columns: Vertical Spine + 4 Stage Selectors */}
+        <div className="lg:col-span-5 relative pl-5 space-y-3">
+          <div className="absolute left-1.5 top-4 bottom-4 w-0.5 bg-[#E4DFD5] dark:bg-white/[0.08] rounded-full overflow-hidden">
             <div
-              ref={beamRef}
-              className="h-full w-full origin-left bg-gradient-to-r from-[#5D55D6] via-[#0EA5E9] to-[#10B981] rounded-full"
+              ref={spineFillRef}
+              style={{ transform: "scaleY(0)" }}
+              className="w-full h-full origin-top bg-gradient-to-b from-[#5D55D6] via-[#0284C7] to-[#0F8C65]"
             />
           </div>
-          <div
-            ref={packetRef}
-            style={{ left: "12.5%" }}
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#FAF8F4] dark:bg-white border-2 border-[#5D55D6] shadow-md shadow-[#5D55D6]/40 pointer-events-none"
-          />
-        </div>
 
-        {/* 4 Interactive Pipeline Stages */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 relative z-10">
-          {stages.map((stage, idx) => {
+          {STAGES.map((stage, idx) => {
             const isActive = activeStage === idx;
             return (
               <button
                 key={stage.id}
                 type="button"
                 onClick={() => setActiveStage(idx)}
-                className={`smg-card text-left p-5 rounded-2xl transition-colors transition-shadow duration-300 cursor-pointer flex flex-col justify-between relative overflow-hidden ${
+                className={`smg-step-btn w-full text-left p-4 rounded-2xl border transition-colors cursor-pointer relative ${
                   isActive
-                    ? "bg-[#FAF8F4] dark:bg-[#1B2438] border-2 border-[#5D55D6] dark:border-[#818CF8] shadow-lg -translate-y-1"
-                    : "bg-[#F2EFE8] dark:bg-[#131B2E] border border-[#DDD8CE] dark:border-slate-700/60 hover:border-[#5D55D6]/50 hover:bg-[#FAF8F4] dark:hover:bg-[#1A253E]"
+                    ? "bg-[#FAF8F4] dark:bg-[#141822] border-[#5D55D6] dark:border-[#818CF8] shadow-md"
+                    : "bg-[#FAF8F4]/60 dark:bg-[#0D1017] border-[#E4DFD5] dark:border-white/[0.07] hover:border-[#5D55D6]/40"
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-mono font-bold tracking-widest text-[#6E7485] dark:text-slate-300 uppercase">
-                      {stage.step}
-                    </span>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-mono font-bold ${
                         isActive
-                          ? "bg-[#EAE8F8] dark:bg-emerald-400/20 text-[#5D55D6] dark:text-emerald-300 border border-[#D4D0F0] dark:border-emerald-400/40"
-                          : "bg-[#E6E2D8] dark:bg-white/5 text-[#4E5565] dark:text-slate-300"
+                          ? "bg-[#5D55D6] text-white"
+                          : "bg-[#EAE6DC] dark:bg-white/[0.08] text-[#4E5565] dark:text-slate-300"
                       }`}
                     >
-                      {stage.metric}
+                      {stage.step}
+                    </span>
+                    <span className="text-sm font-bold text-[#1E222D] dark:text-white">
+                      {stage.title}
                     </span>
                   </div>
-
-                  {/* Icon Badge */}
-                  <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 ${
-                      isActive
-                        ? `bg-gradient-to-tr ${stage.accentGradient} text-white shadow-md scale-105`
-                        : "bg-[#EAE6DC] dark:bg-white/10 text-[#4E5565] dark:text-slate-200 border border-[#DDD8CE] dark:border-white/15"
-                    }`}
-                  >
-                    {stage.icon}
-                  </div>
-
-                  <h3 className="text-sm font-bold text-[#1E222D] dark:text-white mb-2">
-                    {stage.title}
-                  </h3>
-                  <p className="text-xs text-[#4E5565] dark:text-slate-300 leading-relaxed">
-                    {stage.description}
-                  </p>
-                </div>
-
-                <div className="mt-5 pt-3 border-t border-[#E5E0D6] dark:border-white/10 flex items-center justify-between text-[11px] font-semibold text-[#6E7485] dark:text-slate-300">
-                  <span className={isActive ? "text-[#5D55D6] dark:text-[#818CF8] font-bold" : ""}>
-                    {isActive ? "Active Phase" : "Inspect Step"}
+                  <span className="px-2 py-0.5 rounded-md bg-[#EAE6DC] dark:bg-white/[0.06] text-[10px] font-mono font-bold text-[#4E5565] dark:text-slate-300">
+                    {stage.metric}
                   </span>
-                  <ArrowRight
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      isActive ? "translate-x-1 text-[#5D55D6] dark:text-[#818CF8]" : ""
-                    }`}
-                  />
                 </div>
+                <p className="text-xs text-[#4E5565] dark:text-slate-400 leading-relaxed pl-8">
+                  {stage.description}
+                </p>
               </button>
             );
           })}
+        </div>
+
+        {/* Right 7 Columns: Live Explanatory Diagram Canvas */}
+        <div
+          ref={previewStageRef}
+          className="lg:col-span-7 rounded-2xl sm:rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] p-5 sm:p-8 flex flex-col justify-between shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 text-left"
+        >
+          <div className="flex items-center justify-between pb-4 border-b border-[#E4DFD5] dark:border-white/[0.07]">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#5D55D6] dark:text-[#818CF8]">
+              {STAGES[activeStage].icon}
+              <span>
+                PHASE {STAGES[activeStage].step} // {STAGES[activeStage].title.toUpperCase()}
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-[#6E7485] dark:text-slate-400">
+              Live Telemetry Preview
+            </span>
+          </div>
+
+          <div className="py-6 flex-1 flex flex-col justify-center">
+            {activeStage === 0 && (
+              <div className="space-y-4">
+                <div className="smg-anim-item p-3.5 rounded-xl bg-[#F2EFE8] dark:bg-[#141822] border border-[#E4DFD5] dark:border-white/[0.07] font-mono text-xs text-[#1E222D] dark:text-slate-200">
+                  <span className="text-[#5D55D6] dark:text-[#818CF8] font-bold">Prompt:</span>{" "}
+                  &ldquo;Ship multi-tier billing gates with Marcus by Friday high priority&rdquo;
+                </div>
+                <svg viewBox="0 0 520 34" className="w-full h-7">
+                  <path
+                    d="M 260,0 L 260,16 L 90,16 L 90,34 M 260,16 L 260,34 M 260,16 L 430,16 L 430,34"
+                    stroke="#5D55D6"
+                    strokeWidth="1.5"
+                    fill="none"
+                    className="smg-draw-path"
+                  />
+                </svg>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: "Priority & SLA", val: "HIGH // Fri 18:00" },
+                    { label: "Assigned Lead", val: "Marcus (60% load)" },
+                    { label: "Checkpoints", val: "3 Subtasks Mapped" },
+                  ].map((box) => (
+                    <div
+                      key={box.label}
+                      className="smg-anim-item p-3 rounded-xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07]"
+                    >
+                      <div className="text-[10px] font-mono uppercase text-[#6E7485] dark:text-slate-400">
+                        {box.label}
+                      </div>
+                      <div className="text-xs font-bold text-[#1E222D] dark:text-white mt-1">
+                        {box.val}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeStage === 1 && (
+              <div className="space-y-3">
+                <svg viewBox="0 0 520 185" className="w-full h-44">
+                  {[120, 240, 360, 480].map((x, i) => (
+                    <g key={x}>
+                      <line
+                        x1={x}
+                        y1="14"
+                        x2={x}
+                        y2="170"
+                        stroke="currentColor"
+                        className="text-[#E4DFD5] dark:text-white/[0.06]"
+                        strokeWidth="1"
+                      />
+                      <text x={x - 16} y="12" className="fill-[#6E7485] text-[9px] font-mono">
+                        {`WK 0${i + 1}`}
+                      </text>
+                    </g>
+                  ))}
+                  {/* Swimlane Gantt Bars */}
+                  <rect x="20" y="34" width="160" height="24" rx="6" fill="#5D55D6" className="smg-anim-bar" />
+                  <rect x="195" y="76" width="145" height="24" rx="6" fill="#0284C7" className="smg-anim-bar" />
+                  <rect x="355" y="118" width="135" height="24" rx="6" fill="#0F8C65" className="smg-anim-bar" />
+                  {/* SVG Dependency Elbow Connectors */}
+                  <path
+                    d="M 180,46 L 210,46 L 210,74"
+                    stroke="#5D55D6"
+                    strokeWidth="1.8"
+                    fill="none"
+                    className="smg-draw-path"
+                  />
+                  <path
+                    d="M 340,88 L 370,88 L 370,116"
+                    stroke="#0284C7"
+                    strokeWidth="1.8"
+                    fill="none"
+                    className="smg-draw-path"
+                  />
+                  <text x="30" y="50" className="fill-white text-[10px] font-mono font-bold">
+                    Schema &amp; Quotas
+                  </text>
+                  <text x="205" y="92" className="fill-white text-[10px] font-mono font-bold">
+                    Hybrid Billing
+                  </text>
+                  <text x="365" y="134" className="fill-white text-[10px] font-mono font-bold">
+                    Prod Release
+                  </text>
+                </svg>
+              </div>
+            )}
+
+            {activeStage === 2 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3 items-center text-center">
+                  <div className="smg-anim-item p-3.5 rounded-xl bg-[#F4F2ED] dark:bg-[#141822] border border-[#E4DFD5] dark:border-white/[0.07]">
+                    <div className="text-xs font-bold text-[#1E222D] dark:text-white">Web App</div>
+                    <div className="text-[10px] font-mono text-[#5D55D6] dark:text-[#818CF8] mt-0.5">
+                      14-Day Trial / Quote
+                    </div>
+                  </div>
+                  <div className="smg-anim-item p-3.5 rounded-xl bg-[#EAE8F8] dark:bg-[#5D55D6]/20 border border-[#5D55D6]/40">
+                    <div className="text-xs font-bold text-[#5D55D6] dark:text-[#818CF8]">
+                      Firestore Sync
+                    </div>
+                    <div className="text-[10px] font-mono text-[#0F8C65] dark:text-emerald-400 mt-0.5">
+                      &lt; 85ms Live
+                    </div>
+                  </div>
+                  <div className="smg-anim-item p-3.5 rounded-xl bg-[#F4F2ED] dark:bg-[#141822] border border-[#E4DFD5] dark:border-white/[0.07]">
+                    <div className="text-xs font-bold text-[#1E222D] dark:text-white">Android Client</div>
+                    <div className="text-[10px] font-mono text-[#0F8C65] dark:text-emerald-400 mt-0.5">
+                      Google Play Verified
+                    </div>
+                  </div>
+                </div>
+                <svg viewBox="0 0 520 26" className="w-full h-6">
+                  <path
+                    d="M 85,13 L 435,13"
+                    stroke="#0F8C65"
+                    strokeWidth="2"
+                    fill="none"
+                    className="smg-draw-path"
+                  />
+                </svg>
+              </div>
+            )}
+
+            {activeStage === 3 && (
+              <div className="space-y-2.5">
+                {[
+                  "Deliverable evidence screenshot attached",
+                  "Subtask checklist verified (3 / 3 passed)",
+                  "Organization RBAC clearance validated",
+                  "Audit entry sealed with timestamp",
+                ].map((line) => (
+                  <div
+                    key={line}
+                    className="smg-anim-item flex items-center justify-between p-3 rounded-xl bg-[#F4F2ED] dark:bg-[#141822] border border-[#E4DFD5] dark:border-white/[0.07] text-xs"
+                  >
+                    <span className="flex items-center gap-2 font-semibold text-[#1E222D] dark:text-slate-100">
+                      <CheckCircle2 className="w-4 h-4 text-[#0F8C65]" />
+                      <span>{line}</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-[#0F8C65] dark:text-emerald-400 font-bold">
+                      VERIFIED
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="pt-4 border-t border-[#E4DFD5] dark:border-white/[0.07] flex items-center justify-between text-[11px] text-[#6E7485] dark:text-slate-400 font-mono">
+            <span>Phase {activeStage + 1} of 4</span>
+            <span>Interactive GSAP Scroll &amp; State Choreography</span>
+          </div>
         </div>
       </div>
     </section>
