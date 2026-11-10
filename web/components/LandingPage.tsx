@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { TaskPulseLogo } from "./TaskPulseLogo";
 import { useTheme } from "@/context/ThemeContext";
 import { GeminiTaskArchitectBar } from "./GeminiTaskArchitectBar";
@@ -26,11 +29,13 @@ import {
   FileCheck,
   Paperclip,
   Sparkles,
-  ExternalLink,
-  Check,
   Menu,
   X as CloseIcon,
+  Clock,
+  GitBranch,
 } from "lucide-react";
+
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 interface LandingPageProps {
   onEnterDemo: () => void;
@@ -40,372 +45,724 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onEnterDemo,
-  onEnterMarcus,
-  onEnterAdmin,
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const pageRef = useRef<HTMLDivElement>(null);
+  const heroStackRef = useRef<HTMLDivElement>(null);
+  const latencyCountRef = useRef<HTMLSpanElement>(null);
+  const uptimeCountRef = useRef<HTMLSpanElement>(null);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // 1. Hero Kinetic Entrance Timeline
+        const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+        heroTl
+          .from(".lp-hero-pill", {
+            y: 14,
+            opacity: 0,
+            duration: 0.45,
+            clearProps: "transform,opacity",
+          })
+          .from(
+            ".lp-hero-line",
+            {
+              yPercent: 100,
+              opacity: 0,
+              duration: 0.65,
+              stagger: 0.1,
+              clearProps: "transform,opacity",
+            },
+            "-=0.25"
+          )
+          .from(
+            ".lp-hero-sub",
+            {
+              y: 14,
+              opacity: 0,
+              duration: 0.5,
+              clearProps: "transform,opacity",
+            },
+            "-=0.35"
+          )
+          .fromTo(
+            ".lp-hero-cta",
+            { y: 12, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              stagger: 0.08,
+              duration: 0.45,
+              clearProps: "transform,opacity",
+            },
+            "-=0.3"
+          )
+          .from(
+            ".lp-hero-stat",
+            {
+              y: 12,
+              opacity: 0,
+              stagger: 0.08,
+              duration: 0.45,
+              clearProps: "transform,opacity",
+            },
+            "-=0.25"
+          )
+          .from(
+            ".lp-stack-card",
+            {
+              y: 28,
+              opacity: 0,
+              scale: 0.97,
+              stagger: 0.14,
+              duration: 0.7,
+              clearProps: "transform,opacity",
+            },
+            0.15
+          );
+
+        // Animate hero metric bars on load
+        gsap.from(".lp-hero-bar", {
+          scaleX: 0,
+          transformOrigin: "left center",
+          duration: 0.95,
+          stagger: 0.12,
+          delay: 0.45,
+          ease: "power3.out",
+          clearProps: "transform",
+        });
+
+        // Subtle continuous floating drift on floating sprint pill
+        gsap.to(".lp-float-pill", {
+          y: -8,
+          duration: 3.2,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+        });
+
+        // Numerical telemetry count-ups
+        if (latencyCountRef.current) {
+          const obj = { v: 180 };
+          gsap.to(obj, {
+            v: 85,
+            duration: 1.35,
+            delay: 0.3,
+            ease: "power2.out",
+            onUpdate: () => {
+              if (latencyCountRef.current) {
+                latencyCountRef.current.textContent = `< ${Math.round(obj.v)}ms`;
+              }
+            },
+          });
+        }
+
+        if (uptimeCountRef.current) {
+          const obj = { v: 94.0 };
+          gsap.to(obj, {
+            v: 99.98,
+            duration: 1.45,
+            delay: 0.35,
+            ease: "power2.out",
+            onUpdate: () => {
+              if (uptimeCountRef.current) {
+                uptimeCountRef.current.textContent = `${obj.v.toFixed(2)}%`;
+              }
+            },
+          });
+        }
+
+        // 2. ScrollTrigger Bento Grid Reveal (animate transform + gentle opacity without trapping hidden elements)
+        gsap.from(".lp-bento-card", {
+          y: 34,
+          opacity: 0,
+          scale: 0.98,
+          stagger: 0.1,
+          duration: 0.65,
+          ease: "power3.out",
+          immediateRender: false,
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: ".lp-bento-grid",
+            start: "top 88%",
+            once: true,
+          },
+        });
+
+        // ScrollTrigger Capacity Bars Inside Bento
+        gsap.from(".lp-bento-bar", {
+          scaleX: 0,
+          transformOrigin: "left center",
+          stagger: 0.14,
+          duration: 1.0,
+          ease: "power3.out",
+          immediateRender: false,
+          clearProps: "transform",
+          scrollTrigger: {
+            trigger: ".lp-bento-grid",
+            start: "top 85%",
+            once: true,
+          },
+        });
+
+        // 3. Showcase & Gemini Architect Section Reveal
+        gsap.from(".lp-showcase-wrap", {
+          y: 28,
+          opacity: 0,
+          duration: 0.7,
+          ease: "power3.out",
+          immediateRender: false,
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: ".lp-showcase-wrap",
+            start: "top 88%",
+            once: true,
+          },
+        });
+
+        // 4. Closing Conversion Callout Reveal
+        gsap.from(".lp-callout-box", {
+          y: 26,
+          opacity: 0,
+          scale: 0.985,
+          duration: 0.65,
+          ease: "power3.out",
+          immediateRender: false,
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: ".lp-callout-box",
+            start: "top 90%",
+            once: true,
+          },
+        });
+
+        setTimeout(() => ScrollTrigger.refresh(), 300);
+      });
+    },
+    { scope: pageRef }
+  );
+
+  // Smooth GSAP 3D cursor tilt on hero workspace preview stack
+  const handleStackMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!heroStackRef.current) return;
+    const rect = heroStackRef.current.getBoundingClientRect();
+    const rx = (e.clientX - rect.left) / rect.width - 0.5;
+    const ry = (e.clientY - rect.top) / rect.height - 0.5;
+    gsap.to(heroStackRef.current, {
+      rotateY: rx * 7,
+      rotateX: -ry * 7,
+      transformPerspective: 1000,
+      duration: 0.45,
+      ease: "power2.out",
+    });
+  };
+
+  const handleStackMouseLeave = () => {
+    if (!heroStackRef.current) return;
+    gsap.to(heroStackRef.current, {
+      rotateY: 0,
+      rotateX: 0,
+      duration: 0.65,
+      ease: "power3.out",
+    });
+  };
+
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#0F172A] dark:text-white flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
-      {/* 1. Global Floating Executive Navigation Bar */}
-      <header className="sticky top-2 sm:top-3 z-50 max-w-[1360px] w-[96%] mx-auto rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/85 dark:bg-[#0B0F19]/85 backdrop-blur-2xl shadow-xl shadow-black/5 dark:shadow-black/50 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden">
-        {/* Top Specular Sheen Line */}
-        <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-[#756EF3]/60 dark:via-cyan-400/60 to-transparent pointer-events-none" />
+    <div
+      ref={pageRef}
+      className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-white flex flex-col transition-colors duration-200 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6] overflow-x-hidden"
+    >
+      {/* 1. Floating Warm-Paper / Obsidian Navigation Bar */}
+      <header className="sticky top-2 sm:top-3 z-50 max-w-[1360px] w-[96%] mx-auto rounded-2xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/85 backdrop-blur-2xl shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden">
+        <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-[#5D55D6]/40 dark:via-cyan-400/60 to-transparent pointer-events-none" />
 
         <div className="flex items-center gap-4 sm:gap-6">
           <TaskPulseLogo size="md" />
 
-          {/* Live Status Indicator */}
-          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-            <span>v2.4 Live &bull; Sub-16ms</span>
+          <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#E4F2EC] dark:bg-emerald-500/10 border border-[#C5E3D5] dark:border-emerald-500/20 text-[10px] font-mono text-[#0F7656] dark:text-emerald-400 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0F8C65] animate-ping" />
+            <span>v2.4 Live &bull; Sub-85ms</span>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-[#334155] dark:text-slate-200">
-            <a href="#features" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] hover:bg-slate-100 dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all">
-              Platform Overview
+          <nav className="hidden lg:flex items-center gap-4 text-xs font-semibold text-[#4E5565] dark:text-slate-200">
+            <a
+              href="#features"
+              className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] hover:bg-[#ECE8DF] dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all"
+            >
+              Capabilities
             </a>
-            <a href="#pipeline" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] hover:bg-slate-100 dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all">
-              Sprint Pipeline
+            <a
+              href="#showcase"
+              className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] hover:bg-[#ECE8DF] dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all"
+            >
+              Product Tour
             </a>
-            <a href="#workload" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] hover:bg-slate-100 dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all">
-              Capacity
+            <a
+              href="#pipeline"
+              className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] hover:bg-[#ECE8DF] dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all"
+            >
+              Pipeline
             </a>
-            <a href="#security" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] hover:bg-slate-100 dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all">
-              Security
-            </a>
-            <a href="#pricing" className="hover:text-[#756EF3] dark:hover:text-[#818CF8] hover:bg-slate-100 dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all">
-              Pricing &amp; Variants
+            <a
+              href="#pricing"
+              className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] hover:bg-[#ECE8DF] dark:hover:bg-white/5 px-2.5 py-1 rounded-lg transition-all"
+            >
+              Pricing
             </a>
           </nav>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Tactile Liquid Glass Light / Dark Mode Toggle */}
+          {/* Tactile Light / Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
             data-testid="fluid-theme-toggle"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-[#151C2C]/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-[#0F172A] dark:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            title={theme === "dark" ? "Switch to Soft Light Mode" : "Switch to Dark Mode"}
+            className="p-2 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#F4F2ED] dark:bg-[#151C2C]/80 hover:bg-[#EAE6DC] dark:hover:bg-slate-800 text-[#1E222D] dark:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xs"
             aria-label="Toggle Theme"
           >
             {theme === "dark" ? (
               <Sun className="w-4 h-4 text-amber-400" />
             ) : (
-              <Moon className="w-4 h-4 text-[#756EF3]" />
+              <Moon className="w-4 h-4 text-[#5D55D6]" />
             )}
           </button>
 
-          {/* Dedicated Sign In Link */}
           <Link
             href="/login"
-            className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-[#151C2C]/70 hover:border-[#756EF3] text-[#0F172A] dark:text-white text-xs font-semibold shadow-xs hover:shadow transition-all cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C]/70 hover:border-[#5D55D6] text-[#1E222D] dark:text-white text-xs font-semibold shadow-2xs hover:shadow transition-all cursor-pointer"
           >
             Sign In
           </Link>
 
-          {/* Dedicated Onboarding / Get Started Link */}
           <Link
             href="/onboarding"
             data-testid="nav-get-started-btn"
-            className="px-3.5 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#756EF3] to-[#635BFF] hover:opacity-95 text-white text-xs font-semibold shadow-md shadow-[#756EF3]/20 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 sm:px-4 py-1.5 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-md shadow-[#5D55D6]/20 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <span>Get Started</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
 
-          {/* Mobile Hamburger Toggle Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151C2C] text-[#0F172A] dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="lg:hidden p-2 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C] text-[#1E222D] dark:text-white hover:bg-[#ECE8DF] dark:hover:bg-slate-800 transition-colors cursor-pointer"
             aria-label="Toggle Mobile Menu"
           >
             {isMobileMenuOpen ? (
-              <CloseIcon className="w-4 h-4 text-[#756EF3]" />
+              <CloseIcon className="w-4 h-4 text-[#5D55D6]" />
             ) : (
-              <Menu className="w-4 h-4 text-[#0F172A] dark:text-white" />
+              <Menu className="w-4 h-4" />
             )}
           </button>
         </div>
       </header>
 
-      {/* Mobile Navigation Drawer Sheet */}
+      {/* Mobile Navigation Sheet */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden sticky top-[57px] z-30 w-full bg-white/98 dark:bg-[#0B0F19]/98 border-b border-slate-200 dark:border-white/10 shadow-lg backdrop-blur-xl p-4 animate-in slide-in-from-top-2 duration-200">
-          <nav className="flex flex-col gap-2.5 text-xs font-semibold text-[#334155] dark:text-slate-200">
+        <div className="lg:hidden sticky top-[57px] z-30 w-full bg-[#FAF8F4]/98 dark:bg-[#0B0F19]/98 border-b border-[#DDD8CE] dark:border-white/10 shadow-lg backdrop-blur-xl p-4">
+          <nav className="flex flex-col gap-2 text-xs font-semibold text-[#4E5565] dark:text-slate-200">
             <a
               href="#features"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
+              className="p-2.5 rounded-xl hover:bg-[#EAE8F8] dark:hover:bg-[#756EF3]/15 hover:text-[#5D55D6] transition-colors"
             >
-              Platform Overview
+              Capabilities
             </a>
             <a
-              href="#workload"
+              href="#showcase"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
+              className="p-2.5 rounded-xl hover:bg-[#EAE8F8] dark:hover:bg-[#756EF3]/15 hover:text-[#5D55D6] transition-colors"
             >
-              Capacity Management
+              Interactive Product Tour
             </a>
             <a
-              href="#dispatcher"
+              href="#pipeline"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
+              className="p-2.5 rounded-xl hover:bg-[#EAE8F8] dark:hover:bg-[#756EF3]/15 hover:text-[#5D55D6] transition-colors"
             >
-              Sprint Dispatcher
-            </a>
-            <a
-              href="#mobile"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
-            >
-              Mobile Synchronization (iOS &amp; Android)
-            </a>
-            <a
-              href="#security"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
-            >
-              Security &amp; RBAC
+              Delivery Pipeline
             </a>
             <a
               href="#pricing"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-2.5 rounded-xl hover:bg-[#F0EFFF] dark:hover:bg-[#756EF3]/15 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors"
+              className="p-2.5 rounded-xl hover:bg-[#EAE8F8] dark:hover:bg-[#756EF3]/15 hover:text-[#5D55D6] transition-colors"
             >
               Pricing &amp; Variants
             </a>
 
-            <div className="pt-2 border-t border-slate-200 dark:border-white/10 flex flex-col gap-2">
+            <div className="pt-2 border-t border-[#DDD8CE] dark:border-white/10 flex flex-col gap-2">
               <Link
                 href="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full py-2.5 text-center rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151C2C] text-[#0F172A] dark:text-white font-semibold"
+                className="w-full py-2.5 text-center rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#F4F2ED] dark:bg-[#151C2C] text-[#1E222D] dark:text-white font-semibold"
               >
                 Sign In to Workspace
               </Link>
               <Link
                 href="/onboarding"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full py-2.5 text-center rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white font-semibold flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 text-center rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white font-semibold flex items-center justify-center gap-1.5"
               >
                 <span>Start Organization Onboarding</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
-              <button
-                onClick={onEnterDemo}
-                className="w-full py-2.5 text-center rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] dark:text-[#818CF8] font-semibold"
-              >
-                Launch Demo Sandbox (Mobile / Web)
-              </button>
             </div>
           </nav>
         </div>
       )}
 
-      {/* 2. Hero Section */}
-      <section className="relative pt-10 sm:pt-16 pb-14 sm:pb-20 px-4 sm:px-6 max-w-[1400px] w-full mx-auto flex flex-col items-center text-center overflow-hidden">
-        {/* Subtle Background Glow Accent */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-[#756EF3]/10 dark:bg-[#756EF3]/15 blur-[120px] rounded-full pointer-events-none -z-10" />
+      {/* 2. Asymmetric Editorial Hero Section */}
+      <section className="relative pt-10 sm:pt-16 pb-12 sm:pb-16 px-4 sm:px-6 max-w-[1360px] w-full mx-auto">
+        {/* Soft warm atmospheric radial glow (no harsh neon glare) */}
+        <div className="absolute -top-10 left-1/3 w-[560px] h-[340px] bg-[#5D55D6]/[0.06] dark:bg-[#756EF3]/15 blur-[130px] rounded-full pointer-events-none -z-10" />
 
-        {/* Enterprise Platform Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 border border-[#756EF3]/30 text-[#756EF3] dark:text-[#818CF8] text-[11px] sm:text-xs font-semibold tracking-wide mb-5 sm:mb-6 shadow-xs">
-          <Zap className="w-3.5 h-3.5 text-[#756EF3]" />
-          <span>TaskPulse 2.0</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#756EF3]" />
-          <span>High-Velocity Execution for Teams &amp; Solo Founders</span>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* Left 7 Columns: Kinetic Typography + Actions + Telemetry Strip */}
+          <div className="lg:col-span-7 text-left space-y-6">
+            <div className="lp-hero-pill inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] sm:text-xs font-semibold tracking-wide shadow-2xs">
+              <Zap className="w-3.5 h-3.5" />
+              <span>TaskPulse 2.0</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#5D55D6] dark:bg-[#818CF8]" />
+              <span>Calm, High-Velocity Execution</span>
+            </div>
 
-        {/* Headline */}
-        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight max-w-4xl text-[#0F172A] dark:text-white leading-[1.1] font-sans">
-          Project tracking built for speed. <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-[#756EF3] via-indigo-500 to-purple-500 bg-clip-text text-transparent">
-            Not bureaucracy.
-          </span>
-        </h1>
+            {/* Masked Kinetic Lines */}
+            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black tracking-tight text-[#1E222D] dark:text-white leading-[1.08] font-sans">
+              <span className="block overflow-hidden pb-1">
+                <span className="lp-hero-line block">Project execution</span>
+              </span>
+              <span className="block overflow-hidden pb-1">
+                <span className="lp-hero-line block">built for clarity.</span>
+              </span>
+              <span className="block overflow-hidden pb-1">
+                <span className="lp-hero-line block bg-gradient-to-r from-[#5D55D6] via-[#0284C7] to-[#0F8C65] bg-clip-text text-transparent">
+                  Zero glare. Zero clutter.
+                </span>
+              </span>
+            </h1>
 
-        {/* Subtitle */}
-        <p className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-[#334155] dark:text-slate-200 max-w-2xl leading-relaxed font-sans px-2">
-          Experience zero-latency task workflows, interactive 60fps Gantt timelines, Gemini AI sprint synthesis, and offline-first mobile autonomy. No endless forms. No per-seat penalties.
-        </p>
+            <p className="lp-hero-sub text-sm sm:text-base md:text-lg text-[#4E5565] dark:text-slate-200 max-w-xl leading-relaxed font-sans">
+              Orchestrate sprint timelines, protect engineer bandwidth, and verify deliverables across desktop, Android, and iOS — powered by Gemini AI task synthesis without per-seat bloat.
+            </p>
 
-        {/* Call to Action Buttons */}
-        <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 w-full max-w-2xl px-2">
-          <Link
-            href="/onboarding"
-            data-testid="hero-onboarding-btn"
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            {/* Primary & Secondary CTAs */}
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 pt-1">
+              <Link
+                href="/onboarding"
+                data-testid="hero-onboarding-btn"
+                className="lp-hero-cta px-5 py-3.5 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs sm:text-sm font-semibold shadow-md shadow-[#5D55D6]/20 hover:shadow-lg transition-colors transition-shadow flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Start Organization Onboarding</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link
+                href="/login"
+                className="lp-hero-cta px-5 py-3.5 rounded-xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 hover:border-[#5D55D6] text-[#1E222D] dark:text-white text-xs sm:text-sm font-semibold shadow-2xs hover:shadow transition-colors transition-shadow flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Lock className="w-4 h-4 text-[#5D55D6]" />
+                <span>Sign In to Workspace</span>
+              </Link>
+            </div>
+
+            {/* Compact Live Telemetry Strip */}
+            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#DDD8CE] dark:border-white/10 max-w-xl">
+              <div className="lp-hero-stat">
+                <div className="text-lg sm:text-2xl font-black font-mono text-[#5D55D6] dark:text-[#818CF8]">
+                  <span ref={latencyCountRef}>&lt; 85ms</span>
+                </div>
+                <div className="text-[11px] sm:text-xs text-[#4E5565] dark:text-slate-300 font-medium">
+                  Edge Cloud Sync
+                </div>
+              </div>
+              <div className="lp-hero-stat">
+                <div className="text-lg sm:text-2xl font-black font-mono text-[#0F7656] dark:text-emerald-400">
+                  <span ref={uptimeCountRef}>99.98%</span>
+                </div>
+                <div className="text-[11px] sm:text-xs text-[#4E5565] dark:text-slate-300 font-medium">
+                  Sprint Availability
+                </div>
+              </div>
+              <div className="lp-hero-stat">
+                <div className="text-lg sm:text-2xl font-black font-mono text-[#1E222D] dark:text-white">
+                  3-Tier
+                </div>
+                <div className="text-[11px] sm:text-xs text-[#4E5565] dark:text-slate-300 font-medium">
+                  RBAC Audit Guard
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right 5 Columns: GSAP 3D-Tilt Layered Live Workspace Preview Stack */}
+          <div
+            ref={heroStackRef}
+            onMouseMove={handleStackMouseMove}
+            onMouseLeave={handleStackMouseLeave}
+            className="lg:col-span-5 relative py-4 select-none"
           >
-            <Building2 className="w-4 h-4" />
-            <span>Start Organization Onboarding</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+            {/* Primary Matte Workspace Card */}
+            <div className="lp-stack-card relative rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xl shadow-[#1E222D]/[0.06] p-5 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-[#E5E0D6] dark:border-white/10 pb-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#EAE8F8] dark:bg-[#756EF3]/20 text-[#5D55D6] dark:text-[#818CF8] flex items-center justify-center">
+                    <GitBranch className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[#1E222D] dark:text-white">
+                      Release Pipeline &bull; Q4
+                    </div>
+                    <div className="text-[10px] text-[#6E7485] dark:text-slate-400 font-mono">
+                      3 Active Workstreams
+                    </div>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#E4F2EC] dark:bg-emerald-950/60 text-[#0F7656] dark:text-emerald-300 text-[10px] font-bold border border-[#C5E3D5] dark:border-emerald-800">
+                  Healthy Velocity
+                </span>
+              </div>
 
-          <Link
-            href="/login"
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 hover:border-[#756EF3] text-[#0F172A] dark:text-white text-xs sm:text-sm font-semibold shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Lock className="w-4 h-4 text-[#756EF3]" />
-            <span>Sign In to Workspace</span>
-          </Link>
+              {/* Animated Progress Lanes */}
+              <div className="space-y-3.5">
+                <div>
+                  <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                    <span className="text-[#1E222D] dark:text-white">Native Mobile SSO</span>
+                    <span className="font-mono text-[#0F7656] dark:text-emerald-400">100%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#E8E4DA] dark:bg-slate-800 overflow-hidden">
+                    <div className="lp-hero-bar h-full w-full rounded-full bg-gradient-to-r from-[#0F8C65] to-[#10B981]" />
+                  </div>
+                </div>
 
-          <button
-            onClick={onEnterDemo}
-            data-testid="landing-sandbox-btn"
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 hover:bg-[#E2E0FD] dark:hover:bg-[#756EF3]/25 border border-[#756EF3]/30 text-[#756EF3] dark:text-[#818CF8] text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Smartphone className="w-4 h-4" />
-            <span>Open Mobile &amp; iOS Web App</span>
-          </button>
+                <div>
+                  <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                    <span className="text-[#1E222D] dark:text-white">Gemini Sprint Triage API</span>
+                    <span className="font-mono text-[#5D55D6] dark:text-[#818CF8]">78%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#E8E4DA] dark:bg-slate-800 overflow-hidden">
+                    <div className="lp-hero-bar h-full w-[78%] rounded-full bg-gradient-to-r from-[#5D55D6] to-[#0284C7]" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                    <span className="text-[#1E222D] dark:text-white">Capacity Guardrail Matrix</span>
+                    <span className="font-mono text-[#B45309] dark:text-amber-400">62%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#E8E4DA] dark:bg-slate-800 overflow-hidden">
+                    <div className="lp-hero-bar h-full w-[62%] rounded-full bg-gradient-to-r from-[#D97706] to-[#F59E0B]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Mini Task Proof Strip */}
+              <div className="p-3 rounded-2xl bg-[#F1EEE7] dark:bg-[#0B0F19] border border-[#E5E0D6] dark:border-white/10 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="w-4 h-4 text-[#0F8C65] shrink-0" />
+                  <span className="truncate font-semibold text-[#1E222D] dark:text-slate-100">
+                    Google OAuth &amp; Workspace Isolation
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-[#6E7485] dark:text-slate-400 shrink-0 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Verified
+                </span>
+              </div>
+            </div>
+
+            {/* Floating Secondary Notification Pill */}
+            <div className="lp-stack-card lp-float-pill mt-4 sm:mt-0 sm:absolute sm:-bottom-5 sm:-left-6 rounded-2xl bg-[#FAF8F4] dark:bg-[#1B2438] border border-[#DDD8CE] dark:border-white/15 shadow-lg px-4 py-3 flex items-center gap-3 max-w-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#EAE8F8] dark:bg-[#756EF3]/25 text-[#5D55D6] dark:text-[#818CF8] flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-bold text-[#1E222D] dark:text-white">
+                  AI Task Synthesis Ready
+                </div>
+                <div className="text-[11px] text-[#4E5565] dark:text-slate-300">
+                  3 subtasks auto-mapped to team capacity
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        {/* Key Metrics / Value Propositions */}
-        <div className="mt-10 sm:mt-12 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 w-full max-w-3xl px-1">
-          <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-[#756EF3]">Continuous</div>
-            <div className="text-[11px] sm:text-xs text-[#334155] dark:text-slate-200 mt-0.5">Capacity Tracking</div>
-          </div>
-          <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">&lt; 100ms</div>
-            <div className="text-[11px] sm:text-xs text-[#334155] dark:text-slate-200 mt-0.5">Cloud Synchronization</div>
-          </div>
-          <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-[#0F172A] dark:text-white">Multi-Platform</div>
-            <div className="text-[11px] sm:text-xs text-[#334155] dark:text-slate-200 mt-0.5">Desktop, iOS &amp; Android</div>
-          </div>
-          <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs text-left sm:text-center">
-            <div className="text-lg sm:text-2xl font-bold text-[#756EF3]">Enterprise</div>
-            <div className="text-[11px] sm:text-xs text-[#334155] dark:text-slate-200 mt-0.5">Workload Thresholds</div>
-          </div>
-        </div>
-
-        {/* Central Luminous Motion Graphic Visualizer */}
+      {/* 3. Interactive Telemetry Stage + AI Task Architect + Product Tour */}
+      <section id="showcase" className="px-4 sm:px-6 max-w-[1360px] w-full mx-auto">
         <HeroMotionGraphic />
 
-        {/* Live Gemini AI Natural Language Task Engine */}
-        <GeminiTaskArchitectBar />
-
-        {/* 3. Dynamic Interactive Product Showcase */}
-        <div className="mt-8 sm:mt-12 w-full">
+        <div className="lp-showcase-wrap space-y-6 mt-4">
+          <GeminiTaskArchitectBar />
           <InteractiveProductShowcase />
         </div>
       </section>
 
-      {/* 4. Feature Showcase Section */}
-      <section id="features" className="py-16 px-6 max-w-[1400px] w-full mx-auto border-t border-slate-200 dark:border-white/10">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="text-xs font-bold text-[#756EF3] dark:text-[#818CF8] tracking-wider uppercase font-mono mb-2">
+      {/* 4. Asymmetric Editorial Bento Capabilities Grid */}
+      <section
+        id="features"
+        className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1360px] w-full mx-auto mt-10 border-t border-[#DDD8CE] dark:border-white/10"
+      >
+        <div className="max-w-2xl mb-12 text-left">
+          <div className="text-xs font-bold text-[#5D55D6] dark:text-[#818CF8] tracking-wider uppercase font-mono mb-2">
             CORE CAPABILITIES
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#0F172A] dark:text-white tracking-tight">
-            Designed for Modern Enterprise Engineering Teams
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#1E222D] dark:text-white tracking-tight">
+            Designed for Focused, High-Throughput Teams
           </h2>
-          <p className="text-sm sm:text-base text-[#334155] dark:text-slate-200 mt-3">
-            Every layer of TaskPulse is built for high-throughput teams that need absolute transparency without micromanagement.
+          <p className="text-sm sm:text-base text-[#4E5565] dark:text-slate-300 mt-3 leading-relaxed">
+            Every surface in TaskPulse prioritizes calm readability, clear workload boundaries, and verifiable delivery without status-meeting overhead.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Feature 1 */}
-          <div id="workload" className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs hover:border-[#756EF3]/50 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center mb-4">
-              <BarChart3 className="w-5 h-5" />
+        <div className="lp-bento-grid grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+          {/* Bento Card 1 (Wide 7-col): Continuous Capacity Guardrails */}
+          <div
+            id="workload"
+            className="lp-bento-card lg:col-span-7 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between gap-6"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#EAE8F8] dark:bg-[#756EF3]/15 text-[#5D55D6] dark:text-[#818CF8] flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-[#E4F2EC] dark:bg-emerald-950/60 text-[#0F7656] dark:text-emerald-300 text-[11px] font-semibold border border-[#C5E3D5] dark:border-emerald-800">
+                  Real-Time Capacity Matrix
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-[#1E222D] dark:text-white">
+                Continuous Capacity Guardrails
+              </h3>
+              <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 mt-2 leading-relaxed max-w-xl">
+                Bandwidth meters track active assignments per member so managers rebalance sprints before bottlenecks impact release milestones.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">
-              Continuous Capacity Tracking
-            </h3>
-            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-2 leading-relaxed">
-              Real-time member bandwidth indicators automatically track assigned task load. Identify optimal, balanced, and capacity limits proactively before delivery timelines are impacted.
-            </p>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Workload Distribution Guardrails</span>
+
+            {/* Embedded Live Capacity Strip */}
+            <div className="p-4 rounded-2xl bg-[#F2EFE8] dark:bg-[#0B0F19] border border-[#E5E0D6] dark:border-white/10 space-y-3">
+              {[
+                { label: "Platform Engineering", pct: "72%", width: "w-[72%]", color: "bg-[#5D55D6]" },
+                { label: "Mobile & Design Systems", pct: "48%", width: "w-[48%]", color: "bg-[#0F8C65]" },
+              ].map((row) => (
+                <div key={row.label} className="space-y-1">
+                  <div className="flex justify-between text-[11px] font-semibold text-[#1E222D] dark:text-slate-200">
+                    <span>{row.label}</span>
+                    <span className="font-mono">{row.pct} capacity</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-[#E2DED4] dark:bg-slate-800 overflow-hidden">
+                    <div className={`lp-bento-bar h-full ${row.width} ${row.color} rounded-full`} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Feature 2 */}
-          <div id="dispatcher" className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs hover:border-[#756EF3]/50 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center mb-4">
-              <FileCheck className="w-5 h-5" />
+          {/* Bento Card 2 (5-col): Verified Change Logs */}
+          <div
+            id="dispatcher"
+            className="lp-bento-card lg:col-span-5 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-[#E4F2EC] dark:bg-emerald-500/15 text-[#0F7656] dark:text-emerald-400 flex items-center justify-center mb-4">
+                <FileCheck className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-[#1E222D] dark:text-white">
+                Verified Change Logs &amp; Proof
+              </h3>
+              <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 mt-2 leading-relaxed">
+                Assignees attach implementation summaries and verification screenshots directly to completed tickets for instant lead approval.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">
-              Verified Change Logs &amp; Audit Records
-            </h3>
-            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-2 leading-relaxed">
-              When completing tasks, assignees document specific code and implementation changes alongside optional screenshot attachments for manager verification.
-            </p>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
+            <div className="mt-6 pt-4 border-t border-[#E5E0D6] dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-[#5D55D6] dark:text-[#818CF8]">
               <Paperclip className="w-3.5 h-3.5" />
-              <span>Screenshot Verification Attachments</span>
+              <span>Screenshot &amp; Note Attachments Included</span>
             </div>
           </div>
 
-          {/* Feature 3 */}
-          <div id="mobile" className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs hover:border-[#756EF3]/50 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center mb-4">
-              <Smartphone className="w-5 h-5" />
+          {/* Bento Card 3 (5-col): Role-Based Governance */}
+          <div
+            id="security"
+            className="lp-bento-card lg:col-span-5 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-[#F5ECE1] dark:bg-amber-500/15 text-[#B45309] dark:text-amber-400 flex items-center justify-center mb-4">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-[#1E222D] dark:text-white">
+                Multi-Tier Role Governance
+              </h3>
+              <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 mt-2 leading-relaxed">
+                Clean permission boundaries across Administrators, Managers, Members, and Read-Only Viewers with isolated organization workspaces.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">
-              Cross-Platform Client Parity
-            </h3>
-            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-2 leading-relaxed">
-              Unified task execution across mobile and desktop. Access sprint boards, capacity metrics, and task approvals seamlessly on iOS Safari, Android, and desktop browsers.
-            </p>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
-              <Zap className="w-3.5 h-3.5" />
-              <span>Instant Cloud Synchronization</span>
-            </div>
-          </div>
-
-          {/* Feature 4 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs hover:border-[#756EF3]/50 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center mb-4">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">
-              Structured Organization Onboarding
-            </h3>
-            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-2 leading-relaxed">
-              Three-step setup wizard allows administrators to initialize company workspaces, configure engineering departments, and issue team invitation codes.
-            </p>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Team Invitation Codes</span>
+            <div className="mt-5 flex flex-wrap gap-1.5">
+              {["Super Admin", "Manager", "Member", "Viewer"].map((role) => (
+                <span
+                  key={role}
+                  className="px-2.5 py-1 rounded-lg bg-[#EDEAE2] dark:bg-white/5 border border-[#DDD8CE] dark:border-white/10 text-[11px] font-semibold text-[#1E222D] dark:text-slate-200"
+                >
+                  {role}
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* Feature 5 */}
-          <div id="security" className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs hover:border-[#756EF3]/50 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center mb-4">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">
-              Multi-Tier Role-Based Access Control
-            </h3>
-            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-2 leading-relaxed">
-              Strict authorization boundaries between Administrators, Department Managers, and Team Members. Real-time security rules ensure secure data access.
-            </p>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Role-Based Access Governance</span>
-            </div>
-          </div>
+          {/* Bento Card 4 (Wide 7-col): Cross-Platform Client Parity & Onboarding */}
+          <div
+            id="mobile"
+            className="lp-bento-card lg:col-span-7 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between gap-5"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-[#E3F1F7] dark:bg-cyan-500/15 text-[#0369A1] dark:text-cyan-400 flex items-center justify-center mb-4">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1E222D] dark:text-white">
+                  Desktop, Android &amp; iOS Parity
+                </h3>
+                <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 mt-2 leading-relaxed">
+                  Google SSO automatically binds verified accounts to fresh organization workspaces across web browsers and native mobile clients.
+                </p>
+              </div>
 
-          {/* Feature 6 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-slate-200 dark:border-white/10 shadow-xs hover:border-[#756EF3]/50 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center mb-4">
-              <Layers className="w-5 h-5" />
+              <div className="p-4 rounded-2xl bg-[#F2EFE8] dark:bg-[#0B0F19] border border-[#E5E0D6] dark:border-white/10 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#1E222D] dark:text-white">
+                  <Building2 className="w-4 h-4 text-[#5D55D6]" />
+                  <span>3-Step Workspace Setup</span>
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-[#4E5565] dark:text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0F8C65]" />
+                    <span>Google-verified email locking</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0F8C65]" />
+                    <span>Custom department &amp; role rosters</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0F8C65]" />
+                    <span>Cryptographic team join codes</span>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-[#0F172A] dark:text-white">
-              Project-Scoped Sprint Dispatching
-            </h3>
-            <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-2 leading-relaxed">
-              Filter deliverables by specific initiatives, departments, or individual team members. Managers can distribute assignments, rebalance workloads, and adjust timelines directly.
-            </p>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
-              <Users className="w-3.5 h-3.5" />
-              <span>Manager Dispatch Controls</span>
+
+            <div className="pt-4 border-t border-[#E5E0D6] dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[#5D55D6] dark:text-[#818CF8]">
+              <span className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5" />
+                <span>Isolated Multi-Tenant Storage &amp; Cloud Sync</span>
+              </span>
+              <Link href="/onboarding" className="hover:underline inline-flex items-center gap-1">
+                <span>Try Onboarding</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         </div>
@@ -419,53 +776,62 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* 6. Pricing & Product Variants Section */}
       <PricingTiersSection />
 
-      {/* 6. Clean Enterprise Conversion Callout (No In-Page Login Form) */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1200px] w-full mx-auto border-t border-slate-200 dark:border-white/10">
-        <div className="rounded-3xl bg-gradient-to-b from-white to-slate-50 dark:from-[#151C2C] dark:to-[#0B0F19] border border-slate-200 dark:border-white/10 p-8 sm:p-14 text-center max-w-3xl mx-auto shadow-sm">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] dark:text-[#818CF8] text-xs font-semibold mb-4">
+      {/* 7. Clean Executive Conversion Callout */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1200px] w-full mx-auto border-t border-[#DDD8CE] dark:border-white/10">
+        <div className="lp-callout-box rounded-3xl bg-gradient-to-b from-[#FAF8F4] to-[#EFECE5] dark:from-[#151C2C] dark:to-[#0B0F19] border border-[#DDD8CE] dark:border-white/10 p-8 sm:p-14 text-center max-w-3xl mx-auto shadow-md shadow-[#1E222D]/[0.04]">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 text-[#5D55D6] dark:text-[#818CF8] text-xs font-semibold mb-4">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Enterprise Workspace Access</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#0F172A] dark:text-white tracking-tight">
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#1E222D] dark:text-white tracking-tight">
             Streamline your team&apos;s task execution
           </h2>
-          <p className="text-xs sm:text-sm text-[#334155] dark:text-slate-200 mt-3 max-w-xl mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-200 mt-3 max-w-xl mx-auto leading-relaxed">
             Track team capacity, distribute sprint deliverables with clarity, and maintain verified audit records across every project.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
             <Link
               href="/onboarding"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Get Started</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/login"
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151C2C] hover:border-[#756EF3] text-[#0F172A] dark:text-white font-semibold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C] hover:border-[#5D55D6] text-[#1E222D] dark:text-white font-semibold text-xs sm:text-sm shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Lock className="w-4 h-4 text-[#756EF3]" />
+              <Lock className="w-4 h-4 text-[#5D55D6]" />
               <span>Sign In to Workspace</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 6. Enterprise Clean Footer */}
-      <footer className="mt-auto border-t border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B0F19] py-8 px-6 transition-colors">
-        <div className="max-w-[1400px] w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#334155] dark:text-slate-200">
+      {/* 8. Enterprise Footer with Privacy & Legal Links */}
+      <footer className="mt-auto border-t border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#0B0F19] py-8 px-6 transition-colors">
+        <div className="max-w-[1360px] w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#4E5565] dark:text-slate-300">
           <div className="flex items-center gap-3">
             <TaskPulseLogo size="sm" />
             <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Status: All Systems Operational
-            </span>
-            <span className="text-slate-400 dark:text-slate-600">&bull;</span>
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              SOC 2 Type II Certified
+          <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
+            <Link
+              href="/privacy"
+              className="text-[#4E5565] dark:text-slate-300 hover:text-[#5D55D6] dark:hover:text-[#818CF8] font-medium transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms"
+              className="text-[#4E5565] dark:text-slate-300 hover:text-[#5D55D6] dark:hover:text-[#818CF8] font-medium transition-colors"
+            >
+              Terms of Service
+            </Link>
+            <span className="text-[#CFC9BD] dark:text-slate-600">&bull;</span>
+            <span className="text-[#6E7485] dark:text-slate-400 font-medium">
+              SOC 2 Type II Ready
             </span>
           </div>
         </div>

@@ -14,11 +14,11 @@ export const WorkloadMatrix: React.FC<WorkloadMatrixProps> = ({
   onSelectColleague,
 }) => {
   return (
-    <section className="p-4 rounded-2xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-sm transition-colors duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2.5 border-b border-[#E9F1FF] dark:border-[#1E293B]">
+    <section className="p-4 rounded-2xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-[#1E293B] shadow-xs transition-colors duration-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2.5 border-b border-[#E5E0D6] dark:border-[#1E293B]">
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#756EF3] dark:text-[#818CF8]" />
-          <h3 className="text-xs font-bold tracking-wider text-[#002055] dark:text-[#F8FAFC] uppercase font-sans">
+          <Users className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
+          <h3 className="text-xs font-bold tracking-wider text-[#1E222D] dark:text-[#F8FAFC] uppercase font-sans">
             Team Workload & Capacity
           </h3>
         </div>

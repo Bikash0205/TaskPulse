@@ -7,12 +7,12 @@ import { TaskPulseLogo } from "@/components/TaskPulseLogo";
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col font-sans transition-colors selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
-      <header className="border-b border-[#E9F1FF] dark:border-[#1E293B] bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-20 flex items-center justify-between">
+    <div className="min-h-screen bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-[#F8FAFC] flex flex-col font-sans transition-colors selection:bg-[#5D55D6]/20 selection:text-[#5D55D6]">
+      <header className="border-b border-[#DDD8CE] dark:border-[#1E293B] bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-20 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl border border-[#DDD8CE] dark:border-[#1E293B] bg-[#F4F2ED] dark:bg-[#151C2C] hover:bg-[#EAE6DC] dark:hover:bg-slate-800 transition-colors"
             aria-label="Return to Home"
           >
             <ArrowLeft className="w-4 h-4" />

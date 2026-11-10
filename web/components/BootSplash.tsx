@@ -35,7 +35,7 @@ export const BootSplash: React.FC<BootSplashProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#F8FAFC] dark:bg-[#0B0F19] transition-all duration-500 ease-out select-none ${
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#F4F2ED] dark:bg-[#0B0F19] transition-all duration-500 ease-out select-none ${
         isFadingOut ? "opacity-0 -translate-y-8 pointer-events-none scale-98" : "opacity-100 translate-y-0 scale-100"
       }`}
     >

@@ -320,13 +320,13 @@ export default function OnboardingPage() {
   return (
     <div
       ref={pageContainerRef}
-      className="relative min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-300 selection:bg-[#756EF3]/20 selection:text-[#756EF3] overflow-x-hidden font-sans"
+      className="relative min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-[#F8FAFC] flex flex-col transition-colors duration-300 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6] overflow-x-hidden font-sans"
     >
       {/* GSAP Ambient Background Mesh */}
       <AmbientBackground />
 
       {/* Global Navigation Header */}
-      <header className="relative z-40 border-b border-[#E9F1FF]/80 dark:border-[#1E293B]/80 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3 transition-all">
+      <header className="relative z-40 border-b border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3 transition-all">
         <div className="flex items-center gap-3">
           <Link
             href="/"
@@ -1066,12 +1066,20 @@ export default function OnboardingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 mt-auto border-t border-[#E9F1FF]/80 dark:border-[#1E293B]/80 bg-white/60 dark:bg-[#0B0F19]/60 backdrop-blur-md py-4 px-6 text-center text-xs text-[#556070] dark:text-[#94A3B8]">
+      <footer className="relative z-10 mt-auto border-t border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/85 dark:bg-[#0B0F19]/60 backdrop-blur-md py-4 px-6 text-center text-xs text-[#4E5565] dark:text-[#94A3B8]">
         <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
-          <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">
-            Enterprise Setup &bull; SOC 2 Type II Certified
-          </span>
+          <div className="flex items-center gap-4 text-[11px]">
+            <Link href="/privacy" className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] font-medium">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] font-medium">
+              Terms of Service
+            </Link>
+            <span className="text-slate-500 dark:text-slate-400 font-medium">
+              SOC 2 Type II Ready
+            </span>
+          </div>
         </div>
       </footer>
     </div>

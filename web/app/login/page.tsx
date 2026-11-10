@@ -258,7 +258,7 @@ export default function LoginPage() {
   return (
     <div
       ref={pageContainerRef}
-      className="relative min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-300 selection:bg-[#756EF3]/20 selection:text-[#756EF3] overflow-x-hidden font-sans"
+      className="relative min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-[#F8FAFC] flex flex-col transition-colors duration-300 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6] overflow-x-hidden font-sans"
     >
       {/* GSAP Ambient Background */}
       <AmbientBackground />
@@ -266,7 +266,7 @@ export default function LoginPage() {
       {/* 1. Global Navigation Bar */}
       <header
         ref={headerRef}
-        className="relative z-40 border-b border-[#E9F1FF]/80 dark:border-[#1E293B]/80 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3 transition-all"
+        className="relative z-40 border-b border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3 transition-all"
       >
         <div className="flex items-center gap-3">
           <Link
@@ -616,7 +616,7 @@ export default function LoginPage() {
                         setAuthMode(authMode === "login" ? "register" : "login");
                         setError("");
                       }}
-                      className="text-xs text-[#756EF3] dark:text-[#818CF8] hover:underline font-bold cursor-pointer"
+                      className="text-xs text-[#5D55D6] dark:text-[#818CF8] hover:underline font-bold cursor-pointer"
                     >
                       {authMode === "login"
                         ? "Need a workspace account? Create one"
@@ -625,74 +625,12 @@ export default function LoginPage() {
                   </div>
                 </form>
 
-                {/* Instant Role Sandbox Section */}
-                <div ref={sandboxRef} className="pt-5 mt-5 border-t border-slate-200 dark:border-slate-800">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#334155] dark:text-[#94A3B8] mb-2.5 flex items-center justify-between font-bold">
-                    <span>1-Click Role Sandbox</span>
-                    <span className="text-[#756EF3] font-bold">Instant Access</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleRoleSandbox("Sarah Chen", "sarah.chen@taskpulse.internal")}
-                      className="sandbox-btn group p-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 hover:border-[#756EF3] text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] group-hover:text-[#756EF3] transition-colors">
-                          Sarah Chen
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] text-[9px] font-bold">
-                          Manager
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 truncate font-medium">
-                        Lead &bull; Dispatch &amp; approvals
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRoleSandbox("Marcus Vance", "marcus.vance@taskpulse.internal")}
-                      className="sandbox-btn group p-2.5 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-slate-200 dark:border-slate-800 hover:border-[#756EF3] text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF] group-hover:text-[#756EF3] transition-colors">
-                          Marcus Vance
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[9px] font-bold">
-                          Member
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-[#334155] dark:text-[#CBD5E1] mt-0.5 truncate font-medium">
-                        Dev &bull; Tasks &amp; change logs
-                      </div>
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleRoleSandbox("Zevon", PERMANENT_ADMIN_EMAIL)}
-                    className="sandbox-btn w-full mt-2 p-2.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20 border border-purple-500/30 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                      <span className="text-xs font-bold text-[#0F172A] dark:text-[#FFFFFF]">
-                        Zevon (Super Administrator)
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-[9px] font-bold uppercase tracking-wider font-mono">
-                      Full Clearance
-                    </span>
-                  </button>
-                </div>
-
                 {/* Footer Link to Onboarding */}
-                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-[#334155] dark:text-[#CBD5E1]">
+                <div className="pt-4 mt-5 border-t border-[#DDD8CE] dark:border-slate-800 text-center text-xs text-[#4E5565] dark:text-[#CBD5E1]">
                   <span>New organization or department? </span>
                   <Link
                     href="/onboarding"
-                    className="text-[#756EF3] dark:text-[#818CF8] font-bold hover:underline"
+                    className="text-[#5D55D6] dark:text-[#818CF8] font-bold hover:underline"
                   >
                     Start Organization Onboarding
                   </Link>
@@ -704,12 +642,20 @@ export default function LoginPage() {
       </main>
 
       {/* 3. Footer */}
-      <footer className="relative z-10 mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-md py-4 px-6 text-center text-xs text-[#334155] dark:text-[#CBD5E1]">
+      <footer className="relative z-10 mt-auto border-t border-[#DDD8CE] dark:border-slate-800/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-md py-4 px-6 text-center text-xs text-[#4E5565] dark:text-[#CBD5E1]">
         <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>&copy; {new Date().getFullYear()} TaskPulse Inc. Enterprise Workload Platform.</span>
-          <span className="text-[#0F172A] dark:text-slate-300 font-semibold text-[11px]">
-            Status: All Systems Operational
-          </span>
+          <div className="flex items-center gap-4 text-[11px]">
+            <Link href="/privacy" className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] font-medium">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-[#5D55D6] dark:hover:text-[#818CF8] font-medium">
+              Terms of Service
+            </Link>
+            <span className="text-[#1E222D] dark:text-slate-300 font-semibold">
+              Status: All Systems Operational
+            </span>
+          </div>
         </div>
       </footer>
     </div>

@@ -446,7 +446,7 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
           {selectedProjectId === "all" ? (
             <div className="space-y-5">
               {/* Folder Workspace Control Header */}
-              <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-[#1E293B] shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
                     <Folder className="w-5 h-5 text-[#756EF3]" />
@@ -695,21 +695,35 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
 
           {/* Empty State when no tasks match */}
           {filteredTasks.length === 0 && (
-            <div className="p-10 rounded-2xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-center space-y-4 shadow-xs">
-              <div className="w-12 h-12 rounded-2xl bg-[#756EF3]/10 text-[#756EF3] mx-auto flex items-center justify-center font-bold shadow-xs">
+            <div className="p-10 rounded-2xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-[#1E293B] text-center space-y-4 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-[#EAE8F8] dark:bg-[#756EF3]/10 text-[#5D55D6] dark:text-[#818CF8] mx-auto flex items-center justify-center font-bold shadow-xs">
                 <Layers className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">No work items found</h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  No tasks match your active filters or project selection. Create a new task or reset your search.
+                <h4 className="font-bold text-sm text-[#1E222D] dark:text-slate-200">
+                  {projects.length === 0 ? "Your workspace is ready" : "No work items found"}
+                </h4>
+                <p className="text-xs text-[#4E5565] dark:text-slate-400 max-w-sm mx-auto">
+                  {projects.length === 0
+                    ? "Create a project folder or add your first task to start organizing team deliverables."
+                    : "No tasks match your active filters or project selection. Create a new task or reset your search."}
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2.5 pt-1">
+                {projects.length === 0 && canDispatch && (
+                  <button
+                    type="button"
+                    onClick={() => setIsProjectModalOpen(true)}
+                    className="px-3.5 py-2 rounded-xl bg-[#EAE8F8] hover:bg-[#DDD8F4] dark:bg-slate-800 dark:hover:bg-slate-700 text-[#5D55D6] dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" />
+                    <span>Create Folder</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Create Task</span>
@@ -721,7 +735,7 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
                       setSearchQuery("");
                       setSelectedProjectId("all");
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-[#EDEAE2] hover:bg-[#E2DED4] dark:bg-slate-800 dark:hover:bg-slate-700 text-[#1E222D] dark:text-slate-300 text-xs font-medium transition-all cursor-pointer"
                   >
                     Reset Filters
                   </button>

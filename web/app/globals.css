@@ -4,13 +4,19 @@
 
 @layer base {
   :root {
-    --background: #F8FAFF;
-    --foreground: #002055;
+    --background: #F4F2ED;
+    --foreground: #1E222D;
+    --surface: #FAF8F4;
+    --surface-muted: #ECE8DF;
+    --border-hairline: #DDD8CE;
   }
 
   .dark {
     --background: #070B14;
     --foreground: #F8FAFC;
+    --surface: #151C2C;
+    --surface-muted: #0B0F19;
+    --border-hairline: #1E293B;
   }
   
   body {

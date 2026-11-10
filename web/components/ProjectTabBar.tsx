@@ -49,9 +49,9 @@ export const ProjectTabBar: React.FC<ProjectTabBarProps> = ({
   assignedProjectIds,
 }) => {
   return (
-    <div className="flex flex-col gap-3.5 bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] rounded-2xl p-4 shadow-sm transition-colors">
+    <div className="flex flex-col gap-3.5 bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-[#1E293B] rounded-2xl p-4 shadow-xs transition-colors">
       {/* 1. TOP HORIZONTAL PROJECT TABS */}
-      <div className="flex items-center justify-between gap-3 border-b border-[#E9F1FF] dark:border-[#1E293B] pb-3 overflow-x-auto no-scrollbar">
+      <div className="flex items-center justify-between gap-3 border-b border-[#E5E0D6] dark:border-[#1E293B] pb-3 overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-2 shrink-0">
           {/* "ALL PROJECTS" TAB */}
           <button

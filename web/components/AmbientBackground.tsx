@@ -74,18 +74,18 @@ export const AmbientBackground: React.FC = () => {
         <rect width="100%" height="100%" fill="url(#dot-grid)" />
       </svg>
 
-      {/* Floating Glowing Aurora Orbs */}
+      {/* Floating Soft Atmospheric Orbs */}
       <div
         ref={orb1Ref}
-        className="absolute -top-[15%] left-[10%] w-[550px] h-[550px] rounded-full bg-[#756EF3]/15 dark:bg-[#756EF3]/10 blur-[130px] transition-colors"
+        className="absolute -top-[15%] left-[10%] w-[550px] h-[550px] rounded-full bg-[#5D55D6]/[0.07] dark:bg-[#756EF3]/10 blur-[140px] transition-colors"
       />
       <div
         ref={orb2Ref}
-        className="absolute top-[40%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[#3B82F6]/10 dark:bg-[#6366F1]/10 blur-[150px] transition-colors"
+        className="absolute top-[40%] -right-[10%] w-[600px] h-[600px] rounded-full bg-[#0F8C65]/[0.06] dark:bg-[#6366F1]/10 blur-[150px] transition-colors"
       />
       <div
         ref={orb3Ref}
-        className="absolute -bottom-[20%] left-[25%] w-[650px] h-[650px] rounded-full bg-[#8B5CF6]/10 dark:bg-[#756EF3]/8 blur-[160px] transition-colors"
+        className="absolute -bottom-[20%] left-[25%] w-[650px] h-[650px] rounded-full bg-[#C8A97E]/[0.08] dark:bg-[#756EF3]/8 blur-[160px] transition-colors"
       />
 
       {/* Top subtle ambient gradient line */}

@@ -60,9 +60,11 @@ export default function TaskPulseWorkspacePage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const checkViewport = () => {
-        if (window.innerWidth < 768) {
-          setViewportMode("mobile");
-        }
+        const isMobileUa =
+          typeof navigator !== "undefined" &&
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const shouldUseMobile = window.innerWidth < 768 || (isMobileUa && window.innerWidth < 1024);
+        setViewportMode(shouldUseMobile ? "mobile" : "desktop");
       };
       checkViewport();
       window.addEventListener("resize", checkViewport);
@@ -509,7 +511,7 @@ export default function TaskPulseWorkspacePage() {
         <BootSplash onComplete={() => setBootSplashComplete(true)} />
       )}
       {loading ? (
-        <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19]" />
+        <div className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19]" />
       ) : !user ? (
         <LandingPage
           onEnterDemo={loginDemoUser}
@@ -517,62 +519,34 @@ export default function TaskPulseWorkspacePage() {
           onEnterAdmin={() => signInWithCustomUser("Zevon", PERMANENT_ADMIN_EMAIL)}
         />
       ) : (
-        <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#0F172A] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">
-      {/* Real-Time Multiplayer Presence Cursors & Live War Room Canvas */}
-      <LiveMultiplayerPresenceCanvas currentUser={user} />
+        <div className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6]">
+      {/* Real-Time Multiplayer Presence Cursors (Only real organization peers, no simulation) */}
+      <LiveMultiplayerPresenceCanvas currentUser={user} orgId={currentOrg?.id} />
 
       {/* Top Header with Light/Dark toggle, Google Auth & Organization Switcher */}
       <Header projects={projects} />
 
       {/* Main Workspace Body */}
       <main className={`flex-1 ${viewportMode === "mobile" ? "p-0" : "p-3 sm:p-5 md:p-6"} flex flex-col gap-3 sm:gap-5 max-w-[1720px] w-full mx-auto`}>
-        {/* Workspace Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 sm:px-0 py-2 sm:py-0 pb-2 border-b border-[#E9F1FF] dark:border-[#1E293B]">
-          <div className="flex items-center gap-2 text-xs text-[#556070] dark:text-[#94A3B8] font-sans">
-            <Building2 className="w-4 h-4 text-[#756EF3]" />
-            <span>Workspace: </span>
-            <span className="text-[#002055] dark:text-[#F8FAFC] font-semibold">{currentOrg?.name || "TaskPulse Enterprise"}</span>
+        {/* Workspace Info Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 sm:px-0 py-2 sm:py-0 pb-2.5 border-b border-[#DDD8CE] dark:border-[#1E293B]">
+          <div className="flex items-center gap-2 text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans">
+            <Building2 className="w-4 h-4 text-[#5D55D6]" />
+            <span>Workspace:</span>
+            <span className="text-[#1E222D] dark:text-[#F8FAFC] font-semibold">{currentOrg?.name || "Workspace"}</span>
             {currentOrg?.inviteCode && (
-              <span className="ml-1.5 px-2 py-0.5 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] dark:text-[#818CF8] border border-[#756EF3]/30 text-[11px] font-mono">
-                Code: {currentOrg.inviteCode}
+              <span className="ml-1.5 px-2.5 py-0.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 text-[#5D55D6] dark:text-[#818CF8] border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[11px] font-mono font-semibold">
+                Invite Code: {currentOrg.inviteCode}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Viewport Mode Switcher */}
-            <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
-              <button
-                onClick={() => setViewportMode("desktop")}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  viewportMode === "desktop"
-                    ? "bg-white dark:bg-[#151C2C] text-[#002055] dark:text-white shadow-xs font-bold"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Desktop Suite</span>
-              </button>
-              <button
-                onClick={() => setViewportMode("mobile")}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  viewportMode === "mobile"
-                    ? "bg-[#756EF3] text-white shadow-xs font-bold"
-                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Mobile Client</span>
-              </button>
-            </div>
-
-            <div className="hidden md:block text-xs text-[#556070] dark:text-[#94A3B8] font-sans">
-              {user ? (
-                <span>Authenticated as <strong className="text-[#002055] dark:text-[#F8FAFC] font-medium">{user.email}</strong> (<span className="capitalize text-[#756EF3] dark:text-[#818CF8] font-semibold">{user.role}</span>)</span>
-              ) : (
-                <span>Session: Guest (Read-Only)</span>
-              )}
-            </div>
+          <div className="hidden md:block text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans">
+            {user && (
+              <span>
+                Signed in as <strong className="text-[#1E222D] dark:text-[#F8FAFC] font-semibold">{user.email}</strong>
+              </span>
+            )}
           </div>
         </div>
 

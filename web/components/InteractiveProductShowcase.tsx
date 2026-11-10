@@ -22,16 +22,16 @@ export const InteractiveProductShowcase: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"gantt" | "kanban" | "ai" | "capacity">("gantt");
 
   return (
-    <div className="w-full rounded-3xl bg-white dark:bg-[#111726] border border-slate-300 dark:border-white/10 shadow-2xl overflow-hidden transition-all duration-300">
+    <div className="w-full rounded-3xl bg-[#FAF8F4] dark:bg-[#111726] border border-[#DDD8CE] dark:border-white/10 shadow-xl shadow-[#1E222D]/[0.06] overflow-hidden transition-all duration-300">
       {/* 1. Interactive Tab Switcher Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-slate-100 dark:bg-[#0B0F19] border-b border-slate-200 dark:border-white/10">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-[#EFECE5] dark:bg-[#0B0F19] border-b border-[#DDD8CE] dark:border-white/10">
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1">
           <button
             onClick={() => setActiveTab("gantt")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "gantt"
-                ? "bg-[#756EF3] text-white shadow-md shadow-[#756EF3]/30"
-                : "text-[#0F172A] dark:text-[#E2E8F0] hover:bg-slate-200 dark:hover:bg-slate-800"
+                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
+                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
@@ -42,8 +42,8 @@ export const InteractiveProductShowcase: React.FC = () => {
             onClick={() => setActiveTab("kanban")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "kanban"
-                ? "bg-[#756EF3] text-white shadow-md shadow-[#756EF3]/30"
-                : "text-[#0F172A] dark:text-[#E2E8F0] hover:bg-slate-200 dark:hover:bg-slate-800"
+                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
+                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
             }`}
           >
             <Kanban className="w-3.5 h-3.5" />
@@ -54,8 +54,8 @@ export const InteractiveProductShowcase: React.FC = () => {
             onClick={() => setActiveTab("ai")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "ai"
-                ? "bg-[#756EF3] text-white shadow-md shadow-[#756EF3]/30"
-                : "text-[#0F172A] dark:text-[#E2E8F0] hover:bg-slate-200 dark:hover:bg-slate-800"
+                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
+                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -66,8 +66,8 @@ export const InteractiveProductShowcase: React.FC = () => {
             onClick={() => setActiveTab("capacity")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === "capacity"
-                ? "bg-[#756EF3] text-white shadow-md shadow-[#756EF3]/30"
-                : "text-[#0F172A] dark:text-[#E2E8F0] hover:bg-slate-200 dark:hover:bg-slate-800"
+                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
+                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -76,14 +76,14 @@ export const InteractiveProductShowcase: React.FC = () => {
         </div>
 
         {/* Live Status Indicator */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-300 dark:border-emerald-700/50 font-bold">
+        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-[#0F7656] dark:text-emerald-300 bg-[#E4F2EC] dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-[#C5E3D5] dark:border-emerald-700/50 font-bold">
           <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-ping" />
           <span>Realtime 60fps Pipeline</span>
         </div>
       </div>
 
       {/* 2. Tab Content Area */}
-      <div className="p-4 sm:p-7 min-h-[360px] flex flex-col justify-center bg-white dark:bg-[#111726]">
+      <div className="p-4 sm:p-7 min-h-[360px] flex flex-col justify-center bg-[#FAF8F4] dark:bg-[#111726]">
         {/* TAB 1: GANTT TIMELINE */}
         {activeTab === "gantt" && (
           <div className="space-y-4 animate-in fade-in duration-300">

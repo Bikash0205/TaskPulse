@@ -48,13 +48,13 @@ export const GeminiTaskArchitectBar: React.FC = () => {
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto my-6 p-4 sm:p-5 rounded-2xl bg-white/80 dark:bg-[#151C2C]/80 border border-[#756EF3]/30 shadow-lg backdrop-blur-xl transition-all">
+    <div className="w-full max-w-3xl mx-auto my-6 p-4 sm:p-5 rounded-2xl bg-[#FAF8F4]/95 dark:bg-[#151C2C]/85 border border-[#DDD8CE] dark:border-white/15 shadow-lg shadow-[#1E222D]/[0.05] backdrop-blur-xl transition-all">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-[#756EF3] dark:text-[#818CF8]">
-          <Sparkles className="w-4 h-4 text-[#756EF3] animate-pulse" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#5D55D6] dark:text-[#818CF8]">
+          <Sparkles className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
           <span>Gemini Pro Task Architect</span>
         </div>
-        <span className="text-[10px] text-[#334155] dark:text-slate-200 font-mono bg-[#F0EFFF] dark:bg-[#756EF3]/15 px-2 py-0.5 rounded-full">
+        <span className="text-[10px] text-[#4E5565] dark:text-slate-200 font-mono bg-[#EDEAE2] dark:bg-[#756EF3]/15 px-2.5 py-0.5 rounded-full border border-[#DDD8CE] dark:border-transparent">
           Natural Language Engine
         </span>
       </div>
@@ -65,12 +65,12 @@ export const GeminiTaskArchitectBar: React.FC = () => {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Try: 'Launch seasonal discount campaign by Thursday with 3 check points'..."
-          className="w-full pl-4 pr-28 py-3 text-xs sm:text-sm rounded-xl bg-[#F8FAFF] dark:bg-[#0B0F19] border border-slate-200 dark:border-white/10 text-[#0F172A] dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#756EF3]/40 transition-all font-sans"
+          className="w-full pl-4 pr-28 py-3 text-xs sm:text-sm rounded-xl bg-[#F4F2ED] dark:bg-[#0B0F19] border border-[#DDD8CE] dark:border-white/10 text-[#1E222D] dark:text-white placeholder-[#7B8291] focus:outline-none focus:ring-2 focus:ring-[#5D55D6]/35 transition-all font-sans"
         />
         <button
           type="submit"
           disabled={isLoading || !prompt.trim()}
-          className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 sm:px-4 rounded-lg bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+          className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 sm:px-4 rounded-lg bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -84,7 +84,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
       </form>
 
       {/* Quick Prompts */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[#334155] dark:text-slate-200">
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[#4E5565] dark:text-slate-200">
         <span className="font-medium mr-1">Examples:</span>
         {samplePrompts.map((sp, idx) => (
           <button
@@ -93,7 +93,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
             onClick={() => {
               setPrompt(sp);
             }}
-            className="px-2 py-0.5 rounded-md bg-[#F0EFFF] dark:bg-[#1E293B] hover:bg-[#756EF3]/20 hover:text-[#756EF3] dark:hover:text-[#818CF8] transition-colors truncate max-w-[280px] text-left cursor-pointer"
+            className="px-2.5 py-0.5 rounded-md bg-[#ECE8DF] dark:bg-[#1E293B] hover:bg-[#E1DCEB] hover:text-[#5D55D6] dark:hover:text-[#818CF8] transition-colors truncate max-w-[280px] text-left cursor-pointer"
           >
             &ldquo;{sp}&rdquo;
           </button>
@@ -102,7 +102,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
 
       {/* Render Parsed Card */}
       {parsedTask && (
-        <div className="mt-4 p-4 rounded-xl bg-white dark:bg-[#0B0F19] border border-emerald-500/30 dark:border-emerald-500/20 text-left animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="mt-4 p-4 rounded-xl bg-[#F4F2ED] dark:bg-[#0B0F19] border border-emerald-600/30 dark:border-emerald-500/20 text-left animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
