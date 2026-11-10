@@ -315,20 +315,11 @@ export const GoogleOAuthModal: React.FC<GoogleOAuthModalProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* Security Disclosure & Browser Fallback */}
+              {/* In-App Security Disclosure */}
               <View style={styles.disclosureSection}>
                 <Text style={[styles.disclosureText, { color: colors.textSecondary }]}>
-                  To continue, Google will share your name, email address, language preference, and profile picture with TaskPulse. Review TaskPulse Privacy Policy and Terms of Service.
+                  To continue, Google will share your verified name, email address, language preference, and profile picture directly with TaskPulse via Google Identity Services.
                 </Text>
-
-                <TouchableOpacity
-                  onPress={handleLaunchBrowserOAuth}
-                  style={styles.browserOAuthBtn}
-                >
-                  <Text style={styles.browserOAuthBtnText}>
-                    Open Google OAuth 2.0 in System Browser
-                  </Text>
-                </TouchableOpacity>
               </View>
             </ScrollView>
           )}

@@ -1460,39 +1460,11 @@ export default function App() {
     }
   };
 
-  // Handle Google Single Sign-On (Real Live Google OAuth 2.0 via Browser & Deep Link)
-  const handleGoogleSignIn = async () => {
+  // Handle Google Single Sign-On (Pure In-App Google Authentication Sheet)
+  const handleGoogleSignIn = () => {
     triggerHaptic("selection");
     setUninvitedWarning(null);
-    setIsAuthenticatingGoogle(true);
-
-    try {
-      // 1. Request real OAuth 2.0 Auth URI from Google Identity Services
-      const res = await fetch(
-        "https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=AIzaSyBxqUn_iIBvPwc6NCmO4LAikisI0EoC7Wc",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            providerId: "google.com",
-            continueUri: "https://bikash0205.github.io/TaskPulse/auth.html",
-          }),
-        }
-      );
-
-      const data = await res.json();
-      if (data && data.authUri) {
-        // Open the REAL Google OAuth 2.0 authorization screen in Google Chrome / browser
-        await Linking.openURL(data.authUri);
-      } else {
-        setIsGoogleOAuthModalOpen(true);
-      }
-    } catch (err) {
-      console.warn("Real Google OAuth redirect error:", err);
-      setIsGoogleOAuthModalOpen(true);
-    } finally {
-      setIsAuthenticatingGoogle(false);
-    }
+    setIsGoogleOAuthModalOpen(true);
   };
 
   // Listen for incoming deep links (Google OAuth 2.0 redirect from Chrome)
@@ -3041,23 +3013,14 @@ export default function App() {
                 Authenticate with your corporate Google SSO or enter your workspace email.
               </Text>
 
-              {/* Prominent Google Single Sign-On Button */}
+              {/* Prominent Google Single Sign-On Button (In-App Sheet) */}
               <TouchableOpacity
                 activeOpacity={0.85}
-                disabled={isAuthenticatingGoogle}
                 onPress={handleGoogleSignIn}
-                style={[styles.googleAuthBtn, isAuthenticatingGoogle && { opacity: 0.8 }]}
+                style={styles.googleAuthBtn}
               >
-                {isAuthenticatingGoogle ? (
-                  <ActivityIndicator size="small" color="#4285F4" style={{ marginRight: 8 }} />
-                ) : (
-                  <GoogleIcon size={18} />
-                )}
-                <Text style={styles.googleAuthBtnText}>
-                  {isAuthenticatingGoogle
-                    ? "Connecting to accounts.google.com..."
-                    : "Continue with Google"}
-                </Text>
+                <GoogleIcon size={18} />
+                <Text style={styles.googleAuthBtnText}>Continue with Google</Text>
               </TouchableOpacity>
 
               <View style={styles.authDividerRow}>
