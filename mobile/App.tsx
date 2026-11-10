@@ -61,6 +61,7 @@ import {
   ZapIcon,
   SparklesIcon,
   GoogleIcon,
+  CreditCardIcon,
 } from "./components/Icons";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -78,6 +79,9 @@ import { EnterpriseAuditAndRbacModal } from "./components/EnterpriseAuditAndRbac
 import { CorporateAnalyticsExportModal } from "./components/CorporateAnalyticsExportModal";
 import { EnterpriseThreadedDiscussionSection } from "./components/EnterpriseThreadedDiscussionSection";
 import { FluidPressable } from "./components/FluidPressable";
+import { GoogleOAuthModal, GoogleAccountOption } from "./components/GoogleOAuthModal";
+import { AdminSubscriptionPanelModal, MemberSubscription } from "./components/AdminSubscriptionPanelModal";
+import { UserSubscriptionModal } from "./components/UserSubscriptionModal";
 
 export type ProjectTabMode = "list" | "board" | "timeline";
 
@@ -185,6 +189,65 @@ const DEFAULT_ACCOUNTS: UserAccount[] = [
     role: "viewer",
     organization: "TaskPulse Technologies",
     assignedProjects: ["Cubbles Engine"],
+  },
+];
+
+const INITIAL_MEMBER_SUBSCRIPTIONS: MemberSubscription[] = [
+  {
+    userId: "u-admin",
+    userName: "Bikash Kumar Yadav",
+    userEmail: "zevonbcash@gmail.com",
+    role: "admin",
+    planId: "enterprise",
+    planName: "Enterprise Suite",
+    price: 49,
+    status: "active",
+    billingCycle: "monthly",
+    renewsAt: "Dec 15, 2026",
+    paymentMethod: "Google Play Billing",
+    orderId: "GPA.3392-4102-8819-0129",
+  },
+  {
+    userId: "u-marcus",
+    userName: "Marcus Lee",
+    userEmail: "marcus@taskpulse.io",
+    role: "manager",
+    planId: "pro",
+    planName: "TaskPulse Pro",
+    price: 19,
+    status: "active",
+    billingCycle: "monthly",
+    renewsAt: "Nov 30, 2026",
+    paymentMethod: "Google Play Billing",
+    orderId: "GPA.8821-9943-1284-9041",
+  },
+  {
+    userId: "u-sarah",
+    userName: "Sarah Chen",
+    userEmail: "sarah.chen@taskpulse.io",
+    role: "manager",
+    planId: "pro",
+    planName: "TaskPulse Pro",
+    price: 19,
+    status: "active",
+    billingCycle: "annual",
+    renewsAt: "Oct 12, 2027",
+    paymentMethod: "Google Play Billing",
+    orderId: "GPA.1294-0012-7744-8832",
+  },
+  {
+    userId: "u-alex",
+    userName: "Alex Vance",
+    userEmail: "alex@acmecorp.com",
+    role: "member",
+    planId: "free",
+    planName: "Starter Free",
+    price: 0,
+    status: "trialing",
+    billingCycle: "monthly",
+    renewsAt: "Dec 01, 2026",
+    paymentMethod: "Google Play Billing",
+    orderId: "GPA.FREE-TRIAL-001",
   },
 ];
 
@@ -557,6 +620,24 @@ export default function App() {
   // Production default: starts on login screen, requiring user authentication
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [isBooting, setIsBooting] = useState(true);
+
+  // Google OAuth Interactive Modal State
+  const [isGoogleOAuthModalOpen, setIsGoogleOAuthModalOpen] = useState(false);
+
+  // Subscriptions & Google Play Billing State
+  const [memberSubscriptions, setMemberSubscriptions] = useState<MemberSubscription[]>(INITIAL_MEMBER_SUBSCRIPTIONS);
+  const [isAdminSubscriptionModalOpen, setIsAdminSubscriptionModalOpen] = useState(false);
+  const [isUserSubscriptionModalOpen, setIsUserSubscriptionModalOpen] = useState(false);
+
+  // Active Current User Subscription
+  const currentUserSubscription = useMemo(() => {
+    if (!currentUser) return undefined;
+    return (
+      memberSubscriptions.find(
+        (s) => s.userEmail.toLowerCase() === currentUser.email.toLowerCase()
+      ) || memberSubscriptions[0]
+    );
+  }, [currentUser, memberSubscriptions]);
 
   // Auth Entrance Screen State
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
@@ -1376,25 +1457,106 @@ export default function App() {
     }
   };
 
-  // Handle Google Single Sign-On
+  // Handle Google Single Sign-On Trigger
   const handleGoogleSignIn = () => {
     triggerHaptic("selection");
-    const googleAccount = registeredAccounts.find(
-      (a) => a.email.toLowerCase() === "zevonbcash@gmail.com"
-    ) || {
-      id: "u-google",
-      name: "Bikash Kumar Yadav",
-      email: "zevonbcash@gmail.com",
-      role: "admin",
-      organization: "TaskPulse Technologies",
-      assignedProjects: ["Application Design", "Unity Dashboard", "Instagram Shots", "Cubbles Engine", "Ui8 Platform"],
-    };
+    setIsGoogleOAuthModalOpen(true);
+  };
+
+  // Process authenticated Google account selection
+  const handleGoogleAccountSelected = (googleAcc: GoogleAccountOption) => {
+    setIsGoogleOAuthModalOpen(false);
+    const existing = registeredAccounts.find(
+      (a) => a.email.toLowerCase() === googleAcc.email.toLowerCase()
+    );
+
+    let authedUser: UserAccount;
+    if (existing) {
+      authedUser = existing;
+    } else {
+      authedUser = {
+        id: `u-google-${Date.now()}`,
+        name: googleAcc.name,
+        email: googleAcc.email,
+        role: googleAcc.email.toLowerCase() === "zevonbcash@gmail.com" ? "admin" : googleAcc.role || "member",
+        organization: "TaskPulse Technologies",
+        assignedProjects: ["Application Design", "Unity Dashboard", "Instagram Shots"],
+      };
+      setRegisteredAccounts((prev) => [authedUser, ...prev]);
+
+      setMemberSubscriptions((prev) => [
+        {
+          userId: authedUser.id,
+          userName: authedUser.name,
+          userEmail: authedUser.email,
+          role: authedUser.role as any,
+          planId: authedUser.role === "admin" ? "enterprise" : "pro",
+          planName: authedUser.role === "admin" ? "Enterprise Suite" : "TaskPulse Pro",
+          price: authedUser.role === "admin" ? 49 : 19,
+          status: "active",
+          billingCycle: "monthly",
+          renewsAt: "Dec 31, 2026",
+          paymentMethod: "Google Play Billing",
+          orderId: `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        },
+        ...prev,
+      ]);
+    }
 
     setUninvitedWarning(null);
-    setCurrentUser(googleAccount);
+    setCurrentUser(authedUser);
     setNavHistory([]);
     setSelectedProjectView(null);
     setCurrentTab("home");
+    triggerHaptic("success");
+  };
+
+  // Subscriptions management handlers
+  const handleUpdateSubscription = (userId: string, updates: Partial<MemberSubscription>) => {
+    setMemberSubscriptions((prev) =>
+      prev.map((sub) => (sub.userId === userId ? { ...sub, ...updates } : sub))
+    );
+    triggerHaptic("success");
+  };
+
+  const handleUpgradeCurrentUserPlan = (planId: "free" | "pro" | "enterprise") => {
+    if (!currentUser) return;
+    const planName =
+      planId === "enterprise"
+        ? "Enterprise Suite"
+        : planId === "pro"
+        ? "TaskPulse Pro"
+        : "Starter Free";
+    const price = planId === "enterprise" ? 49 : planId === "pro" ? 19 : 0;
+
+    setMemberSubscriptions((prev) => {
+      const exists = prev.some((s) => s.userEmail.toLowerCase() === currentUser.email.toLowerCase());
+      if (exists) {
+        return prev.map((s) =>
+          s.userEmail.toLowerCase() === currentUser.email.toLowerCase()
+            ? { ...s, planId, planName, price, status: "active" }
+            : s
+        );
+      } else {
+        return [
+          {
+            userId: currentUser.id,
+            userName: currentUser.name,
+            userEmail: currentUser.email,
+            role: currentUser.role as any,
+            planId,
+            planName,
+            price,
+            status: "active",
+            billingCycle: "monthly",
+            renewsAt: "Dec 31, 2026",
+            paymentMethod: "Google Play Billing",
+            orderId: `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+          },
+          ...prev,
+        ];
+      }
+    });
     triggerHaptic("success");
   };
 
@@ -2885,6 +3047,16 @@ export default function App() {
           )}
         </ScrollView>
         </SafeAreaView>
+
+        {/* INTERACTIVE GOOGLE OAUTH 2.0 AUTHENTICATION SHEET */}
+        <GoogleOAuthModal
+          visible={isGoogleOAuthModalOpen}
+          isDarkMode={isDarkMode}
+          onClose={() => setIsGoogleOAuthModalOpen(false)}
+          onSelectAccount={handleGoogleAccountSelected}
+          triggerHaptic={triggerHaptic}
+        />
+
         {isBooting && (
           <MobileBootSplash
             isDarkMode={isDarkMode}
@@ -2947,6 +3119,30 @@ export default function App() {
               setIsDarkMode(true);
             }}
           />
+
+          {/* Active Plan Pill */}
+          <TouchableOpacity
+            onPress={() => {
+              triggerHaptic("selection");
+              setIsUserSubscriptionModalOpen(true);
+            }}
+            style={{
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 8,
+              backgroundColor: isDarkMode ? "rgba(117, 110, 243, 0.2)" : "#F0EFFF",
+              borderWidth: 1,
+              borderColor: "#756EF3",
+            }}
+          >
+            <Text style={{ fontSize: 10, fontWeight: "800", color: "#756EF3" }}>
+              {currentUserSubscription?.planId === "enterprise"
+                ? "ENTERPRISE"
+                : currentUserSubscription?.planId === "pro"
+                ? "PRO"
+                : "STARTER"}
+            </Text>
+          </TouchableOpacity>
 
           {/* Animated Notification Bell Button */}
           <AnimatedBellButton
@@ -4049,6 +4245,52 @@ export default function App() {
                 </View>
                 <ChevronRightIcon size={16} color={COLORS.muted} />
               </TouchableOpacity>
+
+              {/* User Subscription & Google Play Billing */}
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setIsUserSubscriptionModalOpen(true);
+                }}
+                style={styles.settingRow}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ marginRight: 8 }}>
+                    <CreditCardIcon size={18} color="#756EF3" />
+                  </View>
+                  <Text style={styles.settingLabel}>Workspace Subscription & Plans</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#756EF3", marginRight: 6 }}>
+                    {currentUserSubscription?.planName || "TaskPulse Pro"}
+                  </Text>
+                  <ChevronRightIcon size={16} color={COLORS.muted} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Admin Subscription Governance Panel */}
+              {currentUser?.role === "admin" && (
+                <TouchableOpacity
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    setIsAdminSubscriptionModalOpen(true);
+                  }}
+                  style={styles.settingRow}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={{ marginRight: 8 }}>
+                      <UsersIcon size={18} color="#3B82F6" />
+                    </View>
+                    <Text style={styles.settingLabel}>Subscription Governance (All Users)</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: "rgba(66, 133, 244, 0.15)", marginRight: 6 }}>
+                      <Text style={{ fontSize: 9, fontWeight: "700", color: "#4285F4" }}>Admin</Text>
+                    </View>
+                    <ChevronRightIcon size={16} color={COLORS.muted} />
+                  </View>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Appearance & System Preferences */}
@@ -4867,6 +5109,36 @@ export default function App() {
                   </View>
                 </FluidPressable>
 
+                {/* Subscriptions & Google Play Billing */}
+                <FluidPressable
+                  targetScale={0.98}
+                  onPress={() => {
+                    triggerHaptic("selection");
+                    closeDrawer();
+                    if (currentUser?.role === "admin") {
+                      setIsAdminSubscriptionModalOpen(true);
+                    } else {
+                      setIsUserSubscriptionModalOpen(true);
+                    }
+                  }}
+                  style={styles.drawerActionCard}
+                >
+                  <View style={[styles.drawerActionIconWrap, { backgroundColor: "rgba(66, 133, 244, 0.12)" }]}>
+                    <CreditCardIcon size={18} color="#4285F4" />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.drawerActionTitle}>
+                      {currentUser?.role === "admin" ? "Subscription Governance" : "Workspace Plan & Billing"}
+                    </Text>
+                    <Text style={styles.drawerActionSub}>Google Play Billing active</Text>
+                  </View>
+                  <View style={[styles.drawerBadgePill, { backgroundColor: "rgba(66, 133, 244, 0.15)" }]}>
+                    <Text style={[styles.drawerBadgePillText, { color: "#4285F4" }]}>
+                      {currentUserSubscription?.planId.toUpperCase() || "PLAN"}
+                    </Text>
+                  </View>
+                </FluidPressable>
+
                 {/* Workspace Settings */}
                 <FluidPressable
                   targetScale={0.98}
@@ -4966,6 +5238,26 @@ export default function App() {
         visible={isAnalyticsModalOpen}
         isDarkMode={isDarkMode}
         onClose={() => setIsAnalyticsModalOpen(false)}
+        triggerHaptic={triggerHaptic}
+      />
+
+      {/* ADMIN SUBSCRIPTION GOVERNANCE MODAL */}
+      <AdminSubscriptionPanelModal
+        visible={isAdminSubscriptionModalOpen}
+        isDarkMode={isDarkMode}
+        onClose={() => setIsAdminSubscriptionModalOpen(false)}
+        subscriptions={memberSubscriptions}
+        onUpdateSubscription={handleUpdateSubscription}
+        triggerHaptic={triggerHaptic}
+      />
+
+      {/* USER SUBSCRIPTION & PLANS MODAL */}
+      <UserSubscriptionModal
+        visible={isUserSubscriptionModalOpen}
+        isDarkMode={isDarkMode}
+        onClose={() => setIsUserSubscriptionModalOpen(false)}
+        currentSubscription={currentUserSubscription}
+        onUpgradePlan={handleUpgradeCurrentUserPlan}
         triggerHaptic={triggerHaptic}
       />
       </SafeAreaView>
