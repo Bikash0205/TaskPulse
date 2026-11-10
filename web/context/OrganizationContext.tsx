@@ -240,7 +240,14 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    // 5. Default fallback to current or core
+    // 5. If user is signed in with a new account and has not signed up or joined an org, open Onboarding wizard
+    if (user && !isPermAdmin && !ownedOrg && !matchingInvite) {
+      setIsOnboardingOpen(true);
+      setCurrentOrg(null);
+      return;
+    }
+
+    // 6. Default fallback to current or core
     if (!currentOrg) {
       setCurrentOrg(DEFAULT_CORE_ORG);
     }

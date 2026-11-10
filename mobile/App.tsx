@@ -170,6 +170,12 @@ export interface OnboardingEmployee {
   assignedProject: string;
 }
 
+export interface UserWorkspaceData {
+  organization: string;
+  projects: MobileProject[];
+  tasks: MobileTask[];
+}
+
 const DEFAULT_ACCOUNTS: UserAccount[] = [
   {
     id: "u-admin",
@@ -700,6 +706,105 @@ export default function App() {
   const [projects, setProjects] = useState<MobileProject[]>(INITIAL_PROJECTS);
   const [selectedTask, setSelectedTask] = useState<MobileTask | null>(INITIAL_TASKS[0]);
   const [selectedProjectView, setSelectedProjectView] = useState<MobileProject | null>(null);
+
+  // User Workspaces state to isolate data strictly between accounts
+  const [userWorkspaces, setUserWorkspaces] = useState<Record<string, UserWorkspaceData>>({
+    "u-admin": {
+      organization: "TaskPulse Technologies",
+      projects: INITIAL_PROJECTS,
+      tasks: INITIAL_TASKS,
+    },
+    "u-marcus": {
+      organization: "TaskPulse Technologies",
+      projects: INITIAL_PROJECTS,
+      tasks: INITIAL_TASKS,
+    },
+    "u-elena": {
+      organization: "TaskPulse Technologies",
+      projects: INITIAL_PROJECTS,
+      tasks: INITIAL_TASKS,
+    },
+    "u-david": {
+      organization: "TaskPulse Technologies",
+      projects: INITIAL_PROJECTS,
+      tasks: INITIAL_TASKS,
+    },
+  });
+
+  const loadUserWorkspace = (userId: string, account?: UserAccount) => {
+    const ws = userWorkspaces[userId];
+    if (ws) {
+      setProjects(ws.projects);
+      setTasks(ws.tasks);
+      setSelectedProjectView(null);
+      setSelectedTask(ws.tasks[0] || null);
+    } else if (account?.organization === "TaskPulse Technologies" || account?.email.toLowerCase() === "zevonbcash@gmail.com") {
+      setProjects(INITIAL_PROJECTS);
+      setTasks(INITIAL_TASKS);
+      setSelectedProjectView(null);
+      setSelectedTask(INITIAL_TASKS[0] || null);
+    } else {
+      const orgName = account?.organization || "My Organization";
+      const starterProject: MobileProject = {
+        id: `p-${Date.now()}`,
+        name: "Workspace Onboarding",
+        category: "Operations",
+        department: "Operations",
+        completed: 0,
+        total: 2,
+        progress: 0,
+        color: "#756EF3",
+        code: "WOB",
+      };
+      const starterTasks: MobileTask[] = [
+        {
+          id: `t-${Date.now()}-1`,
+          title: "Welcome to your new TaskPulse workspace",
+          project: starterProject.name,
+          category: "Operations",
+          priority: "high",
+          status: "in_progress",
+          progress: 50,
+          timeAgo: "Just now",
+          subtasks: [
+            { id: `st-${Date.now()}-1`, title: "Customize organization settings", completed: true },
+            { id: `st-${Date.now()}-2`, title: "Invite team members", completed: false },
+          ],
+        },
+      ];
+      setUserWorkspaces((prev) => ({
+        ...prev,
+        [userId]: {
+          organization: orgName,
+          projects: [starterProject],
+          tasks: starterTasks,
+        },
+      }));
+      setProjects([starterProject]);
+      setTasks(starterTasks);
+      setSelectedProjectView(null);
+      setSelectedTask(starterTasks[0]);
+    }
+  };
+
+  // Keep active workspace in sync with userWorkspaces store
+  useEffect(() => {
+    if (!currentUser) return;
+    setUserWorkspaces((prev) => {
+      const existing = prev[currentUser.id];
+      if (existing && existing.tasks === tasks && existing.projects === projects) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [currentUser.id]: {
+          organization: currentUser.organization || "My Organization",
+          projects,
+          tasks,
+        },
+      };
+    });
+  }, [currentUser?.id, tasks, projects]);
   const [projectFilter, setProjectFilter] = useState("All");
   const [projectTaskFilter, setProjectTaskFilter] = useState("All");
   const [taskStatusFilter, setTaskStatusFilter] = useState("All");
@@ -718,6 +823,14 @@ export default function App() {
 
   // Live Cloud Synchronization with Web API
   useEffect(() => {
+    // Only synchronize remote demo tasks for the core organization or super admin
+    if (
+      currentUser &&
+      currentUser.organization !== "TaskPulse Technologies" &&
+      currentUser.email.toLowerCase() !== "zevonbcash@gmail.com"
+    ) {
+      return;
+    }
     let isMounted = true;
     const syncWithServer = async () => {
       try {
@@ -1461,6 +1574,7 @@ export default function App() {
     if (matched) {
       setUninvitedWarning(null);
       setCurrentUser(matched);
+      loadUserWorkspace(matched.id, matched);
       setNavHistory([]);
       setSelectedProjectView(null);
       setCurrentTab("home");
@@ -1550,49 +1664,64 @@ export default function App() {
   // Process authenticated Google account selection
   const handleGoogleAccountSelected = (googleAcc: GoogleAccountOption) => {
     setIsGoogleOAuthModalOpen(false);
+    const targetEmail = googleAcc.email.toLowerCase().trim();
     const existing = registeredAccounts.find(
-      (a) => a.email.toLowerCase() === googleAcc.email.toLowerCase()
+      (a) => a.email.toLowerCase().trim() === targetEmail
     );
 
-    let authedUser: UserAccount;
+    // If user is already registered, log in and restore their isolated workspace
     if (existing) {
-      authedUser = existing;
-    } else {
-      authedUser = {
-        id: `u-google-${Date.now()}`,
-        name: googleAcc.name,
-        email: googleAcc.email,
-        role: googleAcc.email.toLowerCase() === "zevonbcash@gmail.com" ? "admin" : googleAcc.role || "member",
-        organization: "TaskPulse Technologies",
-        assignedProjects: ["Application Design", "Unity Dashboard", "Instagram Shots"],
-      };
-      setRegisteredAccounts((prev) => [authedUser, ...prev]);
-
-      setMemberSubscriptions((prev) => [
-        {
-          userId: authedUser.id,
-          userName: authedUser.name,
-          userEmail: authedUser.email,
-          role: authedUser.role as any,
-          planId: authedUser.role === "admin" ? "enterprise" : "pro",
-          planName: authedUser.role === "admin" ? "Enterprise Suite" : "TaskPulse Pro",
-          price: authedUser.role === "admin" ? 49 : 19,
-          status: "active",
-          billingCycle: "monthly",
-          renewsAt: "Dec 31, 2026",
-          paymentMethod: "Google Play Billing",
-          orderId: `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
-        },
-        ...prev,
-      ]);
+      setUninvitedWarning(null);
+      setCurrentUser(existing);
+      loadUserWorkspace(existing.id, existing);
+      setNavHistory([]);
+      setSelectedProjectView(null);
+      setCurrentTab("home");
+      triggerHaptic("success");
+      return;
     }
 
+    // Permanent Super Admin always has full access to the master enterprise workspace
+    if (targetEmail === "zevonbcash@gmail.com") {
+      const adminUser: UserAccount = {
+        id: "u-admin",
+        name: "Bikash Kumar Yadav",
+        email: "zevonbcash@gmail.com",
+        role: "admin",
+        organization: "TaskPulse Technologies",
+        assignedProjects: INITIAL_PROJECTS.map((p) => p.name),
+      };
+      setRegisteredAccounts((prev) => {
+        const has = prev.some((a) => a.email.toLowerCase().trim() === "zevonbcash@gmail.com");
+        return has ? prev : [adminUser, ...prev];
+      });
+      setUninvitedWarning(null);
+      setCurrentUser(adminUser);
+      loadUserWorkspace(adminUser.id, adminUser);
+      setNavHistory([]);
+      setSelectedProjectView(null);
+      setCurrentTab("home");
+      triggerHaptic("success");
+      return;
+    }
+
+    // New Google account without an existing workspace: Route to Sign Up (Organization Onboarding)
+    setAuthTab("signup");
+    setOnboardingStep(1);
+    setOnboardAdminName(googleAcc.name);
+    setOnboardAdminEmail(googleAcc.email);
+    setOnboardingOrgName(`${googleAcc.name}'s Workspace`);
+    const cleanSlug = googleAcc.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    setOnboardingSlug(cleanSlug || "my-organization");
     setUninvitedWarning(null);
-    setCurrentUser(authedUser);
-    setNavHistory([]);
-    setSelectedProjectView(null);
-    setCurrentTab("home");
-    triggerHaptic("success");
+    triggerHaptic("selection");
+    Alert.alert(
+      "Complete Your Registration",
+      `Welcome ${googleAcc.name}! Your Google account has been verified. Complete the steps below to configure your fresh organization and launch your workspace.`
+    );
   };
 
   // Subscriptions management handlers
@@ -1663,13 +1792,17 @@ export default function App() {
   // Finish Onboarding & Launch Workspace
   const handleLaunchWorkspace = () => {
     triggerHaptic("success");
+    const newAdminId = `u-${Date.now()}`;
+    const orgTitle = onboardingOrgName.trim() || "My Organization";
+    const starterProjectName = "Workspace Onboarding";
+
     const newAdminAccount: UserAccount = {
-      id: `u-${Date.now()}`,
-      name: onboardAdminName.trim() || "Organization Admin",
+      id: newAdminId,
+      name: onboardAdminName.trim() || "Workspace Admin",
       email: onboardAdminEmail.trim().toLowerCase(),
       role: "admin",
-      organization: onboardingOrgName.trim() || "My Organization",
-      assignedProjects: INITIAL_PROJECTS.map((p) => p.name),
+      organization: orgTitle,
+      assignedProjects: [starterProjectName],
     };
 
     // Register all invited employees as recognized user accounts
@@ -1678,15 +1811,93 @@ export default function App() {
       name: e.name,
       email: e.email,
       role: e.role,
-      organization: onboardingOrgName.trim(),
-      assignedProjects: [e.assignedProject],
+      organization: orgTitle,
+      assignedProjects: [e.assignedProject || starterProjectName],
     }));
 
+    // Fresh starter project specific to this new organization
+    const freshProjects: MobileProject[] = [
+      {
+        id: `p-${Date.now()}`,
+        name: starterProjectName,
+        category: "Operations",
+        department: "Operations",
+        completed: 0,
+        total: 2,
+        progress: 0,
+        color: "#756EF3",
+        code: "WOB",
+      },
+    ];
+
+    // Fresh starter tasks specific to this new organization
+    const freshTasks: MobileTask[] = [
+      {
+        id: `t-${Date.now()}-1`,
+        title: "Welcome to your new TaskPulse workspace",
+        project: starterProjectName,
+        category: "Operations",
+        priority: "high",
+        status: "in_progress",
+        progress: 50,
+        timeAgo: "Just now",
+        subtasks: [
+          { id: `st-${Date.now()}-1`, title: "Customize organization settings", completed: true },
+          { id: `st-${Date.now()}-2`, title: "Invite team members", completed: false },
+        ],
+      },
+      {
+        id: `t-${Date.now()}-2`,
+        title: "Create your team's first roadmap milestone",
+        project: starterProjectName,
+        category: "Operations",
+        priority: "medium",
+        status: "in_progress",
+        progress: 0,
+        timeAgo: "Just now",
+        subtasks: [
+          { id: `st-${Date.now()}-3`, title: "Define deliverables and due dates", completed: false },
+        ],
+      },
+    ];
+
+    // Isolate workspace data strictly for this account
+    setUserWorkspaces((prev) => ({
+      ...prev,
+      [newAdminId]: {
+        organization: orgTitle,
+        projects: freshProjects,
+        tasks: freshTasks,
+      },
+    }));
+
+    // Register active subscription for new workspace admin
+    setMemberSubscriptions((prev) => [
+      {
+        userId: newAdminAccount.id,
+        userName: newAdminAccount.name,
+        userEmail: newAdminAccount.email,
+        role: "admin",
+        planId: "enterprise",
+        planName: "Enterprise Suite",
+        price: 49,
+        status: "active",
+        billingCycle: "monthly",
+        renewsAt: "Dec 31, 2026",
+        paymentMethod: "Google Play Billing",
+        orderId: `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+      },
+      ...prev,
+    ]);
+
     setRegisteredAccounts((prev) => [...prev, newAdminAccount, ...newTeamAccounts]);
+    setProjects(freshProjects);
+    setTasks(freshTasks);
+    setSelectedTask(freshTasks[0]);
+    setSelectedProjectView(null);
     setCurrentUser(newAdminAccount);
     setIsOnboardingModalOpen(false);
     setNavHistory([]);
-    setSelectedProjectView(null);
     setCurrentTab("home");
   };
 
