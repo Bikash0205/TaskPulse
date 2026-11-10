@@ -40,15 +40,12 @@ export const BootSplash: React.FC<BootSplashProps> = ({
       }`}
     >
       <div className="relative w-full h-full max-w-2xl max-h-[90vh] flex items-center justify-center p-4 sm:p-8">
-        <picture className="w-full h-full flex items-center justify-center">
-          <source media="(prefers-color-scheme: dark)" srcSet={`${basePath}/taskpulse_animated_dark.svg`} />
-          <img
-            src={isDark ? `${basePath}/taskpulse_animated_dark.svg` : `${basePath}/taskpulse_animated.svg`}
-            alt="TaskPulse Vector Boot Animation"
-            className="w-full h-auto max-h-full object-contain filter drop-shadow-2xl"
-            loading="eager"
-          />
-        </picture>
+        <img
+          src={isDark ? `${basePath}/taskpulse_animated_dark.svg` : `${basePath}/taskpulse_animated.svg`}
+          alt="TaskPulse Vector Boot Animation"
+          className="w-full h-auto max-h-full object-contain filter drop-shadow-2xl"
+          loading="eager"
+        />
       </div>
     </div>
   );

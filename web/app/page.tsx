@@ -28,6 +28,7 @@ export default function TaskPulseWorkspacePage() {
   const { user, loading, teamRoles, loginDemoUser, signInWithCustomUser } = useAuth();
   const {
     currentOrg,
+    orgLoading,
     assignedProjectForCurrentLogin,
     setAssignedProjectForCurrentLogin,
   } = useOrganization();
@@ -39,6 +40,22 @@ export default function TaskPulseWorkspacePage() {
   const [assignedBannerProject, setAssignedBannerProject] = useState<{ id: string; name: string } | null>(null);
   const [viewportMode, setViewportMode] = useState<"desktop" | "mobile">("desktop");
   const [bootSplashComplete, setBootSplashComplete] = useState(false);
+
+  const isCoreDemoAccount =
+    Boolean(user) &&
+    (user!.email?.toLowerCase().trim() === PERMANENT_ADMIN_EMAIL.toLowerCase() ||
+      Boolean(user!.email?.toLowerCase().endsWith("@taskpulse.internal")) ||
+      currentOrg?.id === "org-core");
+
+  const orgScope =
+    currentOrg?.id && currentOrg.id !== "org-core"
+      ? currentOrg.id
+      : !isCoreDemoAccount && user?.email
+      ? user.email.toLowerCase().trim().replace(/[^a-z0-9]/g, "_")
+      : null;
+
+  const tasksStorageKey = orgScope ? `taskpulse_custom_tasks_${orgScope}` : "taskpulse_custom_tasks";
+  const projectsStorageKey = orgScope ? `taskpulse_custom_projects_${orgScope}` : "taskpulse_custom_projects";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -54,83 +71,102 @@ export default function TaskPulseWorkspacePage() {
   }, []);
 
   useEffect(() => {
+    if (!user || orgLoading) return;
+    let cancelled = false;
+
     let initialTasks: TaskPulseItem[] = [];
     if (typeof window !== "undefined") {
-      const savedTasks = localStorage.getItem("taskpulse_custom_tasks");
-      if (savedTasks) {
+      const savedTasks = localStorage.getItem(tasksStorageKey);
+      if (savedTasks !== null) {
         try {
           initialTasks = JSON.parse(savedTasks);
           setTasks(initialTasks);
           syncColleagueCounts(initialTasks);
         } catch (e) {
-          initialTasks = mockTasks;
-          setTasks(mockTasks);
-          syncColleagueCounts(mockTasks);
+          initialTasks = isCoreDemoAccount ? mockTasks : [];
+          setTasks(initialTasks);
+          syncColleagueCounts(initialTasks);
         }
       } else {
-        initialTasks = mockTasks;
-        setTasks(mockTasks);
-        syncColleagueCounts(mockTasks);
+        initialTasks = isCoreDemoAccount ? mockTasks : [];
+        setTasks(initialTasks);
+        syncColleagueCounts(initialTasks);
       }
 
-      const savedProjects = localStorage.getItem("taskpulse_custom_projects");
+      const savedProjects = localStorage.getItem(projectsStorageKey);
       if (savedProjects !== null) {
         try {
           const parsed = JSON.parse(savedProjects);
-          setProjects(Array.isArray(parsed) && parsed.length > 0 ? parsed : mockProjects);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProjects(parsed);
+          } else {
+            setProjects(isCoreDemoAccount ? mockProjects : []);
+          }
         } catch (e) {
-          setProjects(mockProjects);
+          setProjects(isCoreDemoAccount ? mockProjects : []);
         }
       } else {
-        setProjects(mockProjects);
+        setProjects(isCoreDemoAccount ? mockProjects : []);
       }
 
-      // Initial cloud sync with backend REST API
-      fetch("/api/tasks")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          const list = Array.isArray(data) ? data : data?.tasks;
-          if (list && list.length > 0) {
-            setTasks((prev) => {
-              const remoteIds = new Set(list.map((t: any) => t.id));
-              const localOnly = prev.filter((t) => !remoteIds.has(t.id));
-              const merged = [...list, ...localOnly];
-              syncColleagueCounts(merged);
-              return merged;
-            });
-          }
-        })
-        .catch(() => {});
+      // Only pull global demo REST seed for Core Enterprise / Sandbox accounts
+      if (isCoreDemoAccount) {
+        fetch("/api/tasks")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (cancelled) return;
+            const list = Array.isArray(data) ? data : data?.tasks;
+            if (list && list.length > 0) {
+              setTasks((prev) => {
+                const remoteIds = new Set(list.map((t: any) => t.id));
+                const localOnly = prev.filter((t) => !remoteIds.has(t.id));
+                const merged = [...list, ...localOnly];
+                syncColleagueCounts(merged);
+                return merged;
+              });
+            }
+          })
+          .catch(() => {});
 
-      fetch("/api/projects")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          const list = Array.isArray(data) ? data : data?.projects;
-          if (list && list.length > 0) {
-            setProjects((prev) => {
-              const remoteIds = new Set(list.map((p: any) => p.id));
-              const localOnly = prev.filter((p) => !remoteIds.has(p.id));
-              return [...list, ...localOnly];
-            });
-          }
-        })
-        .catch(() => {});
+        fetch("/api/projects")
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (cancelled) return;
+            const list = Array.isArray(data) ? data : data?.projects;
+            if (list && list.length > 0) {
+              setProjects((prev) => {
+                const remoteIds = new Set(list.map((p: any) => p.id));
+                const localOnly = prev.filter((p) => !remoteIds.has(p.id));
+                return [...list, ...localOnly];
+              });
+            }
+          })
+          .catch(() => {});
+      }
     }
 
-    const unsubscribe = subscribeTasks((remoteTasks) => {
-      setTasks(remoteTasks);
-      syncColleagueCounts(remoteTasks);
-    }, initialTasks);
+    const unsubscribe = subscribeTasks(
+      (remoteTasks) => {
+        if (cancelled) return;
+        setTasks(remoteTasks);
+        syncColleagueCounts(remoteTasks);
+      },
+      initialTasks,
+      orgScope || (isCoreDemoAccount ? "org-core" : "isolated-empty")
+    );
 
-    return () => unsubscribe();
-  }, [user, teamRoles]);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [user?.email, currentOrg?.id, orgLoading, teamRoles]);
 
   // Handle direct jump to assigned project upon invited user login
   useEffect(() => {
     if (assignedProjectForCurrentLogin) {
       let currentProjects = projects;
       if (typeof window !== "undefined") {
-        const savedProjects = localStorage.getItem("taskpulse_custom_projects");
+        const savedProjects = localStorage.getItem(projectsStorageKey);
         if (savedProjects) {
           try {
             const parsed = JSON.parse(savedProjects);
@@ -148,13 +184,13 @@ export default function TaskPulseWorkspacePage() {
         setAssignedBannerProject({ id: matchedProj.id, name: matchedProj.name });
       }
     }
-  }, [assignedProjectForCurrentLogin]);
+  }, [assignedProjectForCurrentLogin, projectsStorageKey]);
 
   const persistTasks = (newTasks: TaskPulseItem[]) => {
     setTasks(newTasks);
     syncColleagueCounts(newTasks);
     if (typeof window !== "undefined") {
-      localStorage.setItem("taskpulse_custom_tasks", JSON.stringify(newTasks));
+      localStorage.setItem(tasksStorageKey, JSON.stringify(newTasks));
     }
   };
 
@@ -162,15 +198,16 @@ export default function TaskPulseWorkspacePage() {
     persistTasks([]);
     setProjects([]);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("taskpulse_custom_projects");
+      localStorage.removeItem(projectsStorageKey);
     }
   };
 
   const handleResetDemoTasks = () => {
+    if (!isCoreDemoAccount) return;
     persistTasks(mockTasks);
     setProjects(mockProjects);
     if (typeof window !== "undefined") {
-      localStorage.setItem("taskpulse_custom_projects", JSON.stringify(mockProjects));
+      localStorage.setItem(projectsStorageKey, JSON.stringify(mockProjects));
     }
   };
 
@@ -242,25 +279,31 @@ export default function TaskPulseWorkspacePage() {
   };
 
   const handleUpdateTask = async (updatedTask: TaskPulseItem) => {
-    const updated = tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t));
+    const scopedTask = { ...updatedTask, orgId: (updatedTask as any).orgId || orgScope || "org-core" };
+    const updated = tasks.map((t) => (t.id === scopedTask.id ? scopedTask : t));
     persistTasks(updated);
-    await updateTaskDocument(updatedTask);
-    fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedTask),
-    }).catch(() => {});
+    await updateTaskDocument(scopedTask);
+    if (isCoreDemoAccount) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scopedTask),
+      }).catch(() => {});
+    }
   };
 
   const handleAddTask = async (newTask: TaskPulseItem) => {
-    const updated = [newTask, ...tasks];
+    const scopedTask = { ...newTask, orgId: (newTask as any).orgId || orgScope || "org-core" };
+    const updated = [scopedTask, ...tasks];
     persistTasks(updated);
-    await createTaskDocument(newTask);
-    fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTask),
-    }).catch(() => {});
+    await createTaskDocument(scopedTask);
+    if (isCoreDemoAccount) {
+      fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scopedTask),
+      }).catch(() => {});
+    }
   };
 
   const handleUpdateTaskProgress = async (taskId: string, progress: number) => {
@@ -279,7 +322,7 @@ export default function TaskPulseWorkspacePage() {
     });
     persistTasks(updated);
     await updateTaskProgressDocument(taskId, progress);
-    if (targetTask) {
+    if (targetTask && isCoreDemoAccount) {
       fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -322,13 +365,13 @@ export default function TaskPulseWorkspacePage() {
 
       syncColleagueCounts(updated);
       if (typeof window !== "undefined") {
-        localStorage.setItem("taskpulse_custom_tasks", JSON.stringify(updated));
+        localStorage.setItem(tasksStorageKey, JSON.stringify(updated));
       }
       return updated;
     });
 
     await updateTaskProgressDocument(taskId, computedProgress);
-    if (modifiedTask) {
+    if (modifiedTask && isCoreDemoAccount) {
       fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -356,11 +399,11 @@ export default function TaskPulseWorkspacePage() {
       });
       syncColleagueCounts(updated);
       if (typeof window !== "undefined") {
-        localStorage.setItem("taskpulse_custom_tasks", JSON.stringify(updated));
+        localStorage.setItem(tasksStorageKey, JSON.stringify(updated));
       }
       return updated;
     });
-    if (modifiedTask) {
+    if (modifiedTask && isCoreDemoAccount) {
       fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -373,15 +416,17 @@ export default function TaskPulseWorkspacePage() {
     setProjects((prevProjects) => {
       const updated = [newProject, ...prevProjects];
       if (typeof window !== "undefined") {
-        localStorage.setItem("taskpulse_custom_projects", JSON.stringify(updated));
+        localStorage.setItem(projectsStorageKey, JSON.stringify(updated));
       }
       return updated;
     });
-    fetch("/api/projects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newProject),
-    }).catch(() => {});
+    if (isCoreDemoAccount) {
+      fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProject),
+      }).catch(() => {});
+    }
   };
 
   const handleAddSubtask = async (taskId: string, subtaskTitle: string) => {
@@ -412,7 +457,7 @@ export default function TaskPulseWorkspacePage() {
 
       syncColleagueCounts(updated);
       if (typeof window !== "undefined") {
-        localStorage.setItem("taskpulse_custom_tasks", JSON.stringify(updated));
+        localStorage.setItem(tasksStorageKey, JSON.stringify(updated));
       }
       return updated;
     });
@@ -439,7 +484,7 @@ export default function TaskPulseWorkspacePage() {
 
       syncColleagueCounts(updated);
       if (typeof window !== "undefined") {
-        localStorage.setItem("taskpulse_custom_tasks", JSON.stringify(updated));
+        localStorage.setItem(tasksStorageKey, JSON.stringify(updated));
       }
       return updated;
     });

@@ -8,6 +8,7 @@ import { useAuth, PERMANENT_ADMIN_EMAIL } from "./AuthContext";
 
 export interface OrganizationContextType {
   currentOrg: Organization | null;
+  orgLoading: boolean;
   organizations: Organization[];
   invites: OrganizationInvite[];
   isOnboardingOpen: boolean;
@@ -18,9 +19,14 @@ export interface OrganizationContextType {
     name: string,
     departments?: Department[] | Department,
     initialProjectName?: string,
-    initialProjectCode?: string
+    initialProjectCode?: string,
+    explicitAdminEmail?: string
   ) => Promise<{ org: Organization; initialProject: Project }>;
-  joinWithCode: (codeOrOrgId: string) => Promise<{ success: boolean; message: string; org?: Organization }>;
+  joinWithCode: (
+    codeOrOrgId: string,
+    explicitEmail?: string,
+    explicitName?: string
+  ) => Promise<{ success: boolean; message: string; org?: Organization }>;
   inviteTeammate: (
     email: string,
     name: string,
@@ -97,7 +103,8 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, assignUserRole } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([DEFAULT_CORE_ORG]);
-  const [currentOrg, setCurrentOrg] = useState<Organization | null>(DEFAULT_CORE_ORG);
+  const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  const [orgsInitialized, setOrgsInitialized] = useState<boolean>(false);
   const [invites, setInvites] = useState<OrganizationInvite[]>(DEFAULT_INVITES);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [assignedProjectForCurrentLogin, setAssignedProjectForCurrentLogin] = useState<string | null>(null);
@@ -130,6 +137,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         } catch (e) {}
       }
     }
+    setOrgsInitialized(true);
 
     // Attempt Firestore sync if db is initialized
     if (db) {
@@ -175,7 +183,10 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Validate user organization membership upon login
   useEffect(() => {
+    if (!orgsInitialized) return;
+
     if (!user || !user.email) {
+      setCurrentOrg(null);
       setIsOnboardingOpen(false);
       return;
     }
@@ -191,7 +202,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     // 2. Check if user is an existing admin of any organization
-    const ownedOrg = organizations.find((o) => o.adminEmail.toLowerCase() === email);
+    const ownedOrg = organizations.find((o) => o.adminEmail?.toLowerCase().trim() === email);
     if (ownedOrg) {
       setCurrentOrg(ownedOrg);
       setIsOnboardingOpen(false);
@@ -240,27 +251,34 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    // 5. If user is signed in with a new account and has not signed up or joined an org, open Onboarding wizard
-    if (user && !isPermAdmin && !ownedOrg && !matchingInvite) {
-      setIsOnboardingOpen(true);
-      setCurrentOrg(null);
-      return;
-    }
-
-    // 6. Default fallback to current or core
-    if (!currentOrg) {
-      setCurrentOrg(DEFAULT_CORE_ORG);
-    }
-  }, [user?.email, organizations, invites]);
+    // 5. New account with no org & no invite: open Onboarding wizard and keep workspace clean
+    setIsOnboardingOpen(true);
+    setCurrentOrg(null);
+  }, [user?.email, organizations, invites, orgsInitialized]);
 
   // Onboard a new company as Admin
   const onboardCompany = async (
     name: string,
     departments?: Department[] | Department,
     initialProjectName?: string,
-    initialProjectCode?: string
+    initialProjectCode?: string,
+    explicitAdminEmail?: string
   ): Promise<{ org: Organization; initialProject: Project }> => {
-    const adminEmail = user?.email || PERMANENT_ADMIN_EMAIL;
+    let fallbackStoredEmail = "";
+    if (typeof window !== "undefined") {
+      try {
+        const loggedRaw = localStorage.getItem("taskpulse_logged_user");
+        if (loggedRaw) fallbackStoredEmail = JSON.parse(loggedRaw)?.email || "";
+        if (!fallbackStoredEmail) {
+          const pendingRaw = localStorage.getItem("taskpulse_pending_google_auth");
+          if (pendingRaw) fallbackStoredEmail = JSON.parse(pendingRaw)?.email || "";
+        }
+      } catch {}
+    }
+
+    const adminEmail = (explicitAdminEmail || user?.email || fallbackStoredEmail || PERMANENT_ADMIN_EMAIL)
+      .trim()
+      .toLowerCase();
     const orgId = `org-${Date.now()}`;
     const cleanCode = (initialProjectCode || name.slice(0, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "") || "PROJ";
 
@@ -271,7 +289,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       resolvedDepts = [departments.trim()];
     }
     if (resolvedDepts.length === 0) {
-      resolvedDepts = ["Operations", "Platform", "Product"];
+      resolvedDepts = ["Operations", "Platform Engineering", "Product Management"];
     }
     const uniqueDepts = Array.from(new Set(resolvedDepts));
 
@@ -285,7 +303,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       inviteCode: `${cleanCode}-${Math.floor(1000 + Math.random() * 9000)}`,
     };
 
-    const initialProject: Project = {
+    const initialProject: Project & { orgId?: string } = {
       id: `proj-${Date.now()}`,
       name: (initialProjectName || `${name.trim()} Core Roadmap`).trim(),
       code: cleanCode,
@@ -293,6 +311,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       description: `Primary initiative for ${name}`,
       progressPercentage: 0,
       targetDate: "Next 30 Days",
+      orgId,
     };
 
     const updatedOrgs = [newOrg, ...organizations];
@@ -303,16 +322,12 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     assignUserRole(adminEmail, "admin");
     setAssignedProjectForCurrentLogin(initialProject.id);
 
-    // Save to localStorage
+    // Save to org-isolated localStorage so new organizations start with a completely fresh workspace
     if (typeof window !== "undefined") {
       localStorage.setItem("taskpulse_organizations", JSON.stringify(updatedOrgs));
       localStorage.setItem("taskpulse_current_org_id", orgId);
-
-      const existingProjects = JSON.parse(localStorage.getItem("taskpulse_custom_projects") || "[]");
-      localStorage.setItem(
-        "taskpulse_custom_projects",
-        JSON.stringify([initialProject, ...existingProjects])
-      );
+      localStorage.setItem(`taskpulse_custom_projects_${orgId}`, JSON.stringify([initialProject]));
+      localStorage.setItem(`taskpulse_custom_tasks_${orgId}`, JSON.stringify([]));
     }
 
     // Save to Firestore if available
@@ -330,7 +345,9 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Join company with invite code
   const joinWithCode = async (
-    codeOrOrgId: string
+    codeOrOrgId: string,
+    explicitEmail?: string,
+    explicitName?: string
   ): Promise<{ success: boolean; message: string; org?: Organization }> => {
     const query = codeOrOrgId.trim().toUpperCase();
     let matched = organizations.find(
@@ -363,8 +380,40 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setCurrentOrg(matched);
     setIsOnboardingOpen(false);
 
-    if (user?.email) {
-      assignUserRole(user.email, "member");
+    const memberEmail = (explicitEmail || user?.email || "").trim().toLowerCase();
+    const memberName = (explicitName || user?.displayName || memberEmail.split("@")[0] || "Team Member").trim();
+
+    if (memberEmail) {
+      assignUserRole(memberEmail, "member");
+      const alreadyInvited = invites.some(
+        (inv) => inv.email.toLowerCase().trim() === memberEmail && inv.orgId === matched!.id
+      );
+      if (!alreadyInvited) {
+        const selfInvite: OrganizationInvite = {
+          id: `inv-${Date.now()}`,
+          orgId: matched.id,
+          email: memberEmail,
+          name: memberName,
+          role: "member",
+          department: matched.departments?.[0] || "Engineering",
+          assignedProjectIds: [],
+          invitedBy: matched.adminEmail,
+          invitedAt: new Date().toISOString(),
+          status: "accepted",
+        };
+        const updatedInvites = [selfInvite, ...invites];
+        setInvites(updatedInvites);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("taskpulse_org_invites", JSON.stringify(updatedInvites));
+        }
+        if (db) {
+          setDoc(doc(db, "invites", selfInvite.id), selfInvite).catch(() => {});
+        }
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("taskpulse_current_org_id", matched.id);
     }
 
     return { success: true, message: `Successfully joined ${matched.name}!`, org: matched };
@@ -425,6 +474,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     <OrganizationContext.Provider
       value={{
         currentOrg,
+        orgLoading: !orgsInitialized,
         organizations,
         invites,
         isOnboardingOpen,

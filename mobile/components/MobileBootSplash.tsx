@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   StyleSheet,
   Animated,
@@ -35,21 +35,32 @@ import {
 export const MobileBootSplash: React.FC<MobileBootSplashProps> = ({
   isDarkMode = false,
   onBootComplete,
-  durationMs = 2600,
+  durationMs = 2800,
 }) => {
   const translateYAnim = useRef(new Animated.Value(0)).current;
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const contentScale = useRef(new Animated.Value(1)).current;
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Fallback safeguard if onLoad doesn't fire within 900ms
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      setImageLoaded(true);
+    }, 900);
+    return () => clearTimeout(fallbackTimer);
+  }, []);
 
   useEffect(() => {
-    // Tactile haptic feedback when arrow snaps (~1.1s)
+    if (!imageLoaded) return;
+
+    // Tactile haptic feedback when arrow snaps (~1.1s after playback begins)
     const hapticTimer = setTimeout(() => {
       try {
         Vibration.vibrate(22);
       } catch {}
     }, 1100);
 
-    // Smooth upward glide and fade exit once animation completes
+    // Smooth upward glide and fade exit once full animation (including TaskPulse reveal) completes
     const exitTimer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(translateYAnim, {
@@ -72,13 +83,13 @@ export const MobileBootSplash: React.FC<MobileBootSplashProps> = ({
       ]).start(() => {
         onBootComplete();
       });
-    }, durationMs);
+    }, Math.max(durationMs, 2800));
 
     return () => {
       clearTimeout(hapticTimer);
       clearTimeout(exitTimer);
     };
-  }, [durationMs, onBootComplete]);
+  }, [imageLoaded, durationMs, onBootComplete]);
 
   const bgColor = isDarkMode ? "#0B0F19" : "#FFFFFF";
 
@@ -106,6 +117,7 @@ export const MobileBootSplash: React.FC<MobileBootSplashProps> = ({
         source={{
           uri: isDarkMode ? TASKPULSE_BOOT_DARK_WEBP : TASKPULSE_BOOT_LIGHT_WEBP,
         }}
+        onLoad={() => setImageLoaded(true)}
         style={styles.fullScreenImage}
         resizeMode="contain"
         fadeDuration={0}

@@ -59,16 +59,28 @@ const DEFAULT_POPULAR_DEPTS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, signInWithCustomUser, signUpWithEmail } = useAuth();
+  const {
+    user,
+    pendingGoogleUser,
+    signInWithCustomUser,
+    signUpWithEmail,
+    completeGoogleOnboarding,
+    clearPendingGoogleUser,
+  } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { onboardCompany, joinWithCode, inviteTeammate } = useOrganization();
+
+  const verifiedGoogleEmail =
+    pendingGoogleUser?.email ||
+    (user?.email && !user.email.endsWith("@taskpulse.internal") ? user.email : "");
+  const isGoogleEmailLocked = Boolean(verifiedGoogleEmail);
 
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Step 1: Company Profile
-  const [adminName, setAdminName] = useState(user?.displayName || "Alex Vance");
-  const [adminEmail, setAdminEmail] = useState(user?.email || "alex.vance@company.com");
+  // Step 1: Company Profile (Starts completely empty by default unless prefilled via verified Google auth)
+  const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -76,23 +88,8 @@ export default function OnboardingPage() {
   const [teamSize, setTeamSize] = useState("11-50");
   const [slug, setSlug] = useState("");
 
-  // Step 2: Employee Roles & Departments
-  const [employees, setEmployees] = useState<EmployeeEntry[]>([
-    {
-      id: "e1",
-      name: "Marcus Lee",
-      email: "marcus@company.com",
-      role: "manager",
-      department: "Platform Engineering",
-    },
-    {
-      id: "e2",
-      name: "Elena Rostova",
-      email: "elena@company.com",
-      role: "member",
-      department: "Design Systems",
-    },
-  ]);
+  // Step 2: Employee Roles & Departments (Starts completely empty by default)
+  const [employees, setEmployees] = useState<EmployeeEntry[]>([]);
 
   const [newEmpName, setNewEmpName] = useState("");
   const [newEmpEmail, setNewEmpEmail] = useState("");
@@ -106,11 +103,26 @@ export default function OnboardingPage() {
 
   // Join Flow
   const [joinCode, setJoinCode] = useState("");
-  const [joinName, setJoinName] = useState(user?.displayName || "");
-  const [joinEmail, setJoinEmail] = useState(user?.email || "");
+  const [joinName, setJoinName] = useState("");
+  const [joinEmail, setJoinEmail] = useState("");
   const [joinPassword, setJoinPassword] = useState("");
   const [showJoinPassword, setShowJoinPassword] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+
+  // Sync verified Google profile (email locked & uneditable, name pre-filled if blank)
+  useEffect(() => {
+    const activeProfile = pendingGoogleUser || (user?.email && !user.email.endsWith("@taskpulse.internal") ? user : null);
+    if (activeProfile) {
+      if (activeProfile.email) {
+        setAdminEmail(activeProfile.email);
+        setJoinEmail(activeProfile.email);
+      }
+      if (activeProfile.displayName) {
+        setAdminName((prev) => prev || activeProfile.displayName || "");
+        setJoinName((prev) => prev || activeProfile.displayName || "");
+      }
+    }
+  }, [pendingGoogleUser, user]);
 
   // GSAP Animation Refs
   const pageContainerRef = useRef<HTMLDivElement>(null);
@@ -196,16 +208,28 @@ export default function OnboardingPage() {
   };
 
   const handleCreateWorkspace = async () => {
-    if (!companyName.trim()) return;
+    const resolvedEmail = (verifiedGoogleEmail || adminEmail).trim().toLowerCase();
+    const resolvedName = adminName.trim() || pendingGoogleUser?.displayName || resolvedEmail.split("@")[0] || "Administrator";
+    if (!companyName.trim() || !resolvedEmail) {
+      setCreateError("Please fill out Organization Name and Administrator Work Email.");
+      return;
+    }
     setCreateError(null);
     setIsSubmitting(true);
 
     try {
-      if (!user) {
+      if (pendingGoogleUser && !user) {
+        const completed = await completeGoogleOnboarding(resolvedName, "admin", "Engineering");
+        if (!completed) {
+          setCreateError("Unable to finalize Google account verification. Please sign in again.");
+          setIsSubmitting(false);
+          return;
+        }
+      } else if (!user) {
         if (adminPassword.trim()) {
           const authRes = await signUpWithEmail(
-            adminName.trim() || "Administrator",
-            adminEmail.trim() || "admin@company.com",
+            resolvedName,
+            resolvedEmail,
             adminPassword.trim(),
             "Engineering",
             "admin"
@@ -216,11 +240,7 @@ export default function OnboardingPage() {
             return;
           }
         } else {
-          signInWithCustomUser(
-            adminName.trim() || "Administrator",
-            adminEmail.trim() || "admin@company.com",
-            "admin"
-          );
+          signInWithCustomUser(resolvedName, resolvedEmail, "admin");
         }
       }
 
@@ -232,7 +252,9 @@ export default function OnboardingPage() {
       const { org, initialProject: proj } = await onboardCompany(
         companyName.trim(),
         customDepts,
-        `${companyName.trim()} Core Roadmap`
+        `${companyName.trim()} Core Roadmap`,
+        undefined,
+        resolvedEmail
       );
 
       for (const emp of employees) {
@@ -250,17 +272,21 @@ export default function OnboardingPage() {
 
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const resolvedEmail = (verifiedGoogleEmail || joinEmail).trim().toLowerCase();
+    const resolvedName = joinName.trim() || pendingGoogleUser?.displayName || resolvedEmail.split("@")[0] || "Team Member";
     if (!joinCode.trim()) return;
 
     setJoinError(null);
     setIsSubmitting(true);
 
     try {
-      if (!user && joinName.trim() && joinEmail.trim()) {
+      if (pendingGoogleUser && !user) {
+        await completeGoogleOnboarding(resolvedName, "member", "Engineering");
+      } else if (!user && resolvedName && resolvedEmail) {
         if (joinPassword.trim()) {
           const authRes = await signUpWithEmail(
-            joinName.trim(),
-            joinEmail.trim(),
+            resolvedName,
+            resolvedEmail,
             joinPassword.trim(),
             "Engineering",
             "member"
@@ -271,15 +297,15 @@ export default function OnboardingPage() {
             return;
           }
         } else {
-          signInWithCustomUser(joinName.trim(), joinEmail.trim(), "member");
+          signInWithCustomUser(resolvedName, resolvedEmail, "member");
         }
       }
 
-      const result = await joinWithCode(joinCode.trim());
+      const result = await joinWithCode(joinCode.trim(), resolvedEmail, resolvedName);
       setIsSubmitting(false);
 
       if (result.success) {
-        router.push("/");
+        window.location.href = "/";
       } else {
         setJoinError(result.message);
       }
@@ -393,6 +419,33 @@ export default function OnboardingPage() {
                   <span>Join with Team Code</span>
                 </button>
               </div>
+
+              {/* Verified Google Account Banner (when routed from Google Sign-In for a new user) */}
+              {pendingGoogleUser && (
+                <div className="mt-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 flex flex-wrap items-center justify-between gap-2 text-xs text-left">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                        Verified via Google: {pendingGoogleUser.email}
+                      </span>
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                        Complete sign-up below to create a fresh organization or join an existing team.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await clearPendingGoogleUser();
+                      router.push("/login");
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#151C2C] border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:border-[#756EF3] transition-colors cursor-pointer"
+                  >
+                    Switch Account
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* CREATE WORKSPACE FLOW */}
@@ -528,58 +581,82 @@ export default function OnboardingPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#E9F1FF] dark:border-[#1E293B]">
                         <div>
                           <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1.5">
-                            Primary Administrator Name
+                            Primary Administrator Name <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
+                            required
                             value={adminName}
                             onChange={(e) => setAdminName(e.target.value)}
-                            placeholder="Alex Vance"
+                            placeholder="Enter your full name"
                             className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1.5">
-                            Administrator Work Email
-                          </label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8]">
+                              Administrator Work Email <span className="text-red-500">*</span>
+                            </label>
+                            {isGoogleEmailLocked && (
+                              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                Verified via Google
+                              </span>
+                            )}
+                          </div>
                           <input
                             type="email"
-                            value={adminEmail}
-                            onChange={(e) => setAdminEmail(e.target.value)}
-                            placeholder="alex.vance@company.com"
-                            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
+                            required
+                            readOnly={isGoogleEmailLocked}
+                            disabled={isGoogleEmailLocked}
+                            value={isGoogleEmailLocked ? verifiedGoogleEmail : adminEmail}
+                            onChange={(e) => {
+                              if (!isGoogleEmailLocked) setAdminEmail(e.target.value);
+                            }}
+                            placeholder="name@company.com"
+                            className={`w-full px-3.5 py-2 rounded-xl border text-xs outline-none transition-all ${
+                              isGoogleEmailLocked
+                                ? "bg-slate-100 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
+                                : "bg-slate-50 dark:bg-[#0B0F19] border-[#E9F1FF] dark:border-[#1E293B] text-[#002055] dark:text-[#F8FAFC] focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20"
+                            }`}
                           />
+                          {isGoogleEmailLocked && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                              Locked to your authenticated Google account ({verifiedGoogleEmail}).
+                            </p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="pt-2">
-                        <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1.5">
-                          Administrator Account Password {!user && <span className="text-slate-400 font-normal">(Min 6 characters)</span>}
-                        </label>
-                        <div className="relative flex items-center">
-                          <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
-                          <input
-                            type={showAdminPassword ? "text" : "password"}
-                            value={adminPassword}
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            placeholder="••••••••"
-                            minLength={6}
-                            className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowAdminPassword(!showAdminPassword)}
-                            className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                            aria-label={showAdminPassword ? "Hide password" : "Show password"}
-                          >
-                            {showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
+                      {!isGoogleEmailLocked && (
+                        <div className="pt-2">
+                          <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1.5">
+                            Administrator Account Password {!user && <span className="text-slate-400 font-normal">(Min 6 characters)</span>}
+                          </label>
+                          <div className="relative flex items-center">
+                            <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
+                            <input
+                              type={showAdminPassword ? "text" : "password"}
+                              value={adminPassword}
+                              onChange={(e) => setAdminPassword(e.target.value)}
+                              placeholder="••••••••"
+                              minLength={6}
+                              className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3] focus:ring-2 focus:ring-[#756EF3]/20 transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowAdminPassword(!showAdminPassword)}
+                              className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                              aria-label={showAdminPassword ? "Hide password" : "Show password"}
+                            >
+                              {showAdminPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                          <span className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-1 block">
+                            Provisions your persistent administrator credentials in Firebase Authentication.
+                          </span>
                         </div>
-                        <span className="text-[11px] text-[#556070] dark:text-[#94A3B8] mt-1 block">
-                          Provisions your persistent administrator credentials in Firebase Authentication.
-                        </span>
-                      </div>
+                      )}
 
                       {createError && (
                         <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
@@ -591,8 +668,23 @@ export default function OnboardingPage() {
                       <div className="flex justify-end pt-4">
                         <button
                           type="button"
-                          disabled={!companyName.trim()}
-                          onClick={() => changeStep(2, "next")}
+                          onClick={() => {
+                            const activeEmail = (isGoogleEmailLocked ? verifiedGoogleEmail : adminEmail).trim();
+                            if (!companyName.trim()) {
+                              setCreateError("Please enter your Company / Organization Name.");
+                              return;
+                            }
+                            if (!adminName.trim()) {
+                              setCreateError("Please enter the Primary Administrator Name.");
+                              return;
+                            }
+                            if (!activeEmail || !activeEmail.includes("@")) {
+                              setCreateError("Please enter a valid Administrator Work Email.");
+                              return;
+                            }
+                            setCreateError(null);
+                            changeStep(2, "next");
+                          }}
                           className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
                         >
                           <span>Configure Departments &amp; Roles</span>
@@ -709,36 +801,42 @@ export default function OnboardingPage() {
                         </div>
 
                         <div className="divide-y divide-[#E9F1FF] dark:divide-[#1E293B] rounded-2xl bg-white dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] overflow-hidden">
-                          {employees.map((emp) => (
-                            <div key={emp.id} className="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center font-bold text-[11px]">
-                                  {emp.name.slice(0, 2).toUpperCase()}
-                                </div>
-                                <div>
-                                  <div className="font-bold text-[#002055] dark:text-[#F8FAFC]">{emp.name}</div>
-                                  <div className="text-[10px] text-[#556070] dark:text-[#94A3B8]">{emp.email}</div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-3">
-                                <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold text-[#556070] dark:text-[#94A3B8]">
-                                  {emp.department}
-                                </span>
-                                <span className="capitalize text-[10px] font-semibold text-[#756EF3] dark:text-[#818CF8]">
-                                  {emp.role}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveEmployee(emp.id)}
-                                  className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
-                                  title="Remove"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                          {employees.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-[#556070] dark:text-[#94A3B8]">
+                              No team members added yet. Add colleagues above or continue to launch your workspace.
                             </div>
-                          ))}
+                          ) : (
+                            employees.map((emp) => (
+                              <div key={emp.id} className="p-3 flex items-center justify-between gap-3 text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-7 h-7 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] flex items-center justify-center font-bold text-[11px]">
+                                    {emp.name.slice(0, 2).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-[#002055] dark:text-[#F8FAFC]">{emp.name}</div>
+                                    <div className="text-[10px] text-[#556070] dark:text-[#94A3B8]">{emp.email}</div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold text-[#556070] dark:text-[#94A3B8]">
+                                    {emp.department}
+                                  </span>
+                                  <span className="capitalize text-[10px] font-semibold text-[#756EF3] dark:text-[#818CF8]">
+                                    {emp.role}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveEmployee(emp.id)}
+                                    className="p-1 rounded text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                                    title="Remove"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
 
@@ -821,7 +919,9 @@ export default function OnboardingPage() {
                       <div className="pt-4 max-w-md mx-auto">
                         <button
                           type="button"
-                          onClick={() => router.push("/")}
+                          onClick={() => {
+                            window.location.href = "/";
+                          }}
                           className="w-full py-3.5 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white font-bold text-sm shadow-md shadow-[#756EF3]/25 hover:shadow-lg hover:shadow-[#756EF3]/35 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <span>Launch Executive Dashboard Now</span>
@@ -881,50 +981,72 @@ export default function OnboardingPage() {
                           required
                           value={joinName}
                           onChange={(e) => setJoinName(e.target.value)}
-                          placeholder="e.g. Sarah Connor"
+                          placeholder="Enter your full name"
                           className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3]"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                          Your Work Email Address <span className="text-red-500">*</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8]">
+                            Your Work Email Address <span className="text-red-500">*</span>
+                          </label>
+                          {isGoogleEmailLocked && (
+                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                              Verified via Google
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="email"
                           required
-                          value={joinEmail}
-                          onChange={(e) => setJoinEmail(e.target.value)}
-                          placeholder="e.g. sarah@company.com"
-                          className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3]"
+                          readOnly={isGoogleEmailLocked}
+                          disabled={isGoogleEmailLocked}
+                          value={isGoogleEmailLocked ? verifiedGoogleEmail : joinEmail}
+                          onChange={(e) => {
+                            if (!isGoogleEmailLocked) setJoinEmail(e.target.value);
+                          }}
+                          placeholder="name@company.com"
+                          className={`w-full px-3.5 py-2 rounded-xl border text-xs outline-none transition-all ${
+                            isGoogleEmailLocked
+                              ? "bg-slate-100 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
+                              : "bg-slate-50 dark:bg-[#0B0F19] border-[#E9F1FF] dark:border-[#1E293B] text-[#002055] dark:text-[#F8FAFC] focus:border-[#756EF3]"
+                          }`}
                         />
+                        {isGoogleEmailLocked && (
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                            Locked to your authenticated Google account ({verifiedGoogleEmail}).
+                          </p>
+                        )}
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
-                          Account Password <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative flex items-center">
-                          <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
-                          <input
-                            type={showJoinPassword ? "text" : "password"}
-                            required
-                            minLength={6}
-                            value={joinPassword}
-                            onChange={(e) => setJoinPassword(e.target.value)}
-                            placeholder="Min 6 characters"
-                            className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowJoinPassword(!showJoinPassword)}
-                            className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                            aria-label={showJoinPassword ? "Hide password" : "Show password"}
-                          >
-                            {showJoinPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          </button>
+                      {!isGoogleEmailLocked && (
+                        <div>
+                          <label className="block text-xs font-semibold text-[#556070] dark:text-[#94A3B8] mb-1">
+                            Account Password <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative flex items-center">
+                            <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" />
+                            <input
+                              type={showJoinPassword ? "text" : "password"}
+                              required
+                              minLength={6}
+                              value={joinPassword}
+                              onChange={(e) => setJoinPassword(e.target.value)}
+                              placeholder="Min 6 characters"
+                              className="w-full pl-9 pr-10 py-2 rounded-xl bg-slate-50 dark:bg-[#0B0F19] border border-[#E9F1FF] dark:border-[#1E293B] text-xs text-[#002055] dark:text-[#F8FAFC] focus:outline-none focus:border-[#756EF3]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowJoinPassword(!showJoinPassword)}
+                              className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                              aria-label={showJoinPassword ? "Hide password" : "Show password"}
+                            >
+                              {showJoinPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </>
                   )}
 

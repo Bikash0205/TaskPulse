@@ -30,7 +30,17 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signInWithCustomUser, isLiveFirebase } = useAuth();
+  const {
+    user,
+    pendingGoogleUser,
+    loading,
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithCustomUser,
+    clearPendingGoogleUser,
+    isLiveFirebase,
+  } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { joinWithCode } = useOrganization();
 
@@ -221,6 +231,10 @@ export default function LoginPage() {
     try {
       const res = await signInWithGoogle();
       if (res.success) {
+        if (res.needsOnboarding) {
+          router.push("/onboarding?google=1");
+          return;
+        }
         window.location.href = "/";
       } else {
         if (res.error && res.error !== "Sign-in popup was closed before completing.") {
@@ -452,6 +466,34 @@ export default function LoginPage() {
                   <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2 animate-shake">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                     <span>{error}</span>
+                  </div>
+                )}
+
+                {/* Pending Google Sign-Up Banner */}
+                {pendingGoogleUser && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 text-xs flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                        Verified Google Account: {pendingGoogleUser.email}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => clearPendingGoogleUser()}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white underline cursor-pointer"
+                      >
+                        Switch
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                      This Google account is not linked to an existing workspace yet. Complete organization sign-up to continue.
+                    </p>
+                    <Link
+                      href="/onboarding?google=1"
+                      className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors"
+                    >
+                      <span>Complete Sign Up with {pendingGoogleUser.email}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 )}
 

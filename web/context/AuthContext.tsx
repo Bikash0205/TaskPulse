@@ -10,7 +10,7 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs, query, where } from "firebase/firestore";
 import {
   auth,
   db,
@@ -36,13 +36,23 @@ export interface AppUser {
   assignedProjectIds?: string[];
 }
 
+export interface PendingGoogleProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string | null;
+}
+
 export interface AuthResult {
   success: boolean;
   error?: string;
+  needsOnboarding?: boolean;
+  googleProfile?: PendingGoogleProfile;
 }
 
 export interface AuthContextType {
   user: AppUser | null;
+  pendingGoogleUser: PendingGoogleProfile | null;
   loading: boolean;
   isLiveFirebase: boolean;
   teamRoles: Record<string, UserRole>;
@@ -56,6 +66,12 @@ export interface AuthContextType {
     initialRole?: UserRole
   ) => Promise<AuthResult>;
   signInWithCustomUser: (name: string, email: string, role?: UserRole) => void;
+  completeGoogleOnboarding: (
+    displayName: string,
+    role?: UserRole,
+    department?: Department
+  ) => Promise<AppUser | null>;
+  clearPendingGoogleUser: () => Promise<void>;
   loginDemoUser: () => void;
   signOutUser: () => Promise<void>;
   switchRole: (role: UserRole) => void;
@@ -74,8 +90,12 @@ const DEFAULT_TEAM_ROLES: Record<string, UserRole> = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+export const PENDING_GOOGLE_STORAGE_KEY = "taskpulse_pending_google_auth";
+export const REGISTERED_USERS_STORAGE_KEY = "taskpulse_registered_users";
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
+  const [pendingGoogleUser, setPendingGoogleUser] = useState<PendingGoogleProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [teamRoles, setTeamRoles] = useState<Record<string, UserRole>>(DEFAULT_TEAM_ROLES);
 
@@ -109,6 +129,168 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return currentRolesMap[normalized] || fallbackRole;
   };
 
+  // Persist a user email/profile as having completed registration or workspace onboarding
+  const recordRegisteredUser = (profile: {
+    email?: string | null;
+    uid?: string;
+    role?: UserRole;
+    department?: Department;
+    displayName?: string | null;
+    orgId?: string;
+  }) => {
+    if (typeof window === "undefined" || !profile.email) return;
+    const cleanEmail = profile.email.toLowerCase().trim();
+    try {
+      const raw = localStorage.getItem(REGISTERED_USERS_STORAGE_KEY);
+      const list: any[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex(
+        (item) => (typeof item === "string" ? item : item?.email)?.toLowerCase().trim() === cleanEmail
+      );
+      const entry = {
+        email: cleanEmail,
+        uid: profile.uid,
+        role: profile.role || "member",
+        department: profile.department || "Engineering",
+        displayName: profile.displayName || "",
+        orgId: profile.orgId,
+        registeredAt: new Date().toISOString(),
+      };
+      if (idx >= 0) {
+        list[idx] = { ...(typeof list[idx] === "object" ? list[idx] : {}), ...entry };
+      } else {
+        list.push(entry);
+      }
+      localStorage.setItem(REGISTERED_USERS_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.warn("Failed to record registered user:", e);
+    }
+  };
+
+  // Check whether an authenticated Google/email user already has a TaskPulse workspace account
+  const checkUserProvisioned = async (
+    email?: string | null,
+    uid?: string
+  ): Promise<{
+    provisioned: boolean;
+    role?: UserRole;
+    department?: Department;
+    displayName?: string;
+    orgId?: string;
+    assignedProjectIds?: string[];
+  }> => {
+    if (!email) return { provisioned: false };
+    const cleanEmail = email.toLowerCase().trim();
+
+    if (cleanEmail === PERMANENT_ADMIN_EMAIL.toLowerCase()) {
+      return { provisioned: true, role: "admin", department: "Engineering", orgId: "org-core" };
+    }
+
+    if (cleanEmail.endsWith("@taskpulse.internal")) {
+      return {
+        provisioned: true,
+        role: DEFAULT_TEAM_ROLES[cleanEmail] || "member",
+        department: "Engineering",
+        orgId: "org-core",
+      };
+    }
+
+    if (typeof window !== "undefined") {
+      try {
+        const regRaw = localStorage.getItem(REGISTERED_USERS_STORAGE_KEY);
+        if (regRaw) {
+          const regList: any[] = JSON.parse(regRaw);
+          const found = regList.find(
+            (item) => (typeof item === "string" ? item : item?.email)?.toLowerCase().trim() === cleanEmail
+          );
+          if (found) {
+            return {
+              provisioned: true,
+              role: (typeof found === "object" && found.role) || "member",
+              department: (typeof found === "object" && found.department) || "Engineering",
+              displayName: typeof found === "object" ? found.displayName : undefined,
+              orgId: typeof found === "object" ? found.orgId : undefined,
+            };
+          }
+        }
+
+        const orgsRaw = localStorage.getItem("taskpulse_organizations");
+        if (orgsRaw) {
+          const orgsList: any[] = JSON.parse(orgsRaw);
+          const ownedOrg = orgsList.find((o) => o?.adminEmail?.toLowerCase().trim() === cleanEmail);
+          if (ownedOrg) {
+            return { provisioned: true, role: "admin", department: "Engineering", orgId: ownedOrg.id };
+          }
+        }
+
+        const invitesRaw = localStorage.getItem("taskpulse_org_invites");
+        if (invitesRaw) {
+          const invitesList: any[] = JSON.parse(invitesRaw);
+          const matchedInvite = invitesList.find((inv) => inv?.email?.toLowerCase().trim() === cleanEmail);
+          if (matchedInvite) {
+            return {
+              provisioned: true,
+              role: matchedInvite.role || "member",
+              department: matchedInvite.department || "Engineering",
+              displayName: matchedInvite.name,
+              orgId: matchedInvite.orgId,
+              assignedProjectIds: matchedInvite.assignedProjectIds,
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("Local provisioning lookup warning:", e);
+      }
+    }
+
+    if (db && uid) {
+      try {
+        const userSnap = await getDoc(doc(db, "users", uid));
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data.onboardingComplete === true || Boolean(data.orgId)) {
+            return {
+              provisioned: true,
+              role: (data.role as UserRole) || "member",
+              department: (data.department as Department) || "Engineering",
+              displayName: data.displayName,
+              orgId: data.orgId,
+            };
+          }
+        }
+
+        const orgQ = query(collection(db, "organizations"), where("adminEmail", "==", cleanEmail));
+        const orgSnap = await getDocs(orgQ);
+        if (!orgSnap.empty) {
+          const orgData = orgSnap.docs[0].data();
+          return {
+            provisioned: true,
+            role: "admin",
+            department: "Engineering",
+            orgId: orgData.id || orgSnap.docs[0].id,
+          };
+        }
+
+        const invQ = query(collection(db, "invites"), where("email", "==", cleanEmail));
+        const invSnap = await getDocs(invQ);
+        if (!invSnap.empty) {
+          const invData = invSnap.docs[0].data();
+          return {
+            provisioned: true,
+            role: (invData.role as UserRole) || "member",
+            department: (invData.department as Department) || "Engineering",
+            displayName: invData.name,
+            orgId: invData.orgId,
+            assignedProjectIds: invData.assignedProjectIds,
+          };
+        }
+      } catch (err) {
+        console.warn("Firestore provisioning lookup notice:", err);
+      }
+    }
+
+    return { provisioned: false };
+  };
+
   useEffect(() => {
     let loadedRoles = DEFAULT_TEAM_ROLES;
     if (typeof window !== "undefined") {
@@ -121,6 +303,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (e) {
           console.warn("Failed to parse team roles:", e);
         }
+      }
+
+      const savedPending = localStorage.getItem(PENDING_GOOGLE_STORAGE_KEY);
+      if (savedPending) {
+        try {
+          const parsedPending = JSON.parse(savedPending);
+          if (parsedPending?.email) {
+            setPendingGoogleUser(parsedPending);
+          }
+        } catch {}
       }
     }
 
@@ -154,17 +346,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 2. Real Firebase Auth state synchronization
     if (isFirebaseConfigured && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        if (firebaseUser) {
+        const isSignedOut =
+          typeof window !== "undefined" && localStorage.getItem("taskpulse_signed_out") === "true";
+
+        if (firebaseUser && !isSignedOut) {
           const isPerm = isPermanentAdminEmail(firebaseUser.email);
+          const status = await checkUserProvisioned(firebaseUser.email, firebaseUser.uid);
+
+          if (!status.provisioned && !isPerm) {
+            // New Google account that has never created an account / workspace:
+            // Keep them in pendingGoogleUser so they complete Sign Up / Onboarding with locked email.
+            const pendingProfile: PendingGoogleProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              displayName: firebaseUser.displayName || "",
+              photoURL: firebaseUser.photoURL || null,
+            };
+            setPendingGoogleUser(pendingProfile);
+            setUser(null);
+            if (typeof window !== "undefined") {
+              localStorage.setItem(PENDING_GOOGLE_STORAGE_KEY, JSON.stringify(pendingProfile));
+              localStorage.removeItem("taskpulse_logged_user");
+            }
+            setLoading(false);
+            return;
+          }
+
           let role: UserRole = isPerm
             ? "admin"
-            : (firebaseUser.email ? (loadedRoles[firebaseUser.email.toLowerCase().trim()] || "member") : "member");
-          let department: Department = "Engineering";
+            : status.role || (firebaseUser.email ? (loadedRoles[firebaseUser.email.toLowerCase().trim()] || "member") : "member");
+          let department: Department = status.department || "Engineering";
 
           const loggedInUser: AppUser = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: firebaseUser.displayName || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
+            displayName: status.displayName || firebaseUser.displayName || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
             photoURL:
               firebaseUser.photoURL ||
               `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -173,17 +389,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: isPerm ? "admin" : role,
             department,
             isPermanentAdmin: isPerm,
+            orgId: status.orgId,
+            assignedProjectIds: status.assignedProjectIds,
           };
 
-          // Synchronize immediately to avoid navigation and render blocking
+          setPendingGoogleUser(null);
           setUser(loggedInUser);
           if (typeof window !== "undefined") {
             localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+            localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
             localStorage.removeItem("taskpulse_signed_out");
           }
           setLoading(false);
 
-          // Asynchronous non-blocking Firestore & claims sync
+          // Asynchronous non-blocking claims sync for provisioned users
           (async () => {
             try {
               let updated = false;
@@ -214,19 +433,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     loggedInUser.displayName = data.displayName;
                     updated = true;
                   }
-                } else {
-                  await setDoc(
-                    userRef,
-                    {
-                      uid: firebaseUser.uid,
-                      email: firebaseUser.email,
-                      displayName: firebaseUser.displayName || "Workspace Member",
-                      role: isPerm ? "admin" : role,
-                      department,
-                      updatedAt: new Date().toISOString(),
-                    },
-                    { merge: true }
-                  );
+                  if (data.orgId && data.orgId !== loggedInUser.orgId) {
+                    loggedInUser.orgId = data.orgId;
+                    updated = true;
+                  }
                 }
               }
 
@@ -276,48 +486,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cred = await signInWithPopup(auth, googleProvider);
       if (cred.user) {
         const isPerm = isPermanentAdminEmail(cred.user.email);
+        const status = await checkUserProvisioned(cred.user.email, cred.user.uid);
+
+        if (!status.provisioned && !isPerm) {
+          // Brand-new Google user who has never signed up / onboarded:
+          // Do not log into a dummy dashboard — send them to Sign Up / Onboarding with email locked.
+          const googleProfile: PendingGoogleProfile = {
+            uid: cred.user.uid,
+            email: cred.user.email || "",
+            displayName: cred.user.displayName || "",
+            photoURL: cred.user.photoURL || null,
+          };
+          setPendingGoogleUser(googleProfile);
+          setUser(null);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(PENDING_GOOGLE_STORAGE_KEY, JSON.stringify(googleProfile));
+            localStorage.removeItem("taskpulse_logged_user");
+            localStorage.removeItem("taskpulse_signed_out");
+          }
+          return { success: true, needsOnboarding: true, googleProfile };
+        }
+
         const initialRole: UserRole = isPerm
           ? "admin"
-          : (teamRoles[cred.user.email?.toLowerCase().trim() || ""] || "member");
+          : status.role || (teamRoles[cred.user.email?.toLowerCase().trim() || ""] || "member");
 
         const loggedInUser: AppUser = {
           uid: cred.user.uid,
           email: cred.user.email,
-          displayName: cred.user.displayName || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
+          displayName: status.displayName || cred.user.displayName || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
           photoURL:
             cred.user.photoURL ||
             `https://ui-avatars.com/api/?name=${encodeURIComponent(
               cred.user.displayName || "User"
             )}&background=${isPerm ? "7C3AED" : "4285F4"}&color=fff`,
           role: initialRole,
-          department: "Engineering",
+          department: status.department || "Engineering",
           isPermanentAdmin: isPerm,
+          orgId: status.orgId,
+          assignedProjectIds: status.assignedProjectIds,
         };
 
+        recordRegisteredUser(loggedInUser);
+        setPendingGoogleUser(null);
         setUser(loggedInUser);
         if (typeof window !== "undefined") {
           localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+          localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
           localStorage.removeItem("taskpulse_signed_out");
         }
 
         if (db) {
-          // Asynchronously upsert profile to Firestore without blocking return
           setDoc(
             doc(db, "users", cred.user.uid),
             {
               uid: cred.user.uid,
               email: cred.user.email,
-              displayName: cred.user.displayName,
+              displayName: loggedInUser.displayName,
               photoURL: cred.user.photoURL,
               role: initialRole,
-              department: "Engineering",
+              department: loggedInUser.department,
+              orgId: status.orgId || null,
+              onboardingComplete: true,
               lastLoginAt: new Date().toISOString(),
             },
             { merge: true }
           ).catch((err) => console.warn("Background Firestore user sync:", err));
         }
 
-        return { success: true };
+        return { success: true, needsOnboarding: false };
       }
       return { success: true };
     } catch (error: any) {
@@ -377,9 +614,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isPermanentAdmin: isPerm,
           };
 
+          recordRegisteredUser(loggedInUser);
+          setPendingGoogleUser(null);
           setUser(loggedInUser);
           if (typeof window !== "undefined") {
             localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+            localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
             localStorage.removeItem("taskpulse_signed_out");
           }
         }
@@ -451,11 +691,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isPermanentAdmin: isPerm,
           };
 
+          recordRegisteredUser(loggedInUser);
           setUser(loggedInUser);
           if (typeof window !== "undefined") {
             localStorage.setItem("taskpulse_logged_user", JSON.stringify(loggedInUser));
+            localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
             localStorage.removeItem("taskpulse_signed_out");
           }
+          setPendingGoogleUser(null);
 
           if (db) {
             setDoc(
@@ -466,6 +709,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 displayName: cleanName,
                 role: targetRole,
                 department,
+                onboardingComplete: true,
                 createdAt: new Date().toISOString(),
               },
               { merge: true }
@@ -493,14 +737,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithCustomUser = (name: string, email: string, roleOverride?: UserRole) => {
-    const isPerm = isPermanentAdminEmail(email);
+    const cleanEmail = (email || "user@workspace.internal").toLowerCase().trim();
+    const isPerm = isPermanentAdminEmail(cleanEmail);
     const resolvedRole: UserRole = isPerm
       ? "admin"
-      : roleOverride || teamRoles[email.toLowerCase().trim()] || "member";
+      : roleOverride || teamRoles[cleanEmail] || "member";
 
     const customUser: AppUser = {
       uid: isPerm ? "super-admin-zevon" : `user-${Date.now()}`,
-      email: email || "user@workspace.internal",
+      email: cleanEmail,
       displayName: name || (isPerm ? "Zevon (Super Admin)" : "Workspace Member"),
       photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(
         name || (isPerm ? "Zevon" : "User")
@@ -510,13 +755,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isPermanentAdmin: isPerm,
     };
 
+    recordRegisteredUser(customUser);
+    setPendingGoogleUser(null);
+
     if (typeof window !== "undefined") {
       localStorage.setItem("taskpulse_logged_user", JSON.stringify(customUser));
+      localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
       localStorage.removeItem("taskpulse_signed_out");
       if (isPerm || roleOverride) {
         const updatedRoles = {
           ...teamRoles,
-          [email.toLowerCase().trim()]: isPerm ? ("admin" as UserRole) : resolvedRole,
+          [cleanEmail]: isPerm ? ("admin" as UserRole) : resolvedRole,
           [PERMANENT_ADMIN_EMAIL]: "admin" as UserRole,
         };
         setTeamRoles(updatedRoles);
@@ -524,6 +773,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     setUser(customUser);
+  };
+
+  const completeGoogleOnboarding = async (
+    displayName: string,
+    role: UserRole = "admin",
+    department: Department = "Engineering"
+  ): Promise<AppUser | null> => {
+    let activePending = pendingGoogleUser;
+    if (!activePending && typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(PENDING_GOOGLE_STORAGE_KEY);
+        if (saved) activePending = JSON.parse(saved);
+      } catch {}
+    }
+
+    const firebaseCurr = auth?.currentUser;
+    const email = activePending?.email || firebaseCurr?.email || user?.email;
+    if (!email) return null;
+
+    const uid = activePending?.uid || firebaseCurr?.uid || user?.uid || `g-${Date.now()}`;
+    const isPerm = isPermanentAdminEmail(email);
+    const resolvedRole: UserRole = isPerm ? "admin" : role;
+    const cleanName = displayName.trim() || activePending?.displayName || firebaseCurr?.displayName || email.split("@")[0];
+
+    const completedUser: AppUser = {
+      uid,
+      email,
+      displayName: cleanName,
+      photoURL:
+        activePending?.photoURL ||
+        firebaseCurr?.photoURL ||
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=${
+          isPerm ? "7C3AED" : "4285F4"
+        }&color=fff`,
+      role: resolvedRole,
+      department,
+      isPermanentAdmin: isPerm,
+    };
+
+    recordRegisteredUser(completedUser);
+    setPendingGoogleUser(null);
+    setUser(completedUser);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("taskpulse_logged_user", JSON.stringify(completedUser));
+      localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
+      localStorage.removeItem("taskpulse_signed_out");
+      const updatedRoles = {
+        ...teamRoles,
+        [email.toLowerCase().trim()]: resolvedRole,
+        [PERMANENT_ADMIN_EMAIL]: "admin" as UserRole,
+      };
+      setTeamRoles(updatedRoles);
+      localStorage.setItem("taskpulse_team_roles", JSON.stringify(updatedRoles));
+    }
+
+    if (firebaseCurr && cleanName && firebaseCurr.displayName !== cleanName) {
+      updateProfile(firebaseCurr, { displayName: cleanName }).catch(() => {});
+    }
+
+    if (db) {
+      try {
+        await setDoc(
+          doc(db, "users", uid),
+          {
+            uid,
+            email: email.toLowerCase().trim(),
+            displayName: cleanName,
+            photoURL: completedUser.photoURL,
+            role: resolvedRole,
+            department,
+            onboardingComplete: true,
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+      } catch (e) {
+        console.warn("Firestore onboarding profile save warning:", e);
+      }
+    }
+
+    return completedUser;
+  };
+
+  const clearPendingGoogleUser = async () => {
+    setPendingGoogleUser(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
+    }
+    if (isFirebaseConfigured && auth && !user) {
+      try {
+        await signOut(auth);
+      } catch {}
+    }
   };
 
   const loginDemoUser = () => {
@@ -544,8 +888,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     if (typeof window !== "undefined") {
       localStorage.removeItem("taskpulse_logged_user");
+      localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
       localStorage.setItem("taskpulse_signed_out", "true");
     }
+    setPendingGoogleUser(null);
     setUser(null);
   };
 
@@ -627,6 +973,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user: effectiveUser,
+        pendingGoogleUser,
         loading,
         isLiveFirebase: isFirebaseConfigured,
         teamRoles,
@@ -634,6 +981,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithEmail,
         signUpWithEmail,
         signInWithCustomUser,
+        completeGoogleOnboarding,
+        clearPendingGoogleUser,
         loginDemoUser,
         signOutUser,
         switchRole,

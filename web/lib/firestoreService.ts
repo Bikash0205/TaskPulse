@@ -13,7 +13,8 @@ import { mockTasks, mockColleagues } from "@shared/mockData";
 
 export const subscribeTasks = (
   onData: (tasks: TaskPulseItem[]) => void,
-  fallbackData: TaskPulseItem[]
+  fallbackData: TaskPulseItem[],
+  orgId?: string
 ) => {
   if (!isFirebaseConfigured || !db) {
     onData(fallbackData);
@@ -32,8 +33,15 @@ export const subscribeTasks = (
         const items = snapshot.docs.map((d) => ({
           id: d.id,
           ...d.data(),
-        })) as TaskPulseItem[];
-        onData(items);
+        })) as (TaskPulseItem & { orgId?: string })[];
+
+        if (orgId && orgId !== "org-core") {
+          const scopedItems = items.filter((item) => item.orgId === orgId);
+          onData(scopedItems.length > 0 ? scopedItems : fallbackData);
+        } else {
+          const coreItems = items.filter((item) => !item.orgId || item.orgId === "org-core");
+          onData(coreItems.length > 0 ? coreItems : fallbackData);
+        }
       }
     },
     (err) => {

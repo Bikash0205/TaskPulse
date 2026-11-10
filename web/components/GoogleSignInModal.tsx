@@ -40,6 +40,10 @@ export const GoogleSignInModal: React.FC<{ isOpen: boolean; onClose?: () => void
       const res = await signInWithGoogle();
       if (res.success) {
         onClose?.();
+        if (res.needsOnboarding) {
+          window.location.href = "/onboarding?google=1";
+          return;
+        }
         window.location.href = "/";
       } else if (res.error && res.error !== "Sign-in popup was closed before completing.") {
         setError(res.error);

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { MobileDeviceFrame } from "@/components/MobileDeviceFrame";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
+import { useOrganization } from "@/context/OrganizationContext";
 import { Header } from "@/components/Header";
 import {
   subscribeTasks,
@@ -13,53 +14,85 @@ import { ArrowLeft, Smartphone, Monitor } from "lucide-react";
 
 export default function MobileAppDedicatedPage() {
   const { user } = useAuth();
+  const { currentOrg, orgLoading } = useOrganization();
   const [tasks, setTasks] = useState<TaskPulseItem[]>([]);
   const [colleagues, setColleagues] = useState<ColleagueProfile[]>([]);
   const [pulseFeed, setPulseFeed] = useState<ColleaguePulseFeedItem[]>([]);
   const [isStandalone, setIsStandalone] = useState<boolean>(true);
 
+  const isCoreDemoAccount =
+    Boolean(user) &&
+    (user!.email?.toLowerCase().trim() === PERMANENT_ADMIN_EMAIL.toLowerCase() ||
+      Boolean(user!.email?.toLowerCase().endsWith("@taskpulse.internal")) ||
+      currentOrg?.id === "org-core");
+
+  const orgScope =
+    currentOrg?.id && currentOrg.id !== "org-core"
+      ? currentOrg.id
+      : !isCoreDemoAccount && user?.email
+      ? user.email.toLowerCase().trim().replace(/[^a-z0-9]/g, "_")
+      : null;
+
+  const tasksStorageKey = orgScope ? `taskpulse_custom_tasks_${orgScope}` : "taskpulse_custom_tasks";
+
   useEffect(() => {
+    if (!user || orgLoading) return;
+    let cancelled = false;
     let initialTasks: TaskPulseItem[] = [];
     if (typeof window !== "undefined") {
-      const savedTasks = localStorage.getItem("taskpulse_custom_tasks");
+      const savedTasks = localStorage.getItem(tasksStorageKey);
       if (savedTasks) {
         try {
           initialTasks = JSON.parse(savedTasks);
           setTasks(initialTasks);
           syncColleagueCounts(initialTasks);
         } catch (e) {}
+      } else if (!isCoreDemoAccount) {
+        setTasks([]);
+        syncColleagueCounts([]);
       }
     }
 
-    fetch("/api/tasks")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        const list = Array.isArray(data) ? data : data?.tasks;
-        if (list && list.length > 0) {
-          setTasks((prev) => {
-            const remoteIds = new Set(list.map((t: any) => t.id));
-            const localOnly = prev.filter((t) => !remoteIds.has(t.id));
-            const merged = [...list, ...localOnly];
-            syncColleagueCounts(merged);
-            return merged;
-          });
-        }
-      })
-      .catch(() => {});
+    if (isCoreDemoAccount) {
+      fetch("/api/tasks")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (cancelled) return;
+          const list = Array.isArray(data) ? data : data?.tasks;
+          if (list && list.length > 0) {
+            setTasks((prev) => {
+              const remoteIds = new Set(list.map((t: any) => t.id));
+              const localOnly = prev.filter((t) => !remoteIds.has(t.id));
+              const merged = [...list, ...localOnly];
+              syncColleagueCounts(merged);
+              return merged;
+            });
+          }
+        })
+        .catch(() => {});
+    }
 
-    const unsubscribe = subscribeTasks((remoteTasks) => {
-      setTasks(remoteTasks);
-      syncColleagueCounts(remoteTasks);
-    }, initialTasks);
+    const unsubscribe = subscribeTasks(
+      (remoteTasks) => {
+        if (cancelled) return;
+        setTasks(remoteTasks);
+        syncColleagueCounts(remoteTasks);
+      },
+      initialTasks,
+      orgScope || (isCoreDemoAccount ? "org-core" : "isolated-empty")
+    );
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [user?.email, currentOrg?.id, orgLoading]);
 
   const persistTasks = (newTasks: TaskPulseItem[]) => {
     setTasks(newTasks);
     syncColleagueCounts(newTasks);
     if (typeof window !== "undefined") {
-      localStorage.setItem("taskpulse_custom_tasks", JSON.stringify(newTasks));
+      localStorage.setItem(tasksStorageKey, JSON.stringify(newTasks));
     }
   };
 

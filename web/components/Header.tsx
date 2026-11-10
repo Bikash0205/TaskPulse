@@ -45,6 +45,10 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
   const handleGoogleDirectSignIn = async () => {
     try {
       const res = await signInWithGoogle();
+      if (res.success && res.needsOnboarding) {
+        window.location.href = "/onboarding?google=1";
+        return;
+      }
       if (!res.success && res.error && res.error !== "Sign-in popup was closed before completing.") {
         setIsLoginModalOpen(true);
       }

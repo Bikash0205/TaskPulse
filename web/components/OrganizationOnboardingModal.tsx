@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
@@ -48,7 +48,7 @@ const DEFAULT_POPULAR_DEPTS = [
 ];
 
 export const OrganizationOnboardingModal: React.FC = () => {
-  const { user, signOutUser, signInWithCustomUser } = useAuth();
+  const { user, pendingGoogleUser, signOutUser, signInWithCustomUser, completeGoogleOnboarding } = useAuth();
   const {
     isOnboardingOpen,
     setIsOnboardingOpen,
@@ -57,45 +57,27 @@ export const OrganizationOnboardingModal: React.FC = () => {
     inviteTeammate,
   } = useOrganization();
 
+  const verifiedGoogleEmail =
+    pendingGoogleUser?.email ||
+    (user?.email && !user.email.endsWith("@taskpulse.internal") ? user.email : "");
+  const isGoogleEmailLocked = Boolean(verifiedGoogleEmail);
+
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Step 1: Admin & Organization Profile (Basic Company Information Only - No department)
-  const [adminName, setAdminName] = useState(user?.displayName || "Alex Vance");
-  const [adminEmail, setAdminEmail] = useState(user?.email || "");
+  // Step 1: Admin & Organization Profile (Empty by default unless pre-filled from verified Google auth)
+  const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [teamSize, setTeamSize] = useState("11-50");
   const [slug, setSlug] = useState("");
 
-  // Step 2: Employee Roles & Custom Departments
-  const [employees, setEmployees] = useState<EmployeeEntry[]>([
-    {
-      id: "e1",
-      name: "Marcus Lee",
-      email: "marcus@company.com",
-      role: "manager",
-      department: "Platform Engineering",
-    },
-    {
-      id: "e2",
-      name: "Elena Rostova",
-      email: "elena@company.com",
-      role: "member",
-      department: "Product Design",
-    },
-    {
-      id: "e3",
-      name: "David Kim",
-      email: "david@company.com",
-      role: "viewer",
-      department: "Customer Operations",
-    },
-  ]);
+  // Step 2: Employee Roles & Custom Departments (Empty by default)
+  const [employees, setEmployees] = useState<EmployeeEntry[]>([]);
 
   const [newEmpName, setNewEmpName] = useState("");
   const [newEmpEmail, setNewEmpEmail] = useState("");
   const [newEmpRole, setNewEmpRole] = useState<UserRole>("member");
-  // Department name can be custom, and it's NOT preselected
   const [newEmpDept, setNewEmpDept] = useState<string>("");
 
   // Step 3: Link copy feedback
@@ -105,6 +87,14 @@ export const OrganizationOnboardingModal: React.FC = () => {
   // Join Form
   const [inviteCodeInput, setInviteCodeInput] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const active = pendingGoogleUser || (user?.email && !user.email.endsWith("@taskpulse.internal") ? user : null);
+    if (active) {
+      if (active.email) setAdminEmail(active.email);
+      if (active.displayName) setAdminName((prev) => prev || active.displayName || "");
+    }
+  }, [pendingGoogleUser, user, isOnboardingOpen]);
 
   // Dynamic suggestions combining existing departments + standard suggestions
   const suggestedChips = useMemo(() => {
@@ -127,20 +117,20 @@ export const OrganizationOnboardingModal: React.FC = () => {
     setEmployees((prev) => [...prev, entry]);
     setNewEmpName("");
     setNewEmpEmail("");
-    // Reset back to unselected/blank so the next user can type or choose their custom department
     setNewEmpDept("");
   };
 
   const handleLaunchWorkspace = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyName.trim()) return;
+    const resolvedEmail = (verifiedGoogleEmail || adminEmail).trim().toLowerCase();
+    const resolvedName = adminName.trim() || pendingGoogleUser?.displayName || "Administrator";
+    if (!companyName.trim() || !resolvedEmail) return;
 
     setIsSubmitting(true);
-    if (!user) {
-      signInWithCustomUser(
-        adminName.trim() || "Administrator",
-        adminEmail.trim() || "admin@company.com"
-      );
+    if (pendingGoogleUser && !user) {
+      await completeGoogleOnboarding(resolvedName, "admin", "Engineering");
+    } else if (!user) {
+      signInWithCustomUser(resolvedName, resolvedEmail, "admin");
     }
 
     // Extract all unique custom departments entered for employees
@@ -155,7 +145,9 @@ export const OrganizationOnboardingModal: React.FC = () => {
       const { org, initialProject: proj } = await onboardCompany(
         companyName.trim(),
         customDepts,
-        `${companyName.trim()} Core Roadmap`
+        `${companyName.trim()} Core Roadmap`,
+        undefined,
+        resolvedEmail
       );
 
       // Register all invited teammates
@@ -174,7 +166,12 @@ export const OrganizationOnboardingModal: React.FC = () => {
     setJoinError(null);
     setIsSubmitting(true);
     try {
-      const result = await joinWithCode(inviteCodeInput.trim());
+      const resolvedEmail = (verifiedGoogleEmail || adminEmail).trim().toLowerCase();
+      const resolvedName = adminName.trim() || pendingGoogleUser?.displayName || "Member";
+      if (pendingGoogleUser && !user) {
+        await completeGoogleOnboarding(resolvedName, "member", "Engineering");
+      }
+      const result = await joinWithCode(inviteCodeInput.trim(), resolvedEmail, resolvedName);
       if (!result.success) {
         setJoinError(result.message);
       }
@@ -369,7 +366,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         required
                         value={adminName}
                         onChange={(e) => setAdminName(e.target.value)}
-                        placeholder="e.g. Alex Vance"
+                        placeholder="Enter your full name"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                       />
                     </div>
@@ -379,7 +376,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                           Admin Work Email <span className="text-red-500">*</span>
                         </label>
-                        {user?.email && (
+                        {isGoogleEmailLocked && (
                           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                             Verified via Google
                           </span>
@@ -388,20 +385,22 @@ export const OrganizationOnboardingModal: React.FC = () => {
                       <input
                         type="email"
                         required
-                        readOnly={Boolean(user?.email)}
-                        disabled={Boolean(user?.email)}
-                        value={user?.email || adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        placeholder="e.g. alex.vance@company.com"
+                        readOnly={isGoogleEmailLocked}
+                        disabled={isGoogleEmailLocked}
+                        value={isGoogleEmailLocked ? verifiedGoogleEmail : adminEmail}
+                        onChange={(e) => {
+                          if (!isGoogleEmailLocked) setAdminEmail(e.target.value);
+                        }}
+                        placeholder="name@company.com"
                         className={`w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all ${
-                          user?.email
+                          isGoogleEmailLocked
                             ? "border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 cursor-not-allowed select-none font-medium"
                             : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                         }`}
                       />
-                      {user?.email && (
+                      {isGoogleEmailLocked && (
                         <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                          Locked to your authenticated Google account ({user.email}).
+                          Locked to your authenticated Google account ({verifiedGoogleEmail}).
                         </p>
                       )}
                     </div>
@@ -622,48 +621,54 @@ export const OrganizationOnboardingModal: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-                        {employees.map((emp) => (
-                          <div
-                            key={emp.id}
-                            className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs"
-                          >
-                            <div className="min-w-0 pr-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-semibold text-slate-900 dark:text-slate-100">
-                                  {emp.name}
-                                </span>
-                                <span
-                                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                    emp.role === "manager"
-                                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                                      : emp.role === "member"
-                                      ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300"
-                                      : "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300"
-                                  }`}
-                                >
-                                  {emp.role}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700">
-                                  {emp.department}
+                        {employees.length === 0 ? (
+                          <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+                            No colleagues added yet. Use the form above or continue to initialize.
+                          </div>
+                        ) : (
+                          employees.map((emp) => (
+                            <div
+                              key={emp.id}
+                              className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                    {emp.name}
+                                  </span>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                      emp.role === "manager"
+                                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
+                                        : emp.role === "member"
+                                        ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300"
+                                        : "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300"
+                                    }`}
+                                  >
+                                    {emp.role}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700">
+                                    {emp.department}
+                                  </span>
+                                </div>
+                                <span className="text-[11px] text-slate-400 truncate block mt-0.5">
+                                  {emp.email}
                                 </span>
                               </div>
-                              <span className="text-[11px] text-slate-400 truncate block mt-0.5">
-                                {emp.email}
-                              </span>
-                            </div>
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setEmployees((prev) => prev.filter((e) => e.id !== emp.id))
-                              }
-                              className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer shrink-0"
-                              title="Remove member"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEmployees((prev) => prev.filter((e) => e.id !== emp.id))
+                                }
+                                className="text-slate-400 hover:text-red-500 p-1 transition-colors cursor-pointer shrink-0"
+                                title="Remove member"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
 
