@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { BootSplash } from "@/components/BootSplash";
 import { Header } from "@/components/Header";
 import { ManagerDispatcher } from "@/components/ManagerDispatcher";
@@ -23,6 +24,7 @@ import { mockColleagues, mockTasks, mockPulseFeed, mockProjects } from "@shared/
 import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole, Project, SubTask } from "@shared/types";
 
 export default function TaskPulseWorkspacePage() {
+  const router = useRouter();
   const { user, loading, teamRoles, loginDemoUser, signInWithCustomUser } = useAuth();
   const {
     currentOrg,

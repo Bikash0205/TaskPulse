@@ -1,13 +1,20 @@
 import React, { useEffect, useRef } from "react";
 import {
   View,
+  TouchableOpacity,
   Pressable,
   Animated,
   Easing,
   StyleSheet,
-  Vibration,
+  Image,
   GestureResponderEvent,
 } from "react-native";
+import {
+  ICON_SUN_ACTIVE,
+  ICON_SUN_MUTED,
+  ICON_MOON_ACTIVE,
+  ICON_MOON_MUTED,
+} from "../assets/themeIconsBase64";
 
 interface ThemeToggleBarProps {
   isDarkMode: boolean;
@@ -22,48 +29,75 @@ export const ThemeToggleBar: React.FC<ThemeToggleBarProps> = ({
   onSelectLight,
   onSelectDark,
 }) => {
-  // Slide animation value: 0 for Dark (left), 1 for Light (right)
-  const slideAnim = useRef(new Animated.Value(isDarkMode ? 0 : 1)).current;
+  // Slide animation value: 0 for Light (left), 1 for Dark (right)
+  const slideAnim = useRef(new Animated.Value(isDarkMode ? 1 : 0)).current;
 
-  // Knob glow pulse & scale animation
-  const glowAnim = useRef(new Animated.Value(1)).current;
+  // Icon animation values
+  const sunRotateAnim = useRef(new Animated.Value(0)).current;
+  const sunScaleAnim = useRef(new Animated.Value(1)).current;
+  const moonRotateAnim = useRef(new Animated.Value(0)).current;
+  const moonScaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Track press scale animation for immediate tactile feedback
   const pressScaleAnim = useRef(new Animated.Value(1)).current;
 
-  // Particle rotation and pulse
-  const particleSpin = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    // 60 FPS Native Spring Transition
+    // Animate slider transition
     Animated.spring(slideAnim, {
-      toValue: isDarkMode ? 0 : 1,
-      friction: 6,
-      tension: 65,
+      toValue: isDarkMode ? 1 : 0,
+      friction: 7,
+      tension: 50,
       useNativeDriver: true,
     }).start();
 
-    // Pulse specular glow on switch
-    Animated.sequence([
-      Animated.timing(glowAnim, {
-        toValue: 1.25,
-        duration: 180,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.spring(glowAnim, {
-        toValue: 1,
-        friction: 4,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Spin particle cluster slightly
-    particleSpin.setValue(0);
-    Animated.timing(particleSpin, {
-      toValue: 1,
-      duration: 350,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
+    // Trigger icon dynamics
+    if (isDarkMode) {
+      // Moon activates
+      moonRotateAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(moonRotateAnim, {
+          toValue: 1,
+          duration: 350,
+          easing: Easing.out(Easing.back(1.5)),
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(moonScaleAnim, {
+            toValue: 1.25,
+            duration: 160,
+            useNativeDriver: true,
+          }),
+          Animated.spring(moonScaleAnim, {
+            toValue: 1,
+            friction: 4,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    } else {
+      // Sun activates
+      sunRotateAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(sunRotateAnim, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(sunScaleAnim, {
+            toValue: 1.25,
+            duration: 160,
+            useNativeDriver: true,
+          }),
+          Animated.spring(sunScaleAnim, {
+            toValue: 1,
+            friction: 4,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    }
   }, [isDarkMode]);
 
   const handlePressIn = () => {
@@ -83,40 +117,42 @@ export const ThemeToggleBar: React.FC<ThemeToggleBarProps> = ({
     }).start();
   };
 
+  // Robust tap handler: detects which half was clicked or toggles reliably
   const handleTrackPress = (event: GestureResponderEvent) => {
-    try {
-      Vibration.vibrate(12);
-    } catch (e) {}
-
     const { locationX } = event.nativeEvent;
     const isLeftSide = locationX < 38; // Capsule width is 76
-
     if (isLeftSide) {
-      if (!isDarkMode) {
-        if (onSelectDark) onSelectDark();
-        else onToggle();
-      } else {
-        onToggle();
-      }
-    } else {
       if (isDarkMode) {
         if (onSelectLight) onSelectLight();
         else onToggle();
       } else {
+        // If already light and tapped, toggle to dark!
+        onToggle();
+      }
+    } else {
+      if (!isDarkMode) {
+        if (onSelectDark) onSelectDark();
+        else onToggle();
+      } else {
+        // If already dark and tapped, toggle to light!
         onToggle();
       }
     }
   };
 
-  // Slide interpolations: x=2 in Dark (left), x=38 in Light (right)
   const slideInterpolation = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [2, 38],
+    outputRange: [2, 38], // Translates knob from x=2 to x=38
   });
 
-  const particleRotate = particleSpin.interpolate({
+  const sunSpin = sunRotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: isDarkMode ? ["-20deg", "0deg"] : ["20deg", "0deg"],
+    outputRange: ["0deg", "180deg"],
+  });
+
+  const moonTilt = moonRotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["-20deg", "0deg"],
   });
 
   return (
@@ -135,75 +171,55 @@ export const ThemeToggleBar: React.FC<ThemeToggleBarProps> = ({
           { transform: [{ scale: pressScaleAnim }] },
         ]}
       >
-        {/* Subtle Ambient Track Glow */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.trackGlow,
-            isDarkMode ? styles.trackGlowDark : styles.trackGlowLight,
-          ]}
-        />
-
-        {/* 1. Fluid Sliding Squircle Thumb */}
+        {/* Sliding Active Indicator Knob - pointerEvents none so it never blocks clicks */}
         <Animated.View
           pointerEvents="none"
           style={[
             styles.activeKnob,
             isDarkMode ? styles.activeKnobDark : styles.activeKnobLight,
             {
-              transform: [
-                { translateX: slideInterpolation },
-                { scale: glowAnim },
-              ],
+              transform: [{ translateX: slideInterpolation }],
             },
           ]}
-        >
-          {/* Specular Rim Light Arc (Exact replica of video) */}
-          <View
-            style={[
-              styles.specularRim,
-              isDarkMode ? styles.specularRimDark : styles.specularRimLight,
-            ]}
-          />
+        />
 
-          {/* 2. Pixel Particle Glyph Cluster */}
+        {/* Light Mode (Sun) Slot */}
+        <View pointerEvents="none" style={styles.slotButton}>
           <Animated.View
-            style={[
-              styles.particleCenter,
-              { transform: [{ rotate: particleRotate }] },
-            ]}
+            style={{
+              transform: [
+                { rotate: !isDarkMode ? sunSpin : "0deg" },
+                { scale: !isDarkMode ? sunScaleAnim : 1 },
+              ],
+              opacity: !isDarkMode ? 1 : 0.65,
+            }}
           >
-            {isDarkMode ? (
-              // Digital Pixel Moon Matrix
-              <View style={styles.pixelMatrixBox}>
-                <View style={[styles.pixelDot, { backgroundColor: "#FFFFFF", top: 1, left: 6 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#C7D2FE", top: 3, left: 4 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#818CF8", top: 6, left: 3 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#C7D2FE", top: 9, left: 4 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#FFFFFF", top: 11, left: 6 }]} />
-                {/* Secondary Star Pixels */}
-                <View style={[styles.microStar, { top: 4, left: 10, backgroundColor: "#93C5FD" }]} />
-                <View style={[styles.microStar, { top: 8, left: 9, backgroundColor: "#C4B5FD" }]} />
-              </View>
-            ) : (
-              // Digital Radiant Sun Burst Matrix
-              <View style={styles.pixelMatrixBox}>
-                {/* Center Sun Core Block */}
-                <View style={styles.sunCoreBlock} />
-                {/* Cardinal Ray Pixels */}
-                <View style={[styles.pixelDot, { backgroundColor: "#D97706", top: 0, left: 6.5 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#D97706", top: 12, left: 6.5 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#D97706", top: 6, left: 0 }]} />
-                <View style={[styles.pixelDot, { backgroundColor: "#D97706", top: 6, left: 13 }]} />
-                {/* Diagonal Ray Pixels */}
-                <View style={[styles.microStar, { top: 2.5, left: 2.5, backgroundColor: "#B45309" }]} />
-                <View style={[styles.microStar, { top: 2.5, left: 10.5, backgroundColor: "#B45309" }]} />
-                <View style={[styles.microStar, { top: 9.5, left: 2.5, backgroundColor: "#B45309" }]} />
-                <View style={[styles.microStar, { top: 9.5, left: 10.5, backgroundColor: "#B45309" }]} />
-              </View>
-            )}
+            <Image
+              source={{ uri: !isDarkMode ? ICON_SUN_ACTIVE : ICON_SUN_MUTED }}
+              style={styles.iconImage}
+              resizeMode="contain"
+            />
           </Animated.View>
-        </Animated.View>
+        </View>
+
+        {/* Dark Mode (Moon) Slot */}
+        <View pointerEvents="none" style={styles.slotButton}>
+          <Animated.View
+            style={{
+              transform: [
+                { rotate: isDarkMode ? moonTilt : "0deg" },
+                { scale: isDarkMode ? moonScaleAnim : 1 },
+              ],
+              opacity: isDarkMode ? 1 : 0.65,
+            }}
+          >
+            <Image
+              source={{ uri: isDarkMode ? ICON_MOON_ACTIVE : ICON_MOON_MUTED }}
+              style={styles.iconImage}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
       </Animated.View>
     </Pressable>
   );
@@ -211,34 +227,22 @@ export const ThemeToggleBar: React.FC<ThemeToggleBarProps> = ({
 
 const styles = StyleSheet.create({
   capsuleTrack: {
+    flexDirection: "row",
+    alignItems: "center",
     width: 76,
     height: 36,
     borderRadius: 18,
     borderWidth: 1.2,
     position: "relative",
-    justifyContent: "center",
+    paddingHorizontal: 1,
   },
   capsuleTrackLight: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#EDF2F7",
     borderColor: "#CBD5E1",
   },
   capsuleTrackDark: {
-    backgroundColor: "#0B0F19",
-    borderColor: "rgba(255, 255, 255, 0.12)",
-  },
-  trackGlow: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderRadius: 18,
-  },
-  trackGlowDark: {
-    backgroundColor: "rgba(99, 102, 241, 0.08)",
-  },
-  trackGlowLight: {
-    backgroundColor: "rgba(245, 158, 11, 0.08)",
+    backgroundColor: "#0F172A",
+    borderColor: "#334155",
   },
   activeKnob: {
     position: "absolute",
@@ -246,78 +250,37 @@ const styles = StyleSheet.create({
     left: 0,
     width: 34,
     height: 30,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 15,
   },
   activeKnobLight: {
     backgroundColor: "#FFFFFF",
-    shadowColor: "#F59E0B",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 3,
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
   activeKnobDark: {
-    backgroundColor: "#1E2538",
+    backgroundColor: "#1E293B",
     shadowColor: "#6366F1",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.45,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "#475569",
   },
-  specularRim: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 14,
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-  },
-  specularRimDark: {
-    borderTopColor: "#818CF8",
-    borderLeftColor: "#818CF8",
-  },
-  specularRimLight: {
-    borderTopColor: "#F59E0B",
-    borderLeftColor: "#F59E0B",
-  },
-  particleCenter: {
-    width: 16,
-    height: 16,
+  slotButton: {
+    width: 36,
+    height: 34,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
   },
-  pixelMatrixBox: {
-    width: 16,
-    height: 16,
-    position: "relative",
-  },
-  pixelDot: {
-    position: "absolute",
-    width: 2.5,
-    height: 2.5,
-    borderRadius: 0.5,
-  },
-  microStar: {
-    position: "absolute",
-    width: 2,
-    height: 2,
-    borderRadius: 0.5,
-  },
-  sunCoreBlock: {
-    position: "absolute",
-    top: 5,
-    left: 5,
-    width: 5.5,
-    height: 5.5,
-    borderRadius: 1.2,
-    backgroundColor: "#0F172A",
+  iconImage: {
+    width: 20,
+    height: 20,
   },
 });

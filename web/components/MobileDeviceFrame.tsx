@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FluidNeumorphicThemeToggle } from "./FluidNeumorphicThemeToggle";
 import {
   TaskPulseItem,
   ColleagueProfile,
@@ -572,17 +571,14 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <FluidNeumorphicThemeToggle size="sm" />
-              <button
-                onClick={() => setIsNotificationsOpen(true)}
-                className="w-9 h-9 rounded-xl border border-[#E9F1FF] flex items-center justify-center text-[#002055] hover:bg-[#F0EFFF] hover:border-[#756EF3]/30 transition-colors relative cursor-pointer"
-                title="Notifications"
-              >
-                <Bell className="w-4 h-4 text-[#002055]" />
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#FE7182] ring-2 ring-white" />
-              </button>
-            </div>
+            <button
+              onClick={() => setIsNotificationsOpen(true)}
+              className="w-9 h-9 rounded-xl border border-[#E9F1FF] flex items-center justify-center text-[#002055] hover:bg-[#F0EFFF] hover:border-[#756EF3]/30 transition-colors relative cursor-pointer"
+              title="Notifications"
+            >
+              <Bell className="w-4 h-4 text-[#002055]" />
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#FE7182] ring-2 ring-white" />
+            </button>
           </div>
 
           {/* Main Scrollable Canvas */}

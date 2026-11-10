@@ -22,7 +22,6 @@ import {
 import GoogleSignInModal from "./GoogleSignInModal";
 import RoleManagementModal from "./RoleManagementModal";
 import { OrganizationOnboardingModal } from "./OrganizationOnboardingModal";
-import { FluidNeumorphicThemeToggle } from "./FluidNeumorphicThemeToggle";
 import { TaskPulseLiteModal } from "./TaskPulseLiteModal";
 
 interface HeaderProps {
@@ -80,8 +79,20 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
             </button>
           )}
 
-          {/* Fluid Neumorphic Light / Dark Mode Toggle */}
-          <FluidNeumorphicThemeToggle size="sm" />
+          {/* Tactile Liquid Glass Light / Dark Mode Toggle */}
+          <button
+            onClick={toggleTheme}
+            data-testid="fluid-theme-toggle"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className="p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white/80 dark:bg-[#151C2C]/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            aria-label="Toggle Theme"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-[#756EF3]" />
+            )}
+          </button>
 
           {/* TaskPulse Lite Soft Launch Trial Badge */}
           <button

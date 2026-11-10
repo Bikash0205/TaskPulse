@@ -10,7 +10,6 @@ import { useTheme } from "@/context/ThemeContext";
 import { useOrganization } from "@/context/OrganizationContext";
 import { SpotlightCard } from "@/components/SpotlightCard";
 import { AmbientBackground } from "@/components/AmbientBackground";
-import { FluidNeumorphicThemeToggle } from "@/components/FluidNeumorphicThemeToggle";
 import {
   ArrowLeft,
   ArrowRight,
@@ -268,8 +267,20 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Fluid Neumorphic Light / Dark Mode Toggle */}
-          <FluidNeumorphicThemeToggle size="sm" />
+          {/* Tactile Liquid Glass Light / Dark Mode Toggle */}
+          <button
+            onClick={toggleTheme}
+            data-testid="fluid-theme-toggle"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className="p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white/80 dark:bg-[#151C2C]/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            aria-label="Toggle Theme"
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-[#756EF3]" />
+            )}
+          </button>
 
           <Link
             href="/onboarding"

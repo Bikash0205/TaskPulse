@@ -553,8 +553,8 @@ export default function App() {
 
   // User Accounts & Authentication Gate State
   const [registeredAccounts, setRegisteredAccounts] = useState<UserAccount[]>(DEFAULT_ACCOUNTS);
-  // Default to Super Admin so existing tests work, or user can tap Logout / Switch Account anytime
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(DEFAULT_ACCOUNTS[0]);
+  // Production default: starts on login screen, requiring user authentication
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [isBooting, setIsBooting] = useState(true);
 
   // Auth Entrance Screen State
