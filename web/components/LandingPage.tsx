@@ -12,6 +12,7 @@ import { PricingTiersSection } from "./PricingTiersSection";
 import { InteractiveProductShowcase } from "./InteractiveProductShowcase";
 import { HeroMotionGraphic } from "./HeroMotionGraphic";
 import { ScrollMotionGraphics } from "./ScrollMotionGraphics";
+import { FeatureMatrixShowcase } from "./FeatureMatrixShowcase";
 import {
   ShieldCheck,
   Zap,
@@ -192,21 +193,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           clearProps: "transform,opacity",
           scrollTrigger: {
             trigger: ".lp-bento-grid",
-            start: "top 88%",
-            once: true,
-          },
-        });
-
-        gsap.from(".lp-matrix-tile", {
-          y: 20,
-          opacity: 0,
-          stagger: 0.05,
-          duration: 0.5,
-          ease: "power3.out",
-          immediateRender: false,
-          clearProps: "transform,opacity",
-          scrollTrigger: {
-            trigger: ".lp-matrix-grid",
             start: "top 88%",
             once: true,
           },
@@ -872,30 +858,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* Complete Platform Capabilities Matrix */}
-        <div className="lp-matrix-grid mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-          {[
-            { tag: "DISPATCHER", title: "Sections, Kanban & Table", desc: "Switch views per project with nested subtask checklists and priority filters." },
-            { tag: "TIMELINE", title: "Gantt & Critical Path", desc: "Visualize sprint durations, dependencies, and target delivery dates cleanly." },
-            { tag: "PRESENCE", title: "Live Peer Telemetry", desc: "See real active teammates in your organization workspace without mock noise." },
-            { tag: "EXPORTS", title: "Corporate Audit Exports", desc: "Generate structured CSV, JSON, and executive summary printouts on demand." },
-            { tag: "DISCUSSIONS", title: "Threaded Task Reviews", desc: "Resolve blockers and manager feedback directly inside each project thread." },
-            { tag: "RBAC", title: "Role & Project Scoping", desc: "Assign Managers, Members, and Viewers to scoped projects and departments." },
-            { tag: "BILLING", title: "Hybrid Plan Quotas", desc: "Combine 14-day Web trials, UPI/invoices, and Google Play purchases in real time." },
-            { tag: "RESPONSIVE", title: "Auto Desktop & Mobile UI", desc: "Browsers detect device form factor automatically alongside native Android sync." },
-          ].map((feat) => (
-            <div
-              key={feat.tag}
-              className="lp-matrix-tile p-4 rounded-2xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] hover:border-[#5D55D6]/50 transition-colors"
-            >
-              <span className="text-[10px] font-mono font-bold tracking-wider text-[#5D55D6] dark:text-[#818CF8]">
-                {feat.tag}
-              </span>
-              <h4 className="text-sm font-bold text-[#1E222D] dark:text-white mt-1">{feat.title}</h4>
-              <p className="text-xs text-[#4E5565] dark:text-slate-400 mt-1.5 leading-relaxed">{feat.desc}</p>
-            </div>
-          ))}
-        </div>
+        {/* Complete Platform Capabilities Matrix with SVG & GSAP Motion Graphics */}
+        <FeatureMatrixShowcase />
       </section>
 
       {/* 5. Scroll-Triggered Pipeline Motion Graphic */}
