@@ -1,280 +1,243 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import {
   Kanban,
   Calendar,
   Sparkles,
   BarChart3,
   CheckCircle2,
-  Clock,
-  ArrowRight,
-  User,
-  AlertCircle,
-  TrendingUp,
-  Layers,
-  ChevronRight,
-  Shield,
-  Zap,
+  ShieldCheck,
+  CreditCard,
+  MessageSquare,
 } from "lucide-react";
 
+gsap.registerPlugin(useGSAP);
+
+type ShowcaseTab = "gantt" | "kanban" | "ai" | "capacity" | "governance" | "billing";
+
+const TABS: { id: ShowcaseTab; label: string; icon: React.ReactNode }[] = [
+  { id: "gantt", label: "Gantt & Milestones", icon: <Calendar className="w-3.5 h-3.5" /> },
+  { id: "kanban", label: "Boards & Subtasks", icon: <Kanban className="w-3.5 h-3.5" /> },
+  { id: "ai", label: "AI Task Synthesis", icon: <Sparkles className="w-3.5 h-3.5" /> },
+  { id: "capacity", label: "Workload & Presence", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+  { id: "governance", label: "Verification & Audit", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+  { id: "billing", label: "Multi-Org & Hybrid Sync", icon: <CreditCard className="w-3.5 h-3.5" /> },
+];
+
 export const InteractiveProductShowcase: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"gantt" | "kanban" | "ai" | "capacity">("gantt");
+  const [activeTab, setActiveTab] = useState<ShowcaseTab>("gantt");
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          ".ips-anim",
+          { y: 12, opacity: 0 },
+          { y: 0, opacity: 1, stagger: 0.06, duration: 0.38, ease: "power3.out", clearProps: "transform,opacity" }
+        );
+        gsap.fromTo(
+          ".ips-bar",
+          { scaleX: 0 },
+          {
+            scaleX: 1,
+            transformOrigin: "left center",
+            stagger: 0.08,
+            duration: 0.65,
+            ease: "power3.out",
+            clearProps: "transform",
+          }
+        );
+      });
+    },
+    { scope: panelRef, dependencies: [activeTab] }
+  );
 
   return (
-    <div className="w-full rounded-3xl bg-[#FAF8F4] dark:bg-[#111726] border border-[#DDD8CE] dark:border-white/10 shadow-xl shadow-[#1E222D]/[0.06] overflow-hidden transition-all duration-300">
-      {/* 1. Interactive Tab Switcher Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-[#EFECE5] dark:bg-[#0B0F19] border-b border-[#DDD8CE] dark:border-white/10">
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1">
-          <button
-            onClick={() => setActiveTab("gantt")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === "gantt"
-                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
-                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Interactive Gantt</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("kanban")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === "kanban"
-                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
-                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
-            }`}
-          >
-            <Kanban className="w-3.5 h-3.5" />
-            <span>Fluid Kanban</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("ai")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === "ai"
-                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
-                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Task Engine</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("capacity")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              activeTab === "capacity"
-                ? "bg-[#5D55D6] text-white shadow-md shadow-[#5D55D6]/25"
-                : "text-[#1E222D] dark:text-[#E2E8F0] hover:bg-[#E4E0D6] dark:hover:bg-slate-800"
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Capacity &amp; Heatmap</span>
-          </button>
+    <div className="w-full rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] shadow-xl shadow-[#1E222D]/[0.05] overflow-hidden">
+      {/* Interactive Tab Switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-[#F2EFE8] dark:bg-[#12161F] border-b border-[#E4DFD5] dark:border-white/[0.07]">
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setActiveTab(t.id)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === t.id
+                  ? "bg-[#5D55D6] text-white shadow-sm"
+                  : "text-[#1E222D] dark:text-slate-200 hover:bg-[#E4E0D6] dark:hover:bg-white/[0.06]"
+              }`}
+            >
+              {t.icon}
+              <span>{t.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Live Status Indicator */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-[#0F7656] dark:text-emerald-300 bg-[#E4F2EC] dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-[#C5E3D5] dark:border-emerald-700/50 font-bold">
-          <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-ping" />
-          <span>Realtime 60fps Pipeline</span>
+        <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-[#0F7656] dark:text-emerald-300 bg-[#E4F2EC] dark:bg-emerald-500/15 px-3 py-1 rounded-full border border-[#C5E3D5] dark:border-emerald-500/25 font-bold">
+          <span className="w-2 h-2 rounded-full bg-[#0F8C65]" />
+          <span>Interactive Feature Explorer</span>
         </div>
       </div>
 
-      {/* 2. Tab Content Area */}
-      <div className="p-4 sm:p-7 min-h-[360px] flex flex-col justify-center bg-[#FAF8F4] dark:bg-[#111726]">
-        {/* TAB 1: GANTT TIMELINE */}
+      {/* Tab Content Panel */}
+      <div ref={panelRef} className="p-5 sm:p-7 min-h-[300px] flex flex-col justify-center bg-[#FAF8F4] dark:bg-[#0D1017] text-left">
         {activeTab === "gantt" && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between">
+          <div className="space-y-4">
+            <div className="ips-anim flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h4 className="text-sm sm:text-base font-bold text-[#0F172A] dark:text-white">
-                  Sprint 14: Mobile Release &amp; Core Infrastructure
+                <h4 className="text-sm sm:text-base font-bold text-[#1E222D] dark:text-white">
+                  60fps Gantt Timeline &amp; Critical Path
                 </h4>
-                <p className="text-xs text-[#334155] dark:text-slate-300 font-medium mt-0.5">
-                  Critical path dependencies automatically calculated with zero UI lag.
+                <p className="text-xs text-[#4E5565] dark:text-slate-400 mt-0.5">
+                  Track cross-department dependencies, target dates, and milestone slippage across projects.
                 </p>
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-lg bg-blue-100 dark:bg-blue-950/80 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-[#E4F2EC] dark:bg-emerald-500/15 text-[#0F7656] dark:text-emerald-300 border border-[#C5E3D5] dark:border-emerald-500/25">
                 On Track (88%)
               </span>
             </div>
 
-            {/* Gantt Timeline Visualizer */}
-            <div className="mt-3 space-y-3 bg-slate-50 dark:bg-[#070B14] p-4 rounded-2xl border border-slate-200 dark:border-white/10">
-              {/* Task Row 1 */}
-              <div>
-                <div className="flex justify-between text-xs font-bold mb-1 text-[#0F172A] dark:text-white">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#756EF3]" />
-                    <span>Android Fluid Gesture Engine</span>
-                  </span>
-                  <span className="text-[11px] text-[#334155] dark:text-slate-300">Nov 2 - Nov 8 (100%)</span>
-                </div>
-                <div className="h-7 w-full bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden relative">
-                  <div className="h-full bg-gradient-to-r from-[#756EF3] to-[#9089FC] rounded-lg w-full flex items-center px-3 text-[11px] text-white font-bold">
-                    Completed &bull; Verified by Lead
+            <div className="space-y-3 bg-[#F4F2ED] dark:bg-[#090C11] p-4 rounded-2xl border border-[#E4DFD5] dark:border-white/[0.07]">
+              {[
+                { name: "Multi-Tenant RBAC & Google Lock", window: "Week 1 – 2", pct: "100%", w: "w-full", color: "bg-[#5D55D6]", tag: "Verified" },
+                { name: "Hybrid Entitlement & Quota Engine", window: "Week 2 – 3", pct: "84%", w: "w-[84%]", color: "bg-[#0284C7]", tag: "In Review" },
+                { name: "Android Offline SQLite Reconciler", window: "Week 3 – 4", pct: "62%", w: "w-[62%]", color: "bg-[#0F8C65]", tag: "In Progress" },
+              ].map((lane) => (
+                <div key={lane.name} className="ips-anim">
+                  <div className="flex justify-between text-xs font-semibold mb-1 text-[#1E222D] dark:text-white">
+                    <span>{lane.name}</span>
+                    <span className="font-mono text-[11px] text-[#4E5565] dark:text-slate-400">
+                      {lane.window} &bull; {lane.pct}
+                    </span>
+                  </div>
+                  <div className="h-6 w-full bg-[#E5E0D6] dark:bg-white/[0.07] rounded-lg overflow-hidden">
+                    <div className={`ips-bar h-full ${lane.w} ${lane.color} rounded-lg flex items-center px-3 text-[11px] text-white font-bold`}>
+                      {lane.tag}
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Task Row 2 */}
-              <div>
-                <div className="flex justify-between text-xs font-bold mb-1 text-[#0F172A] dark:text-white">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-                    <span>Edge API &amp; Neural NLP Pipeline</span>
-                  </span>
-                  <span className="text-[11px] text-[#334155] dark:text-slate-300">Nov 6 - Nov 12 (75%)</span>
-                </div>
-                <div className="h-7 w-full bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden relative">
-                  <div className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-lg w-[75%] flex items-center px-3 text-[11px] text-white font-bold">
-                    In Progress &bull; 14 Milestones Linked
-                  </div>
-                </div>
-              </div>
-
-              {/* Task Row 3 */}
-              <div>
-                <div className="flex justify-between text-xs font-bold mb-1 text-[#0F172A] dark:text-white">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-600 dark:bg-amber-400" />
-                    <span>Google Play &#8377;199 Subscription Hook</span>
-                  </span>
-                  <span className="text-[11px] text-[#334155] dark:text-slate-300">Nov 10 - Nov 16 (Upcoming)</span>
-                </div>
-                <div className="h-7 w-full bg-slate-200 dark:bg-slate-800 rounded-lg overflow-hidden relative">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-lg w-[35%] flex items-center px-3 text-[11px] text-slate-950 font-black">
-                    Ready to Launch
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* TAB 2: FLUID KANBAN */}
         {activeTab === "kanban" && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Column 1: In Progress */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-white/10">
-                <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] dark:text-white mb-3">
-                  <span>IN PROGRESS (3)</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {[
+              { col: "IN PROGRESS (3)", badge: "HIGH", title: "Subtask Checklist Sync", owner: "Marcus Vance", status: "75% Done", tone: "text-[#5D55D6] dark:text-[#818CF8]" },
+              { col: "IN REVIEW (2)", badge: "VERIFICATION", title: "Project Folder Hierarchy", owner: "Sarah Chen", status: "Awaiting Proof", tone: "text-[#0284C7] dark:text-sky-400" },
+              { col: "COMPLETED (12)", badge: "VERIFIED", title: "Tabular Dispatcher View", owner: "Elena Rostova", status: "100% Sealed", tone: "text-[#0F8C65] dark:text-emerald-400" },
+            ].map((card) => (
+              <div key={card.col} className="ips-anim p-4 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07]">
+                <div className="text-[10px] font-mono font-bold text-[#6E7485] dark:text-slate-400 mb-2.5">
+                  {card.col}
                 </div>
-                <div className="p-3.5 rounded-xl bg-white dark:bg-[#151C2C] border border-slate-300 dark:border-white/10 shadow-sm hover:border-[#756EF3] transition-all">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300">
-                    CRITICAL
-                  </span>
-                  <h5 className="text-xs font-bold mt-2 text-[#0F172A] dark:text-white">
-                    Fluid Touch Bottom Sheet
-                  </h5>
-                  <p className="text-[11px] text-[#334155] dark:text-slate-200 mt-1 font-medium leading-relaxed">
-                    Direct 1:1 finger tracking with crosshair drag dismissal.
-                  </p>
-                  <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-[11px] font-semibold text-[#1E293B] dark:text-slate-300">
-                    <span>Marcus Vance</span>
-                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">95% Done</span>
+                <div className="p-3.5 rounded-xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08]">
+                  <span className={`text-[10px] font-mono font-bold ${card.tone}`}>{card.badge}</span>
+                  <h5 className="text-xs font-bold mt-1.5 text-[#1E222D] dark:text-white">{card.title}</h5>
+                  <div className="mt-3 pt-2 border-t border-[#E4DFD5] dark:border-white/[0.06] flex justify-between text-[11px] text-[#4E5565] dark:text-slate-400">
+                    <span>{card.owner}</span>
+                    <span className="font-mono font-semibold">{card.status}</span>
                   </div>
                 </div>
               </div>
-
-              {/* Column 2: In Review */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-white/10">
-                <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] dark:text-white mb-3">
-                  <span>MANAGER REVIEW (1)</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-600" />
-                </div>
-                <div className="p-3.5 rounded-xl bg-white dark:bg-[#151C2C] border-2 border-amber-400 dark:border-amber-600 shadow-sm">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-300">
-                    AWAITING SIGN-OFF
-                  </span>
-                  <h5 className="text-xs font-bold mt-2 text-[#0F172A] dark:text-white">
-                    Vector Boot Animation
-                  </h5>
-                  <p className="text-[11px] text-[#334155] dark:text-slate-200 mt-1 font-medium leading-relaxed">
-                    Centered SVG typography reveal with specular glow.
-                  </p>
-                  <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-[11px] font-semibold text-[#1E293B] dark:text-slate-300">
-                    <span>Bikash Lead</span>
-                    <span className="text-amber-800 dark:text-amber-300 font-bold">Reviewing</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 3: Completed */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#070B14] border border-slate-200 dark:border-white/10">
-                <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] dark:text-white mb-3">
-                  <span>VERIFIED (8)</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-                </div>
-                <div className="p-3.5 rounded-xl bg-white dark:bg-[#151C2C] border-2 border-emerald-400 dark:border-emerald-600 shadow-sm">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300">
-                    VERIFIED IN PROD
-                  </span>
-                  <h5 className="text-xs font-bold mt-2 text-[#0F172A] dark:text-white">
-                    Frosted Liquid Glass Dock
-                  </h5>
-                  <p className="text-[11px] text-[#334155] dark:text-slate-200 mt-1 font-medium leading-relaxed">
-                    Multi-axis fluid squashing without RenderNode clipping.
-                  </p>
-                  <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
-                    <span>Audit Passed</span>
-                    <span>100%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
-        {/* TAB 3: GEMINI AI ENGINE */}
         {activeTab === "ai" && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="p-5 rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/40">
-              <div className="flex items-center gap-2 text-xs font-bold text-violet-900 dark:text-violet-300 mb-2">
-                <Sparkles className="w-4 h-4 text-[#756EF3]" />
-                <span>Zero-Friction Prompt to Action</span>
+          <div className="ips-anim p-5 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#5D55D6] dark:text-[#818CF8]">
+              <Sparkles className="w-4 h-4" />
+              <span>Natural-Language Sprint Synthesis</span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 leading-relaxed">
+              Describe deliverables in plain English. TaskPulse AI infers priority, target completion date, department routing, and actionable subtask checklists automatically.
+            </p>
+            <div className="p-3.5 rounded-xl bg-[#FAF8F4] dark:bg-[#090C11] border border-[#DDD8CE] dark:border-white/[0.08] font-mono text-xs space-y-1">
+              <div>
+                <span className="text-[#0F8C65] font-bold">&gt; Input:</span>{" "}
+                <span className="text-[#1E222D] dark:text-slate-200">&ldquo;Prepare SOC 2 export audit with Sarah by Friday critical priority&rdquo;</span>
               </div>
-              <p className="text-xs sm:text-sm text-[#0F172A] dark:text-white font-medium leading-relaxed">
-                Type natural requirements into any view. Our AI engine analyzes dependencies, estimates realistic timeframes, auto-populates subtask checklists, and assigns team leads based on active bandwidth.
-              </p>
-              <div className="mt-4 p-3.5 rounded-xl bg-white dark:bg-[#070B14] border border-slate-300 dark:border-white/10 text-xs font-mono text-[#0F172A] dark:text-slate-200 font-semibold shadow-xs">
-                <span className="text-emerald-700 dark:text-emerald-400 font-bold">&gt; Input:</span> &ldquo;Launch summer promotion with Elena by Friday high priority&rdquo;<br />
-                <span className="text-violet-700 dark:text-violet-400 font-bold">&gt; Output:</span> [PRJ-04] Marketing | Priority: High | Target: 2026-11-13 | 3 Checkpoints generated
+              <div>
+                <span className="text-[#5D55D6] dark:text-[#818CF8] font-bold">&gt; Output:</span>{" "}
+                <span className="text-[#4E5565] dark:text-slate-300">[SEC] Security | Priority: Critical | 3 Subtasks Auto-Mapped</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 4: CAPACITY & HEATMAP */}
         {activeTab === "capacity" && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] dark:text-white">
-                <span>Engineering Core (4 Members)</span>
-                <span className="text-emerald-800 dark:text-emerald-300 font-extrabold">Optimal Bandwidth (68%)</span>
+          <div className="space-y-4">
+            <div className="ips-anim flex items-center justify-between text-xs font-bold text-[#1E222D] dark:text-white">
+              <span>Live Department Bandwidth &amp; Peer Presence</span>
+              <span className="font-mono text-[#0F8C65] dark:text-emerald-400">Rebalance Guardrails Active</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { name: "Sarah Chen", load: "3 / 5 tasks", pct: "60%", bar: "w-[60%] bg-[#0F8C65]" },
+                { name: "Marcus Vance", load: "4 / 5 tasks", pct: "80%", bar: "w-[80%] bg-[#D97706]" },
+                { name: "Elena Rostova", load: "2 / 5 tasks", pct: "40%", bar: "w-[40%] bg-[#0F8C65]" },
+                { name: "David Kim", load: "3 / 5 tasks", pct: "60%", bar: "w-[60%] bg-[#5D55D6]" },
+              ].map((m) => (
+                <div key={m.name} className="ips-anim p-3.5 rounded-xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07]">
+                  <div className="text-xs font-bold text-[#1E222D] dark:text-white">{m.name}</div>
+                  <div className="text-[11px] text-[#4E5565] dark:text-slate-400 mt-0.5">{m.load}</div>
+                  <div className="mt-2.5 h-1.5 rounded-full bg-[#E2DED4] dark:bg-white/[0.08] overflow-hidden">
+                    <div className={`ips-bar h-full ${m.bar} rounded-full`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "governance" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="ips-anim p-4 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#1E222D] dark:text-white">
+                <CheckCircle2 className="w-4 h-4 text-[#0F8C65]" />
+                <span>Manager Evidence Verification</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-center">
-                  <div className="text-xs font-bold text-emerald-950 dark:text-emerald-200">Sarah C.</div>
-                  <div className="text-[11px] text-emerald-800 dark:text-emerald-300 mt-1 font-semibold">3 / 5 Active Tasks</div>
-                </div>
-                <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-center">
-                  <div className="text-xs font-bold text-emerald-950 dark:text-emerald-200">Alex R.</div>
-                  <div className="text-[11px] text-emerald-800 dark:text-emerald-300 mt-1 font-semibold">4 / 6 Active Tasks</div>
-                </div>
-                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-center">
-                  <div className="text-xs font-bold text-amber-950 dark:text-amber-200">David L.</div>
-                  <div className="text-[11px] text-amber-800 dark:text-amber-300 mt-1 font-semibold">Near Limit (85%)</div>
-                </div>
-                <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-300 dark:border-blue-700/50 text-center">
-                  <div className="text-xs font-bold text-blue-950 dark:text-blue-200">Bikash S.</div>
-                  <div className="text-[11px] text-blue-800 dark:text-blue-300 mt-1 font-semibold">Lead Architect</div>
-                </div>
+              <p className="text-xs text-[#4E5565] dark:text-slate-300 leading-relaxed">
+                Assignees submit implementation notes and verification screenshots; leads approve or request changes with immutable audit timestamps and CSV/JSON exports.
+              </p>
+            </div>
+            <div className="ips-anim p-4 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-2.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#1E222D] dark:text-white">
+                <MessageSquare className="w-4 h-4 text-[#5D55D6]" />
+                <span>Threaded Discussions &amp; RBAC</span>
               </div>
+              <p className="text-xs text-[#4E5565] dark:text-slate-300 leading-relaxed">
+                Role-locked permissions separate Super Admin, Manager, Member, and Viewer scopes with server-enforced Firestore &amp; API guardrails.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "billing" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="ips-anim p-4 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-2">
+              <div className="text-xs font-bold text-[#1E222D] dark:text-white">
+                4-Tier Onboarding &amp; Quota Gates
+              </div>
+              <p className="text-xs text-[#4E5565] dark:text-slate-300 leading-relaxed">
+                New companies choose Free, Growth, Pro, or custom-quoted Enterprise during onboarding; invited teammates join via cryptographic code and inherit host entitlements automatically.
+              </p>
+            </div>
+            <div className="ips-anim p-4 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-2">
+              <div className="text-xs font-bold text-[#1E222D] dark:text-white">
+                Hybrid Play + Web Sync + Auto Client Detection
+              </div>
+              <p className="text-xs text-[#4E5565] dark:text-slate-300 leading-relaxed">
+                14-day Web trials, UPI/invoice approvals, and Android Google Play purchases sync in real time via Firestore, while browsers automatically adapt between Desktop and Mobile layouts.
+              </p>
             </div>
           </div>
         )}
