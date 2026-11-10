@@ -73,26 +73,36 @@ export default function LoginPage() {
         tl.fromTo(
           headerRef.current,
           { y: -20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.6 }
+          { y: 0, opacity: 1, duration: 0.5 }
         );
       }
 
-      // 2. Left column elements stagger
+      // 2. Right column card entrance concurrently for instant responsiveness
+      if (cardBoxRef.current) {
+        tl.fromTo(
+          cardBoxRef.current,
+          { y: 24, opacity: 0, scale: 0.98 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" },
+          0.1
+        );
+      }
+
+      // 3. Left column elements stagger
       if (badgeRef.current) {
         tl.fromTo(
           badgeRef.current,
           { y: 15, opacity: 0, scale: 0.95 },
-          { y: 0, opacity: 1, scale: 1, duration: 0.5 },
-          "-=0.3"
+          { y: 0, opacity: 1, scale: 1, duration: 0.4 },
+          0.15
         );
       }
 
       if (titleRef.current) {
         tl.fromTo(
           titleRef.current,
-          { y: 25, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.7 },
-          "-=0.3"
+          { y: 20, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.5 },
+          "-=0.25"
         );
       }
 
@@ -100,36 +110,26 @@ export default function LoginPage() {
         tl.fromTo(
           subtitleRef.current,
           { y: 15, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.6 },
-          "-=0.4"
+          { y: 0, opacity: 1, duration: 0.4 },
+          "-=0.3"
         );
       }
 
       if (featuresRef.current) {
         tl.fromTo(
           featuresRef.current.children,
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5, stagger: 0.12 },
-          "-=0.3"
+          { y: 15, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.35, stagger: 0.08 },
+          "-=0.2"
         );
       }
 
       if (telemetryRef.current) {
         tl.fromTo(
           telemetryRef.current,
-          { y: 15, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.5 },
+          { y: 12, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.35 },
           "-=0.2"
-        );
-      }
-
-      // 3. Right column card entrance with smooth scale
-      if (cardBoxRef.current) {
-        tl.fromTo(
-          cardBoxRef.current,
-          { y: 35, opacity: 0, scale: 0.97 },
-          { y: 0, opacity: 1, scale: 1, duration: 0.75, ease: "back.out(1.4)" },
-          "-=0.7"
         );
       }
 
@@ -137,9 +137,9 @@ export default function LoginPage() {
       if (sandboxRef.current) {
         tl.fromTo(
           sandboxRef.current.querySelectorAll(".sandbox-btn"),
-          { y: 15, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.4, stagger: 0.08 },
-          "-=0.4"
+          { y: 12, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.3, stagger: 0.05 },
+          "-=0.2"
         );
       }
     }, pageContainerRef);

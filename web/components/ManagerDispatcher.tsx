@@ -695,14 +695,38 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
 
           {/* Empty State when no tasks match */}
           {filteredTasks.length === 0 && (
-            <div className="p-10 rounded-2xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-center space-y-3 shadow-xs">
-              <div className="w-12 h-12 rounded-2xl bg-[#756EF3]/10 text-[#756EF3] mx-auto flex items-center justify-center font-bold">
+            <div className="p-10 rounded-2xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] text-center space-y-4 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-[#756EF3]/10 text-[#756EF3] mx-auto flex items-center justify-center font-bold shadow-xs">
                 <Layers className="w-6 h-6" />
               </div>
-              <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">No work items found</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                No tasks match your active filters or project selection. Create a new task or adjust your filters.
-              </p>
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">No work items found</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  No tasks match your active filters or project selection. Create a new task or reset your search.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Create Task</span>
+                </button>
+                {(searchQuery || selectedProjectId !== "all") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedProjectId("all");
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
