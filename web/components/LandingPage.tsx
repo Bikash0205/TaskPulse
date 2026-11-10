@@ -51,6 +51,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   const pageRef = useRef<HTMLDivElement>(null);
   const heroStackRef = useRef<HTMLDivElement>(null);
+  const scrollBarRef = useRef<HTMLDivElement>(null);
+  const marqueeTrackRef = useRef<HTMLDivElement>(null);
+  const marqueeTweenRef = useRef<gsap.core.Tween | null>(null);
   const latencyCountRef = useRef<HTMLSpanElement>(null);
   const uptimeCountRef = useRef<HTMLSpanElement>(null);
 
@@ -225,7 +228,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           },
         });
 
-        // 4. Closing Conversion Callout Reveal
+        // 4. Pricing Tier Cards Staggered ScrollTrigger Entrance
+        gsap.from("#pricing .pricing-card", {
+          y: 28,
+          opacity: 0,
+          scale: 0.97,
+          stagger: 0.09,
+          duration: 0.65,
+          ease: "power3.out",
+          immediateRender: false,
+          clearProps: "transform,opacity",
+          scrollTrigger: {
+            trigger: "#pricing",
+            start: "top 85%",
+            once: true,
+          },
+        });
+
+        // 5. Scrubbed Reading Progress Indicator in Top Header
+        if (scrollBarRef.current) {
+          gsap.fromTo(
+            scrollBarRef.current,
+            { scaleX: 0 },
+            {
+              scaleX: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: pageRef.current,
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.25,
+              },
+            }
+          );
+        }
+
+        // 6. Infinite 60fps Capability Telemetry Marquee
+        if (marqueeTrackRef.current) {
+          marqueeTweenRef.current = gsap.to(marqueeTrackRef.current, {
+            xPercent: -50,
+            duration: 28,
+            repeat: -1,
+            ease: "none",
+          });
+        }
+
+        // 7. Closing Conversion Callout Reveal
         gsap.from(".lp-callout-box", {
           y: 26,
           opacity: 0,
@@ -279,6 +327,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     >
       {/* 1. Floating Warm-Paper / Obsidian Navigation Bar */}
       <header className="sticky top-2 sm:top-3 z-50 max-w-[1360px] w-[96%] mx-auto rounded-2xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/85 backdrop-blur-2xl shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden">
+        <div
+          ref={scrollBarRef}
+          style={{ transform: "scaleX(0)" }}
+          className="absolute top-0 left-0 right-0 h-[2.5px] origin-left bg-gradient-to-r from-[#5D55D6] via-[#0EA5E9] to-[#0F8C65] pointer-events-none"
+        />
         <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-[#5D55D6]/40 dark:via-cyan-400/60 to-transparent pointer-events-none" />
 
         <div className="flex items-center gap-4 sm:gap-6">
@@ -602,6 +655,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="lp-showcase-wrap space-y-6 mt-4">
           <GeminiTaskArchitectBar />
           <InteractiveProductShowcase />
+        </div>
+      </section>
+
+      {/* Continuous GSAP Telemetry Capability Ticker */}
+      <section
+        aria-label="Live Platform Capabilities"
+        className="w-full overflow-hidden py-5 mt-12 border-y border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/70 dark:bg-[#0D1322]/70"
+        onMouseEnter={() => marqueeTweenRef.current?.timeScale(0.35)}
+        onMouseLeave={() => marqueeTweenRef.current?.timeScale(1)}
+      >
+        <div ref={marqueeTrackRef} className="flex w-max items-center gap-4 will-change-transform">
+          {[0, 1].map((dup) => (
+            <div key={dup} className="flex items-center gap-4 pr-4">
+              {[
+                { label: "Sub-85ms Real-Time Sync", tag: "EDGE" },
+                { label: "Hybrid Google Play + Web Trials", tag: "BILLING" },
+                { label: "Role-Locked RBAC & Org Isolation", tag: "SECURITY" },
+                { label: "60fps Gantt Critical Path", tag: "TIMELINE" },
+                { label: "AI Sprint Task Synthesis", tag: "AUTOMATION" },
+                { label: "Zero-Latency Android Offline Queue", tag: "MOBILE" },
+              ].map((item) => (
+                <div
+                  key={`${dup}-${item.tag}`}
+                  className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#F4F2ED] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 text-xs font-semibold text-[#1E222D] dark:text-slate-100 whitespace-nowrap shadow-2xs"
+                >
+                  <span className="px-2 py-0.5 rounded-full bg-[#EAE8F8] dark:bg-[#5D55D6]/25 text-[#5D55D6] dark:text-[#818CF8] font-mono text-[10px] font-bold">
+                    {item.tag}
+                  </span>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </section>
 

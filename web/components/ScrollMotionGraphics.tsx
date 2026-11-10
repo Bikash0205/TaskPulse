@@ -29,6 +29,7 @@ export const ScrollMotionGraphics: React.FC = () => {
   const [activeStage, setActiveStage] = useState<number>(0);
   const sectionRef = useRef<HTMLDivElement>(null);
   const beamRef = useRef<HTMLDivElement>(null);
+  const packetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -36,6 +37,15 @@ export const ScrollMotionGraphics: React.FC = () => {
     }, 3200);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!packetRef.current) return;
+    gsap.to(packetRef.current, {
+      left: `${activeStage * 25 + 12.5}%`,
+      duration: 0.6,
+      ease: "power3.out",
+    });
+  }, [activeStage]);
 
   useGSAP(
     () => {
@@ -158,11 +168,18 @@ export const ScrollMotionGraphics: React.FC = () => {
 
       {/* Warm-Paper / Obsidian Pipeline Container */}
       <div className="smg-grid relative rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1322] border border-[#DDD8CE] dark:border-white/10 p-5 sm:p-9 shadow-xl shadow-[#1E222D]/[0.04] dark:shadow-black/50 overflow-hidden">
-        {/* Scroll-Scrubbed Conduit Progress Rail */}
-        <div className="hidden lg:block relative h-1.5 mb-7 rounded-full bg-[#EAE6DC] dark:bg-white/10 overflow-hidden">
+        {/* Scroll-Scrubbed Conduit Progress Rail + Live Stage Packet */}
+        <div className="hidden lg:block relative h-2 mb-7 rounded-full bg-[#EAE6DC] dark:bg-white/10 overflow-visible">
+          <div className="h-full w-full rounded-full overflow-hidden">
+            <div
+              ref={beamRef}
+              className="h-full w-full origin-left bg-gradient-to-r from-[#5D55D6] via-[#0EA5E9] to-[#10B981] rounded-full"
+            />
+          </div>
           <div
-            ref={beamRef}
-            className="h-full w-full origin-left bg-gradient-to-r from-[#5D55D6] via-[#0EA5E9] to-[#10B981] rounded-full"
+            ref={packetRef}
+            style={{ left: "12.5%" }}
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#FAF8F4] dark:bg-white border-2 border-[#5D55D6] shadow-md shadow-[#5D55D6]/40 pointer-events-none"
           />
         </div>
 

@@ -21,6 +21,7 @@ export const HeroMotionGraphic: React.FC = () => {
   const stageRef = useRef<HTMLDivElement>(null);
   const wavePathRef = useRef<SVGPathElement>(null);
   const secWaveRef = useRef<SVGPathElement>(null);
+  const pulsePacketRef = useRef<SVGPathElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
   const [pulsePhase, setPulsePhase] = useState(0);
 
@@ -113,6 +114,40 @@ export const HeroMotionGraphic: React.FC = () => {
           repeat: -1,
           yoyo: true,
           ease: "sine.inOut",
+        });
+
+        // Traveling signal packets gliding smoothly across the primary sprint wave
+        if (pulsePacketRef.current) {
+          gsap.to(pulsePacketRef.current, {
+            strokeDashoffset: -180,
+            duration: 2.2,
+            repeat: -1,
+            ease: "none",
+          });
+        }
+
+        // Concentric sonar ripples around milestone nodes
+        gsap.fromTo(
+          ".hmg-sonar",
+          { scale: 1, opacity: 0.5 },
+          {
+            scale: 2.15,
+            opacity: 0,
+            transformOrigin: "center center",
+            stagger: 0.45,
+            duration: 2.4,
+            repeat: -1,
+            ease: "power2.out",
+          }
+        );
+
+        // Ambient rotating telemetry orbit ring
+        gsap.to(".hmg-orbit-ring", {
+          rotation: 360,
+          transformOrigin: "center center",
+          duration: 36,
+          repeat: -1,
+          ease: "none",
         });
 
         if (counterRef.current) {
@@ -256,6 +291,12 @@ export const HeroMotionGraphic: React.FC = () => {
               fill="none"
             />
 
+            {/* Subtle Orbital Telemetry Mesh */}
+            <g className="hmg-orbit-ring" opacity="0.22">
+              <circle cx="450" cy="160" r="128" stroke="#5D55D6" strokeWidth="1.2" strokeDasharray="6 10" fill="none" />
+              <circle cx="450" cy="160" r="88" stroke="#0EA5E9" strokeWidth="1" strokeDasharray="4 8" fill="none" />
+            </g>
+
             {/* Primary Sprint Pulse Wave */}
             <path
               ref={wavePathRef}
@@ -266,23 +307,39 @@ export const HeroMotionGraphic: React.FC = () => {
               fill="none"
             />
 
-            {/* Milestone Nodes */}
+            {/* Continuous Traveling Energy Packet Along Wave */}
+            <path
+              ref={pulsePacketRef}
+              d="M 50,220 Q 200,80 380,180 T 720,120 L 850,160"
+              stroke="#FFFFFF"
+              strokeOpacity="0.85"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeDasharray="24 156"
+              fill="none"
+            />
+
+            {/* Milestone Nodes with Sonar Ripples */}
             <g className="hmg-node" transform="translate(200, 105)">
+              <circle className="hmg-sonar" r="15" stroke="#5D55D6" strokeWidth="1.5" fill="none" />
               <circle r="15" fill="#5D55D6" fillOpacity="0.18" />
               <circle r="8.5" fill="#5D55D6" stroke="#FAF8F4" strokeWidth="2.5" />
             </g>
 
             <g className="hmg-node" transform="translate(380, 180)">
+              <circle className="hmg-sonar" r="17" stroke="#0EA5E9" strokeWidth="1.5" fill="none" />
               <circle r="17" fill="#0EA5E9" fillOpacity="0.2" />
               <circle r="9.5" fill="#0EA5E9" stroke="#FAF8F4" strokeWidth="2.5" />
             </g>
 
             <g className="hmg-node" transform="translate(550, 150)">
+              <circle className="hmg-sonar" r="18" stroke="#10B981" strokeWidth="1.5" fill="none" />
               <circle r="18" fill="#10B981" fillOpacity="0.22" />
               <circle r="10" fill="#10B981" stroke="#FAF8F4" strokeWidth="2.5" />
             </g>
 
             <g className="hmg-node" transform="translate(720, 120)">
+              <circle className="hmg-sonar" r="20" stroke="#D97706" strokeWidth="1.5" fill="none" />
               <circle r="20" fill="#D97706" fillOpacity="0.2" />
               <circle r="11" fill="#D97706" stroke="#FAF8F4" strokeWidth="2.5" />
             </g>
