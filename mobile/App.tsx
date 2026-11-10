@@ -602,20 +602,8 @@ const getDynamicDays = () => {
 };
 
 export default function App() {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      return Appearance.getColorScheme() === "dark";
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      setIsDarkMode(colorScheme === "dark");
-    });
-    return () => sub.remove();
-  }, []);
+  // Default theme is explicitly Light Mode
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
   const COLORS = isDarkMode ? DARK_COLORS : LIGHT_COLORS;
 
