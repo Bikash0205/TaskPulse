@@ -668,6 +668,7 @@ export default function App() {
   const [onboardingStep, setOnboardingStep] = useState<1 | 2 | 3>(1);
   const [onboardAdminName, setOnboardAdminName] = useState("Alex Vance");
   const [onboardAdminEmail, setOnboardAdminEmail] = useState("alex@acmecorp.com");
+  const [isGoogleEmailLocked, setIsGoogleEmailLocked] = useState(false);
   const [onboardingOrgName, setOnboardingOrgName] = useState("Acme Innovations");
   const [onboardingSlug, setOnboardingSlug] = useState("acme-innovations");
   const [onboardingTeamSize, setOnboardingTeamSize] = useState("11-50");
@@ -1706,6 +1707,7 @@ export default function App() {
     }
 
     // New Google account without an existing workspace: Route to Sign Up (Organization Onboarding)
+    setIsGoogleEmailLocked(true);
     setAuthTab("signup");
     setOnboardingStep(1);
     setOnboardAdminName(googleAcc.name);
@@ -2390,16 +2392,39 @@ export default function App() {
             style={styles.textInput}
           />
 
-          <Text style={[styles.inputLabel, { marginTop: 10 }]}>ADMIN WORK EMAIL *</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10, marginBottom: 4 }}>
+            <Text style={styles.inputLabel}>ADMIN WORK EMAIL *</Text>
+            {isGoogleEmailLocked && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <ShieldCheckIcon size={12} color="#10B981" />
+                <Text style={{ fontSize: 10, color: "#10B981", fontWeight: "700", textTransform: "uppercase" }}>
+                  Verified via Google
+                </Text>
+              </View>
+            )}
+          </View>
           <TextInput
             value={onboardAdminEmail}
-            onChangeText={setOnboardAdminEmail}
+            onChangeText={isGoogleEmailLocked ? undefined : setOnboardAdminEmail}
+            editable={!isGoogleEmailLocked}
             placeholder="e.g. alex@acmecorp.com"
             placeholderTextColor={COLORS.muted}
             keyboardType="email-address"
             autoCapitalize="none"
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              isGoogleEmailLocked && {
+                backgroundColor: isDarkMode ? "#131B2E" : "#F1F5F9",
+                borderColor: isDarkMode ? "#1E293B" : "#CBD5E1",
+                color: isDarkMode ? "#94A3B8" : "#64748B",
+              },
+            ]}
           />
+          {isGoogleEmailLocked && (
+            <Text style={{ fontSize: 11, color: isDarkMode ? "#94A3B8" : "#64748B", marginTop: 4 }}>
+              Locked to your authenticated Google account ({onboardAdminEmail}).
+            </Text>
+          )}
 
           <Text style={[styles.inputLabel, { marginTop: 10 }]}>ORGANIZATION NAME *</Text>
           <TextInput
@@ -3228,6 +3253,7 @@ export default function App() {
                 triggerHaptic("selection");
                 setAuthTab("signin");
                 setUninvitedWarning(null);
+                setIsGoogleEmailLocked(false);
               }}
               style={[styles.authSegmentBtn, authTab === "signin" && styles.authSegmentBtnActive]}
             >
