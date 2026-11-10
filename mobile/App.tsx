@@ -654,15 +654,15 @@ export default function App() {
 
   // 3-Step Organization Onboarding Wizard State (Admin Flow)
   const [onboardingStep, setOnboardingStep] = useState<1 | 2 | 3>(1);
-  const [onboardAdminName, setOnboardAdminName] = useState("Alex Vance");
-  const [onboardAdminEmail, setOnboardAdminEmail] = useState("alex@acmecorp.com");
+  const [onboardAdminName, setOnboardAdminName] = useState("");
+  const [onboardAdminEmail, setOnboardAdminEmail] = useState("");
   const [isGoogleEmailLocked, setIsGoogleEmailLocked] = useState(false);
-  const [onboardingOrgName, setOnboardingOrgName] = useState("Acme Innovations");
-  const [onboardingSlug, setOnboardingSlug] = useState("acme-innovations");
-  const [onboardingTeamSize, setOnboardingTeamSize] = useState("11-50");
+  const [onboardingOrgName, setOnboardingOrgName] = useState("");
+  const [onboardingSlug, setOnboardingSlug] = useState("");
+  const [onboardingTeamSize, setOnboardingTeamSize] = useState("1-10");
 
   // Step 2 Employee Additions
-  const [onboardingEmployees, setOnboardingEmployees] = useState<OnboardingEmployee[]>(INITIAL_ONBOARDING_EMPLOYEES);
+  const [onboardingEmployees, setOnboardingEmployees] = useState<OnboardingEmployee[]>([]);
   const [newEmployeeName, setNewEmployeeName] = useState("");
   const [newEmployeeEmail, setNewEmployeeEmail] = useState("");
   const [newEmployeeRole, setNewEmployeeRole] = useState<"manager" | "member" | "viewer">("manager");
@@ -1700,12 +1700,9 @@ export default function App() {
     setOnboardingStep(1);
     setOnboardAdminName(googleAcc.name);
     setOnboardAdminEmail(googleAcc.email);
-    setOnboardingOrgName(`${googleAcc.name}'s Workspace`);
-    const cleanSlug = googleAcc.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    setOnboardingSlug(cleanSlug || "my-organization");
+    setOnboardingOrgName("");
+    setOnboardingSlug("");
+    setOnboardingEmployees([]);
     setUninvitedWarning(null);
     triggerHaptic("selection");
     Alert.alert(
@@ -2494,6 +2491,13 @@ export default function App() {
 
           <TouchableOpacity
             onPress={() => {
+              if (!onboardAdminName.trim() || !onboardAdminEmail.trim() || !onboardingOrgName.trim()) {
+                Alert.alert(
+                  "Required Fields",
+                  "Please enter your Admin Name, Work Email, and Organization Name to proceed."
+                );
+                return;
+              }
               triggerHaptic("selection");
               setOnboardingStep(2);
             }}
@@ -2586,45 +2590,53 @@ export default function App() {
             TEAM ROSTER ({onboardingEmployees.length} Added)
           </Text>
           <View style={styles.employeeListContainer}>
-            {onboardingEmployees.map((emp) => (
-              <View key={emp.id} style={styles.employeeCardRow}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={styles.employeeCardName}>{emp.name}</Text>
-                    <View
-                      style={[
-                        styles.employeeRoleTag,
-                        emp.role === "manager" && { backgroundColor: "rgba(16, 185, 129, 0.15)" },
-                        emp.role === "member" && { backgroundColor: "rgba(117, 110, 243, 0.15)" },
-                        emp.role === "viewer" && { backgroundColor: "rgba(59, 130, 246, 0.15)" },
-                      ]}
-                    >
-                      <Text
+            {onboardingEmployees.length === 0 ? (
+              <View style={{ paddingVertical: 14, paddingHorizontal: 10, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ fontSize: 12, color: COLORS.muted, textAlign: "center" }}>
+                  No members added yet. You can invite team members now or later from settings.
+                </Text>
+              </View>
+            ) : (
+              onboardingEmployees.map((emp) => (
+                <View key={emp.id} style={styles.employeeCardRow}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={styles.employeeCardName}>{emp.name}</Text>
+                      <View
                         style={[
-                          styles.employeeRoleTagText,
-                          emp.role === "manager" && { color: COLORS.accentGreen },
-                          emp.role === "member" && { color: COLORS.primary },
-                          emp.role === "viewer" && { color: COLORS.accentBlue },
+                          styles.employeeRoleTag,
+                          emp.role === "manager" && { backgroundColor: "rgba(16, 185, 129, 0.15)" },
+                          emp.role === "member" && { backgroundColor: "rgba(117, 110, 243, 0.15)" },
+                          emp.role === "viewer" && { backgroundColor: "rgba(59, 130, 246, 0.15)" },
                         ]}
                       >
-                        {emp.role.toUpperCase()}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.employeeRoleTagText,
+                            emp.role === "manager" && { color: COLORS.accentGreen },
+                            emp.role === "member" && { color: COLORS.primary },
+                            emp.role === "viewer" && { color: COLORS.accentBlue },
+                          ]}
+                        >
+                          {emp.role.toUpperCase()}
+                        </Text>
+                      </View>
                     </View>
+                    <Text style={styles.employeeCardEmail}>{emp.email} • {emp.assignedProject}</Text>
                   </View>
-                  <Text style={styles.employeeCardEmail}>{emp.email} • {emp.assignedProject}</Text>
-                </View>
 
-                <TouchableOpacity
-                  onPress={() => {
-                    triggerHaptic("light");
-                    setOnboardingEmployees((prev) => prev.filter((e) => e.id !== emp.id));
-                  }}
-                  style={{ padding: 4 }}
-                >
-                  <XIcon size={14} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
+                  <TouchableOpacity
+                    onPress={() => {
+                      triggerHaptic("light");
+                      setOnboardingEmployees((prev) => prev.filter((e) => e.id !== emp.id));
+                    }}
+                    style={{ padding: 4 }}
+                  >
+                    <XIcon size={14} color="#EF4444" />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
           </View>
 
           {/* Stepper Nav Buttons */}
@@ -2670,19 +2682,27 @@ export default function App() {
               You have been invited to collaborate with {onboardAdminName} on {onboardingOrgName}. Your workspace role has been assigned with personalized project access.
             </Text>
 
-            <View style={styles.emailPreviewRosterBox}>
-              <Text style={{ fontSize: 9, fontWeight: "bold", color: COLORS.muted, marginBottom: 4 }}>
-                DISPATCHING TO {onboardingEmployees.length} MEMBERS:
-              </Text>
-              {onboardingEmployees.slice(0, 3).map((e) => (
-                <Text key={e.id} style={{ fontSize: 10, color: COLORS.navy }}>
-                  • {e.email} ({e.role.toUpperCase()})
+            {onboardingEmployees.length > 0 ? (
+              <View style={styles.emailPreviewRosterBox}>
+                <Text style={{ fontSize: 9, fontWeight: "bold", color: COLORS.muted, marginBottom: 4 }}>
+                  DISPATCHING TO {onboardingEmployees.length} MEMBERS:
                 </Text>
-              ))}
-              {onboardingEmployees.length > 3 && (
-                <Text style={{ fontSize: 9, color: COLORS.muted }}>+ {onboardingEmployees.length - 3} more</Text>
-              )}
-            </View>
+                {onboardingEmployees.slice(0, 3).map((e) => (
+                  <Text key={e.id} style={{ fontSize: 10, color: COLORS.navy }}>
+                    • {e.email} ({e.role.toUpperCase()})
+                  </Text>
+                ))}
+                {onboardingEmployees.length > 3 && (
+                  <Text style={{ fontSize: 9, color: COLORS.muted }}>+ {onboardingEmployees.length - 3} more</Text>
+                )}
+              </View>
+            ) : (
+              <View style={[styles.emailPreviewRosterBox, { alignItems: "center" }]}>
+                <Text style={{ fontSize: 10, color: COLORS.muted }}>
+                  Solo admin workspace ready. No invitations will be queued.
+                </Text>
+              </View>
+            )}
 
             <View style={styles.emailMockButton}>
               <Text style={styles.emailMockButtonText}>Accept Invitation & Open App</Text>
@@ -3256,6 +3276,13 @@ export default function App() {
                 setAuthTab("signup");
                 setOnboardingStep(1);
                 setUninvitedWarning(null);
+                if (!isGoogleEmailLocked) {
+                  setOnboardAdminName("");
+                  setOnboardAdminEmail("");
+                  setOnboardingOrgName("");
+                  setOnboardingSlug("");
+                  setOnboardingEmployees([]);
+                }
               }}
               style={[styles.authSegmentBtn, authTab === "signup" && styles.authSegmentBtnActive]}
             >

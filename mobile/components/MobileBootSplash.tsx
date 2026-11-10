@@ -27,6 +27,11 @@ interface MobileBootSplashProps {
  * - Solid theme background (#0B0F19 in Dark Mode, #FFFFFF in Light Mode)
  * - Smooth upward glide and dissolve into workspace
  */
+import {
+  TASKPULSE_BOOT_LIGHT_WEBP,
+  TASKPULSE_BOOT_DARK_WEBP,
+} from "../assets/bootAnimationBase64";
+
 export const MobileBootSplash: React.FC<MobileBootSplashProps> = ({
   isDarkMode = false,
   onBootComplete,
@@ -99,9 +104,7 @@ export const MobileBootSplash: React.FC<MobileBootSplashProps> = ({
       />
       <Image
         source={{
-          uri: isDarkMode
-            ? "asset:/taskpulse_boot_animated_dark.gif"
-            : "asset:/taskpulse_boot_animated.gif",
+          uri: isDarkMode ? TASKPULSE_BOOT_DARK_WEBP : TASKPULSE_BOOT_LIGHT_WEBP,
         }}
         style={styles.fullScreenImage}
         resizeMode="contain"
