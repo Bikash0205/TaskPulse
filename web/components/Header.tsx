@@ -18,24 +18,40 @@ import {
   Users,
   Building2,
   Zap,
+  CreditCard,
 } from "lucide-react";
 import GoogleSignInModal from "./GoogleSignInModal";
 import RoleManagementModal from "./RoleManagementModal";
 import { OrganizationOnboardingModal } from "./OrganizationOnboardingModal";
 import { TaskPulseLiteModal } from "./TaskPulseLiteModal";
+import { AdminSubscriptionModal } from "./AdminSubscriptionModal";
+import { UserSubscriptionModal } from "./UserSubscriptionModal";
 
 interface HeaderProps {
   projects?: Project[];
 }
 
 export const Header: React.FC<HeaderProps> = ({ projects }) => {
-  const { user, isLiveFirebase, signOutUser, switchRole, loginDemoUser } = useAuth();
+  const { user, isLiveFirebase, signOutUser, switchRole, loginDemoUser, signInWithGoogle } = useAuth();
   const { currentOrg, setIsOnboardingOpen } = useOrganization();
   const { theme, toggleTheme } = useTheme();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
   const [isLiteModalOpen, setIsLiteModalOpen] = useState(false);
+  const [isAdminSubModalOpen, setIsAdminSubModalOpen] = useState(false);
+  const [isUserSubModalOpen, setIsUserSubModalOpen] = useState(false);
+
+  const handleGoogleDirectSignIn = async () => {
+    try {
+      const res = await signInWithGoogle();
+      if (!res.success && res.error && res.error !== "Sign-in popup was closed before completing.") {
+        setIsLoginModalOpen(true);
+      }
+    } catch {
+      setIsLoginModalOpen(true);
+    }
+  };
 
   const roles: UserRole[] = ["admin", "manager", "member"];
 
@@ -63,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
           {/* Prominent Sign in with Google button */}
           {(!user || user.email?.endsWith("@taskpulse.internal")) && (
             <button
-              onClick={() => setIsLoginModalOpen(true)}
+              onClick={handleGoogleDirectSignIn}
               data-testid="google-signin-btn"
               className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] hover:border-[#756EF3] shadow-xs text-xs font-medium text-[#002055] dark:text-[#F8FAFC] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
               aria-label="Sign in with Google"
@@ -108,17 +124,29 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
 
           {user ? (
             <>
-              {/* If user is Admin, show Manage Roles Button */}
+              {/* If user is Admin, show Manage Roles and Subscriptions Button */}
               {isAdmin && (
-                <button
-                  onClick={() => setIsRoleManagementOpen(true)}
-                  data-testid="manage-roles-btn"
-                  title="Workspace Role Management: Manage team roles and project access"
-                  className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 hover:bg-[#E2E0FD] dark:hover:bg-[#756EF3]/25 border border-[#756EF3]/30 text-[#756EF3] dark:text-[#818CF8] text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                >
-                  <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span className="hidden md:inline">Manage Roles</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsAdminSubModalOpen(true)}
+                    data-testid="admin-subscriptions-btn"
+                    title="Subscription Governance: Manage user subscriptions and Google Play Billing"
+                    className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                  >
+                    <CreditCard className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                    <span className="hidden md:inline">Subscriptions</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsRoleManagementOpen(true)}
+                    data-testid="manage-roles-btn"
+                    title="Workspace Role Management: Manage team roles and project access"
+                    className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl bg-[#F0EFFF] dark:bg-[#756EF3]/15 hover:bg-[#E2E0FD] dark:hover:bg-[#756EF3]/25 border border-[#756EF3]/30 text-[#756EF3] dark:text-[#818CF8] text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="hidden md:inline">Manage Roles</span>
+                  </button>
+                </>
               )}
 
               {/* Role Display or Switcher */}
@@ -249,6 +277,18 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
       <TaskPulseLiteModal
         isOpen={isLiteModalOpen}
         onClose={() => setIsLiteModalOpen(false)}
+      />
+
+      <AdminSubscriptionModal
+        isOpen={isAdminSubModalOpen}
+        onClose={() => setIsAdminSubModalOpen(false)}
+        currentUserEmail={user?.email}
+      />
+
+      <UserSubscriptionModal
+        isOpen={isUserSubModalOpen}
+        onClose={() => setIsUserSubModalOpen(false)}
+        userEmail={user?.email}
       />
     </>
   );

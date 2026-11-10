@@ -84,6 +84,16 @@ import { FluidPressable } from "./components/FluidPressable";
 import { GoogleOAuthModal, GoogleAccountOption } from "./components/GoogleOAuthModal";
 import { AdminSubscriptionPanelModal, MemberSubscription } from "./components/AdminSubscriptionPanelModal";
 import { UserSubscriptionModal } from "./components/UserSubscriptionModal";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
+
+try {
+  GoogleSignin.configure({
+    webClientId: "31759289651-pg8emrlsqs62nbi4ok0bl97qa358vjds.apps.googleusercontent.com",
+    offlineAccess: true,
+  });
+} catch (e) {
+  console.warn("GoogleSignin.configure notice:", e);
+}
 
 export type ProjectTabMode = "list" | "board" | "timeline";
 
@@ -1460,11 +1470,33 @@ export default function App() {
     }
   };
 
-  // Handle Google Single Sign-On (Pure In-App Google Authentication Sheet)
-  const handleGoogleSignIn = () => {
+  // Handle Google Single Sign-On (Pure Native Android Account Picker with fallback)
+  const handleGoogleSignIn = async () => {
     triggerHaptic("selection");
     setUninvitedWarning(null);
-    setIsGoogleOAuthModalOpen(true);
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const userObj = (response as any)?.data?.user || (response as any)?.user;
+      if (userObj && userObj.email) {
+        handleGoogleAccountSelected({
+          id: userObj.id || `g-${Date.now()}`,
+          name: userObj.name || userObj.email.split("@")[0],
+          email: userObj.email,
+          role: userObj.email.toLowerCase() === "zevonbcash@gmail.com" ? "admin" : "member",
+          initials: (userObj.name || userObj.email).substring(0, 2).toUpperCase(),
+          avatarColor: "#4285F4",
+        });
+        return;
+      }
+    } catch (error: any) {
+      console.warn("Native Google Sign-In notice:", error?.code, error?.message);
+      if (error?.code === statusCodes?.SIGN_IN_CANCELLED) {
+        return;
+      }
+      // If native services are unavailable or failed, present the interactive sheet
+      setIsGoogleOAuthModalOpen(true);
+    }
   };
 
   // Listen for incoming deep links (Google OAuth 2.0 redirect from Chrome)
