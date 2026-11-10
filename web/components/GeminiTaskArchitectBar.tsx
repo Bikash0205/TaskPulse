@@ -32,7 +32,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
       const data = await res.json();
       if (data.task) {
         setParsedTask(data.task);
-        setSource(data.source === "gemini-pro" ? "Gemini Pro" : "Neural Heuristic Engine");
+        setSource(data.source === "gemini-pro" ? "AI Synthesis Engine" : "Neural Heuristic Engine");
       }
     } catch (err) {
       console.error("AI parse error:", err);
@@ -52,7 +52,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 text-xs font-semibold text-[#5D55D6] dark:text-[#818CF8]">
           <Sparkles className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
-          <span>Gemini Pro Task Architect</span>
+          <span>AI Task Architect</span>
         </div>
         <span className="text-[10px] text-[#4E5565] dark:text-slate-200 font-mono bg-[#EDEAE2] dark:bg-[#756EF3]/15 px-2.5 py-0.5 rounded-full border border-[#DDD8CE] dark:border-transparent">
           Natural Language Engine

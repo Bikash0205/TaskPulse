@@ -59,7 +59,7 @@ const PLANS = [
       "50 Included Workspace Seats",
       "Unlimited Projects & Departments",
       "Interactive Gantt Timeline & Exports",
-      "Unlimited Gemini Pro AI Parsing",
+      "Unlimited AI Task Parsing",
     ],
     sku: "taskpulse_pro_monthly_19",
     popular: true,

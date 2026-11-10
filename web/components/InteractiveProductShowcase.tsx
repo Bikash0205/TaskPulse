@@ -59,7 +59,7 @@ export const InteractiveProductShowcase: React.FC = () => {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Gemini AI Engine</span>
+            <span>AI Task Engine</span>
           </button>
 
           <button
@@ -124,7 +124,7 @@ export const InteractiveProductShowcase: React.FC = () => {
                 <div className="flex justify-between text-xs font-bold mb-1 text-[#0F172A] dark:text-white">
                   <span className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-400" />
-                    <span>Edge API &amp; Gemini NLP Pipeline</span>
+                    <span>Edge API &amp; Neural NLP Pipeline</span>
                   </span>
                   <span className="text-[11px] text-[#334155] dark:text-slate-300">Nov 6 - Nov 12 (75%)</span>
                 </div>
@@ -239,7 +239,7 @@ export const InteractiveProductShowcase: React.FC = () => {
                 <span>Zero-Friction Prompt to Action</span>
               </div>
               <p className="text-xs sm:text-sm text-[#0F172A] dark:text-white font-medium leading-relaxed">
-                Type natural requirements into any view. Gemini Pro analyzes dependencies, estimates realistic timeframes, auto-populates subtask checklists, and assigns team leads based on active bandwidth.
+                Type natural requirements into any view. Our AI engine analyzes dependencies, estimates realistic timeframes, auto-populates subtask checklists, and assigns team leads based on active bandwidth.
               </p>
               <div className="mt-4 p-3.5 rounded-xl bg-white dark:bg-[#070B14] border border-slate-300 dark:border-white/10 text-xs font-mono text-[#0F172A] dark:text-slate-200 font-semibold shadow-xs">
                 <span className="text-emerald-700 dark:text-emerald-400 font-bold">&gt; Input:</span> &ldquo;Launch summer promotion with Elena by Friday high priority&rdquo;<br />

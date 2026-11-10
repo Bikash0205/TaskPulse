@@ -98,9 +98,9 @@ export const ScrollMotionGraphics: React.FC = () => {
     {
       id: "ai",
       step: "STAGE 01",
-      title: "Gemini AI Natural Triage",
+      title: "AI Natural Triage",
       description:
-        "Type requirements in plain English. Gemini Pro extracts deadlines, priority, and subtasks cleanly.",
+        "Type requirements in plain English. TaskPulse AI extracts deadlines, priority, and subtasks cleanly.",
       icon: <Sparkles className="w-5 h-5" />,
       accentGradient: "from-[#5D55D6] to-[#7C73E6]",
       metric: "< 800ms parsing",

@@ -448,7 +448,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </h1>
 
             <p className="lp-hero-sub text-sm sm:text-base md:text-lg text-[#4E5565] dark:text-slate-200 max-w-xl leading-relaxed font-sans">
-              Orchestrate sprint timelines, protect engineer bandwidth, and verify deliverables across desktop, Android, and iOS — powered by Gemini AI task synthesis without per-seat bloat.
+              Orchestrate sprint timelines, protect engineer bandwidth, and verify deliverables across desktop, Android, and iOS — powered by AI task synthesis without per-seat bloat.
             </p>
 
             {/* Primary & Secondary CTAs */}
@@ -543,7 +543,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                 <div>
                   <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                    <span className="text-[#1E222D] dark:text-white">Gemini Sprint Triage API</span>
+                    <span className="text-[#1E222D] dark:text-white">AI Sprint Triage API</span>
                     <span className="font-mono text-[#5D55D6] dark:text-[#818CF8]">78%</span>
                   </div>
                   <div className="h-2 rounded-full bg-[#E8E4DA] dark:bg-slate-800 overflow-hidden">
