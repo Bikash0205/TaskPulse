@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskPulse Google Authentication</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0B0F19;
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: #151C2C;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(66, 133, 244, 0.2);
+      border-top-color: #4285F4;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h2 {
+      font-size: 20px;
+      margin: 0 0 8px;
+    }
+    p {
+      color: #94A3B8;
+      font-size: 14px;
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+    .btn {
+      display: inline-block;
+      background: #756EF3;
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #635BFF;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h2 id="title">Authenticating with Google...</h2>
+    <p id="status">Connecting your verified Google identity to TaskPulse.</p>
+    <a id="appBtn" href="io.taskpulse.app://auth" class="btn" style="display: none;">Return to TaskPulse App</a>
+  </div>
+
+  <script>
+    (function() {
+      var hash = window.location.hash.substring(1);
+      var params = new URLSearchParams(hash || window.location.search);
+      var idToken = params.get('id_token') || params.get('token');
+      var error = params.get('error');
+
+      if (error) {
+        document.getElementById('title').innerText = 'Authentication Error';
+        document.getElementById('status').innerText = 'Google reported: ' + error;
+        document.getElementById('appBtn').style.display = 'inline-block';
+        return;
+      }
+
+      if (idToken) {
+        try {
+          var base64Url = idToken.split('.')[1];
+          var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          var payload = JSON.parse(jsonPayload);
+
+          var name = payload.name || payload.given_name || 'Google User';
+          var email = payload.email || '';
+          var picture = payload.picture || '';
+
+          var deepLink = 'io.taskpulse.app://auth?token=' + encodeURIComponent(idToken) +
+            '&name=' + encodeURIComponent(name) +
+            '&email=' + encodeURIComponent(email) +
+            '&picture=' + encodeURIComponent(picture);
+
+          document.getElementById('title').innerText = 'Authenticated!';
+          document.getElementById('status').innerText = 'Welcome ' + name + ' (' + email + '). Opening TaskPulse...';
+          document.getElementById('appBtn').href = deepLink;
+          document.getElementById('appBtn').style.display = 'inline-block';
+
+          // Auto redirect
+          window.location.href = deepLink;
+          setTimeout(function() {
+            window.location.replace(deepLink);
+          }, 300);
+        } catch(e) {
+          document.getElementById('status').innerText = 'Tokens received. Opening TaskPulse app...';
+          var fallbackLink = 'io.taskpulse.app://auth?token=' + encodeURIComponent(idToken);
+          document.getElementById('appBtn').href = fallbackLink;
+          document.getElementById('appBtn').style.display = 'inline-block';
+          window.location.href = fallbackLink;
+        }
+      } else {
+        // If loaded without token, check if code or redirect to Google
+        document.getElementById('status').innerText = 'Awaiting Google OAuth credentials...';
+        document.getElementById('appBtn').style.display = 'inline-block';
+      }
+    })();
+  </script>
+</body>
+</html>

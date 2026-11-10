@@ -19,6 +19,8 @@ import {
   AppRegistry,
   Appearance,
   PanResponder,
+  Linking,
+  ActivityIndicator,
 } from "react-native";
 import {
   HomeIcon,
@@ -623,6 +625,7 @@ export default function App() {
 
   // Google OAuth Interactive Modal State
   const [isGoogleOAuthModalOpen, setIsGoogleOAuthModalOpen] = useState(false);
+  const [isAuthenticatingGoogle, setIsAuthenticatingGoogle] = useState(false);
 
   // Subscriptions & Google Play Billing State
   const [memberSubscriptions, setMemberSubscriptions] = useState<MemberSubscription[]>(INITIAL_MEMBER_SUBSCRIPTIONS);
@@ -1457,11 +1460,85 @@ export default function App() {
     }
   };
 
-  // Handle Google Single Sign-On Trigger
-  const handleGoogleSignIn = () => {
+  // Handle Google Single Sign-On (Real Live Google OAuth 2.0 via Browser & Deep Link)
+  const handleGoogleSignIn = async () => {
     triggerHaptic("selection");
-    setIsGoogleOAuthModalOpen(true);
+    setUninvitedWarning(null);
+    setIsAuthenticatingGoogle(true);
+
+    try {
+      // 1. Request real OAuth 2.0 Auth URI from Google Identity Services
+      const res = await fetch(
+        "https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=AIzaSyBxqUn_iIBvPwc6NCmO4LAikisI0EoC7Wc",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            providerId: "google.com",
+            continueUri: "https://bikash0205.github.io/TaskPulse/auth.html",
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (data && data.authUri) {
+        // Open the REAL Google OAuth 2.0 authorization screen in Google Chrome / browser
+        await Linking.openURL(data.authUri);
+      } else {
+        setIsGoogleOAuthModalOpen(true);
+      }
+    } catch (err) {
+      console.warn("Real Google OAuth redirect error:", err);
+      setIsGoogleOAuthModalOpen(true);
+    } finally {
+      setIsAuthenticatingGoogle(false);
+    }
   };
+
+  // Listen for incoming deep links (Google OAuth 2.0 redirect from Chrome)
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      const url = event.url;
+      if (!url || !url.startsWith("io.taskpulse.app://auth")) return;
+
+      try {
+        const queryIdx = url.indexOf("?");
+        if (queryIdx === -1) return;
+        const queryString = url.substring(queryIdx + 1);
+        const pairs = queryString.split("&");
+        const params: Record<string, string> = {};
+        for (const pair of pairs) {
+          const [k, v] = pair.split("=");
+          if (k) params[decodeURIComponent(k)] = decodeURIComponent(v || "");
+        }
+
+        const email = params.email;
+        const name = params.name || email?.split("@")[0] || "Google User";
+        if (email) {
+          handleGoogleAccountSelected({
+            id: `g-${Date.now()}`,
+            name,
+            email,
+            role: email.toLowerCase() === "zevonbcash@gmail.com" ? "admin" : "member",
+            initials: name.substring(0, 2).toUpperCase(),
+            avatarColor: "#4285F4",
+          });
+        }
+      } catch (e) {
+        console.warn("Failed to parse auth deep link", e);
+      }
+    };
+
+    const sub = Linking.addEventListener("url", handleDeepLink);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => {
+      sub.remove();
+    };
+  }, [registeredAccounts]);
 
   // Process authenticated Google account selection
   const handleGoogleAccountSelected = (googleAcc: GoogleAccountOption) => {
@@ -2967,11 +3044,20 @@ export default function App() {
               {/* Prominent Google Single Sign-On Button */}
               <TouchableOpacity
                 activeOpacity={0.85}
+                disabled={isAuthenticatingGoogle}
                 onPress={handleGoogleSignIn}
-                style={styles.googleAuthBtn}
+                style={[styles.googleAuthBtn, isAuthenticatingGoogle && { opacity: 0.8 }]}
               >
-                <GoogleIcon size={18} />
-                <Text style={styles.googleAuthBtnText}>Continue with Google</Text>
+                {isAuthenticatingGoogle ? (
+                  <ActivityIndicator size="small" color="#4285F4" style={{ marginRight: 8 }} />
+                ) : (
+                  <GoogleIcon size={18} />
+                )}
+                <Text style={styles.googleAuthBtnText}>
+                  {isAuthenticatingGoogle
+                    ? "Connecting to accounts.google.com..."
+                    : "Continue with Google"}
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.authDividerRow}>
