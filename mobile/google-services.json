@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:31759289651:android:02756806487c18d95bc246",
+        "mobilesdk_app_id": "1:31759289651:android:d1a5facd97b1758f5bc246",
         "android_client_info": {
           "package_name": "io.taskpulse.app"
         }
@@ -20,12 +20,17 @@
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBxqUn_iIBvPwc6NCmO4LAikisI0EoC7Wc"
+          "current_key": "AIzaSyDYl4Vrbd8hkpEp1E1Ml0Yv_EFrsJdi-dc"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "31759289651-pg8emrlsqs62nbi4ok0bl97qa358vjds.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

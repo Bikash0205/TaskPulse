@@ -21,6 +21,7 @@ import {
   PanResponder,
   Linking,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import {
   HomeIcon,
@@ -1470,7 +1471,7 @@ export default function App() {
     }
   };
 
-  // Handle Google Single Sign-On (Pure Native Android Account Picker with fallback)
+  // Handle Google Single Sign-On (Pure Native Android Account Picker)
   const handleGoogleSignIn = async () => {
     triggerHaptic("selection");
     setUninvitedWarning(null);
@@ -1494,8 +1495,10 @@ export default function App() {
       if (error?.code === statusCodes?.SIGN_IN_CANCELLED) {
         return;
       }
-      // If native services are unavailable or failed, present the interactive sheet
-      setIsGoogleOAuthModalOpen(true);
+      Alert.alert(
+        "Google Sign-In",
+        error?.message || "Google Authentication encountered an error. Please try again."
+      );
     }
   };
 
