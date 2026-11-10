@@ -22,6 +22,7 @@ import {
 } from "@/lib/firestoreService";
 import { mockColleagues, mockTasks, mockPulseFeed, mockProjects } from "@shared/mockData";
 import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole, Project, SubTask } from "@shared/types";
+import { formatPlanStatusLabel, getEffectivePlan } from "@shared/plans";
 
 export default function TaskPulseWorkspacePage() {
   const router = useRouter();
@@ -530,7 +531,7 @@ export default function TaskPulseWorkspacePage() {
       <main className={`flex-1 ${viewportMode === "mobile" ? "p-0" : "p-3 sm:p-5 md:p-6"} flex flex-col gap-3 sm:gap-5 max-w-[1720px] w-full mx-auto`}>
         {/* Workspace Info Bar */}
         <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 sm:px-0 py-2 sm:py-0 pb-2.5 border-b border-[#DDD8CE] dark:border-[#1E293B]">
-          <div className="flex items-center gap-2 text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans">
             <Building2 className="w-4 h-4 text-[#5D55D6]" />
             <span>Workspace:</span>
             <span className="text-[#1E222D] dark:text-[#F8FAFC] font-semibold">{currentOrg?.name || "Workspace"}</span>
@@ -539,6 +540,12 @@ export default function TaskPulseWorkspacePage() {
                 Invite Code: {currentOrg.inviteCode}
               </span>
             )}
+            <span
+              data-testid="workspace-plan-badge"
+              className="px-2.5 py-0.5 rounded-full bg-[#E4F2EC] dark:bg-emerald-950/50 text-[#0F7656] dark:text-emerald-300 border border-[#C5E3D5] dark:border-emerald-800/60 text-[11px] font-semibold"
+            >
+              {getEffectivePlan(currentOrg, user?.email).name} ({formatPlanStatusLabel(currentOrg?.planStatus, currentOrg?.trialEndsAt)})
+            </span>
           </div>
 
           <div className="hidden md:block text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans">

@@ -8,7 +8,9 @@ import { TaskPulseLogo } from "@/components/TaskPulseLogo";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useOrganization } from "@/context/OrganizationContext";
-import { Department, UserRole } from "@shared/types";
+import { Department, PlanTierId, UserRole } from "@shared/types";
+import { PLAN_DEFINITIONS } from "@shared/plans";
+import { PlanSelectionCards, PaidFulfillmentMode } from "@/components/PlanSelectionCards";
 import { SpotlightCard } from "@/components/SpotlightCard";
 import { AmbientBackground } from "@/components/AmbientBackground";
 import {
@@ -68,7 +70,7 @@ export default function OnboardingPage() {
     clearPendingGoogleUser,
   } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { onboardCompany, joinWithCode, inviteTeammate } = useOrganization();
+  const { onboardCompany, joinWithCode, inviteTeammate, submitEnterpriseQuote } = useOrganization();
 
   const verifiedGoogleEmail =
     pendingGoogleUser?.email ||
@@ -76,7 +78,14 @@ export default function OnboardingPage() {
   const isGoogleEmailLocked = Boolean(verifiedGoogleEmail);
 
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Step 3: Plan Selection & Hybrid Fulfillment State
+  const [selectedPlan, setSelectedPlan] = useState<PlanTierId>("free");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+  const [fulfillmentMode, setFulfillmentMode] = useState<PaidFulfillmentMode>("web_trial");
+  const [quoteSeats, setQuoteSeats] = useState<number>(100);
+  const [quoteRequirements, setQuoteRequirements] = useState<string>("");
 
   // Step 1: Company Profile (Starts completely empty by default unless prefilled via verified Google auth)
   const [adminName, setAdminName] = useState("");
@@ -96,10 +105,16 @@ export default function OnboardingPage() {
   const [newEmpRole, setNewEmpRole] = useState<UserRole>("member");
   const [newEmpDept, setNewEmpDept] = useState<string>("");
 
-  // Step 3: Success state
+  // Step 4: Success state
   const [linkCopied, setLinkCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdOrgData, setCreatedOrgData] = useState<{ code: string; name: string } | null>(null);
+  const [createdOrgData, setCreatedOrgData] = useState<{
+    id: string;
+    code: string;
+    name: string;
+    planId: PlanTierId;
+    statusLabel: string;
+  } | null>(null);
 
   // Join Flow
   const [joinCode, setJoinCode] = useState("");
@@ -152,7 +167,7 @@ export default function OnboardingPage() {
   // Animate Step Progress Bar
   useEffect(() => {
     if (progressBarRef.current) {
-      const percentage = step === 1 ? 33 : step === 2 ? 66 : 100;
+      const percentage = step * 25;
       gsap.to(progressBarRef.current, {
         width: `${percentage}%`,
         duration: 0.5,
@@ -162,7 +177,7 @@ export default function OnboardingPage() {
   }, [step]);
 
   // Directional Step Switch Animation
-  const changeStep = (targetStep: 1 | 2 | 3, direction: "next" | "back") => {
+  const changeStep = (targetStep: 1 | 2 | 3 | 4, direction: "next" | "back") => {
     if (!stepContentRef.current) {
       setStep(targetStep);
       return;
@@ -249,21 +264,73 @@ export default function OnboardingPage() {
         customDepts.push("Platform Engineering", "Design Systems", "Product Management");
       }
 
+      const resolvedBillingSource =
+        selectedPlan === "free"
+          ? ("free" as const)
+          : selectedPlan === "enterprise"
+          ? ("enterprise_quote" as const)
+          : fulfillmentMode;
+      const resolvedPlanStatus =
+        selectedPlan === "free"
+          ? ("active" as const)
+          : selectedPlan === "enterprise"
+          ? ("quote_pending" as const)
+          : fulfillmentMode === "web_trial"
+          ? ("trialing" as const)
+          : ("past_due" as const);
+
       const { org, initialProject: proj } = await onboardCompany(
         companyName.trim(),
         customDepts,
         `${companyName.trim()} Core Roadmap`,
         undefined,
-        resolvedEmail
+        resolvedEmail,
+        {
+          planId: selectedPlan,
+          planStatus: resolvedPlanStatus,
+          billingSource: resolvedBillingSource,
+          billingCycle,
+          teamSize,
+          trialDays: 14,
+        }
       );
+
+      if (selectedPlan === "enterprise") {
+        await submitEnterpriseQuote({
+          orgId: org.id,
+          companyName: org.name,
+          contactName: resolvedName,
+          contactEmail: resolvedEmail,
+          teamSize,
+          estimatedSeats: quoteSeats,
+          requirements: quoteRequirements.trim() || "Custom enterprise deployment & SLA",
+        });
+      }
 
       for (const emp of employees) {
         await inviteTeammate(emp.email, emp.name, emp.role, emp.department as Department, [proj.id]);
       }
 
-      setCreatedOrgData({ code: org.inviteCode, name: org.name });
+      const statusLabel =
+        selectedPlan === "free"
+          ? "Active Free Tier"
+          : selectedPlan === "enterprise"
+          ? "Enterprise Quote Submitted"
+          : fulfillmentMode === "web_trial"
+          ? "14-Day Trial Active"
+          : fulfillmentMode === "google_play"
+          ? "Awaiting Google Play Sync"
+          : "Invoice Request Submitted";
+
+      setCreatedOrgData({
+        id: org.id,
+        code: org.inviteCode,
+        name: org.name,
+        planId: selectedPlan,
+        statusLabel,
+      });
       setIsSubmitting(false);
-      changeStep(3, "next");
+      changeStep(4, "next");
     } catch (err: any) {
       setCreateError(err?.message || "Failed to initialize organization workspace. Please try again.");
       setIsSubmitting(false);
@@ -504,19 +571,40 @@ export default function OnboardingPage() {
 
                   <div className="w-8 sm:w-16 h-0.5 bg-slate-200 dark:bg-slate-800" />
 
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <span
                       className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${
                         step >= 3
+                          ? "bg-[#756EF3] text-white shadow-xs"
+                          : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                      }`}
+                    >
+                      {step > 3 ? <Check className="w-3.5 h-3.5" /> : "3"}
+                    </span>
+                    <span
+                      className={`font-semibold tracking-tight ${
+                        step === 3 ? "text-[#756EF3] dark:text-[#818CF8]" : "text-slate-500"
+                      }`}
+                    >
+                      Select Plan
+                    </span>
+                  </div>
+
+                  <div className="w-6 sm:w-12 h-0.5 bg-slate-200 dark:bg-slate-800" />
+
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${
+                        step >= 4
                           ? "bg-emerald-500 text-white shadow-xs"
                           : "bg-slate-200 dark:bg-slate-800 text-slate-500"
                       }`}
                     >
-                      3
+                      4
                     </span>
                     <span
                       className={`font-semibold tracking-tight ${
-                        step === 3 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"
+                        step === 4 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"
                       }`}
                     >
                       Keys &amp; Launch
@@ -857,25 +945,86 @@ export default function OnboardingPage() {
                         </button>
                         <button
                           type="button"
-                          disabled={isSubmitting}
-                          onClick={handleCreateWorkspace}
-                          className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
+                          onClick={() => changeStep(3, "next")}
+                          className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white font-semibold text-xs sm:text-sm shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
                         >
-                          <span>{isSubmitting ? "Provisioning Workspace..." : "Generate Keys & Activate Workspace"}</span>
+                          <span>Choose Plan &amp; Continue</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* STEP 3: Activation & Access Keys */}
-                  {step === 3 && createdOrgData && (
+                  {/* STEP 3: Plan Selection & Hybrid Activation */}
+                  {step === 3 && (
+                    <div className="p-6 sm:p-8 space-y-6 text-left">
+                      <PlanSelectionCards
+                        selectedPlan={selectedPlan}
+                        onSelectPlan={setSelectedPlan}
+                        billingCycle={billingCycle}
+                        onChangeBillingCycle={setBillingCycle}
+                        fulfillmentMode={fulfillmentMode}
+                        onChangeFulfillmentMode={setFulfillmentMode}
+                        quoteSeats={quoteSeats}
+                        onChangeQuoteSeats={setQuoteSeats}
+                        quoteRequirements={quoteRequirements}
+                        onChangeQuoteRequirements={setQuoteRequirements}
+                      />
+
+                      {createError && (
+                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{createError}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-4 border-t border-[#E9F1FF] dark:border-[#1E293B]">
+                        <button
+                          type="button"
+                          onClick={() => changeStep(2, "back")}
+                          className="px-4 py-2.5 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] text-xs font-semibold text-[#556070] dark:text-[#94A3B8] hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="complete-plan-onboarding-btn"
+                          disabled={isSubmitting}
+                          onClick={handleCreateWorkspace}
+                          className="px-6 py-3 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] disabled:opacity-50 text-white font-semibold text-xs sm:text-sm shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 cursor-pointer"
+                        >
+                          <span>
+                            {isSubmitting
+                              ? "Provisioning Workspace..."
+                              : selectedPlan === "enterprise"
+                              ? "Submit Custom Quote & Launch"
+                              : selectedPlan === "free"
+                              ? "Activate Free Workspace"
+                              : fulfillmentMode === "web_trial"
+                              ? `Start 14-Day ${PLAN_DEFINITIONS[selectedPlan].shortName} Trial`
+                              : fulfillmentMode === "google_play"
+                              ? `Provision & Sync via Google Play`
+                              : "Request Invoice & Launch"}
+                          </span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 4: Activation & Access Keys */}
+                  {step === 4 && createdOrgData && (
                     <div className="p-6 sm:p-8 space-y-6 text-center">
                       <div className="w-14 h-14 rounded-3xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 animate-bounce">
                         <CheckCircle2 className="w-8 h-8" />
                       </div>
 
                       <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/20 text-[#5D55D6] dark:text-[#818CF8] text-xs font-bold mb-2">
+                          <span>{PLAN_DEFINITIONS[createdOrgData.planId].name}</span>
+                          <span>|</span>
+                          <span>{createdOrgData.statusLabel}</span>
+                        </div>
                         <h2 className="text-xl sm:text-2xl font-black text-[#002055] dark:text-[#F8FAFC] tracking-tight">
                           Workspace Activated Successfully
                         </h2>

@@ -15,6 +15,8 @@ import {
   Award,
 } from "lucide-react";
 import { MemberSubscriptionRecord } from "@/app/api/subscriptions/route";
+import { EnterpriseQuoteRequest, PlanTierId } from "@shared/types";
+import { useOrganization } from "@/context/OrganizationContext";
 
 interface AdminSubscriptionModalProps {
   isOpen: boolean;
@@ -27,30 +29,42 @@ export const AdminSubscriptionModal: React.FC<AdminSubscriptionModalProps> = ({
   onClose,
   currentUserEmail,
 }) => {
+  const { updateOrgPlan } = useOrganization();
   const [subscriptions, setSubscriptions] = useState<MemberSubscriptionRecord[]>([]);
+  const [quotes, setQuotes] = useState<EnterpriseQuoteRequest[]>([]);
+  const [activeSubTab, setActiveSubTab] = useState<"subscriptions" | "quotes">("subscriptions");
   const [kpis, setKpis] = useState({
     mrr: 0,
     activeCount: 0,
     entCount: 0,
     proCount: 0,
+    growthCount: 0,
     freeCount: 0,
+    pendingInvoices: 0,
     totalUsers: 0,
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterPlan, setFilterPlan] = useState<"all" | "enterprise" | "pro" | "free">("all");
+  const [filterPlan, setFilterPlan] = useState<"all" | PlanTierId>("all");
   const [isLoading, setIsLoading] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
   const fetchSubscriptions = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/subscriptions");
-      if (res.ok) {
-        const data = await res.json();
+      const [subRes, quoteRes] = await Promise.all([
+        fetch("/api/subscriptions"),
+        fetch("/api/quotes"),
+      ]);
+      if (subRes.ok) {
+        const data = await subRes.json();
         setSubscriptions(data.subscriptions || []);
         if (data.kpis) {
-          setKpis(data.kpis);
+          setKpis((prev) => ({ ...prev, ...data.kpis }));
         }
+      }
+      if (quoteRes.ok) {
+        const qData = await quoteRes.json();
+        setQuotes(qData.quotes || []);
       }
     } catch (e) {
       console.warn("Failed to fetch subscriptions from API:", e);
@@ -65,23 +79,90 @@ export const AdminSubscriptionModal: React.FC<AdminSubscriptionModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleUpdatePlan = async (userId: string, newPlanId: "free" | "pro" | "enterprise") => {
+  const handleUpdatePlan = async (
+    sub: MemberSubscriptionRecord,
+    newPlanId: PlanTierId
+  ) => {
     try {
       const res = await fetch("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "update_plan",
-          userId,
+          userId: sub.userId,
+          userEmail: sub.userEmail,
+          orgId: sub.orgId,
           planId: newPlanId,
         }),
       });
       if (res.ok) {
-        showFeedback("Subscription tier updated successfully.");
+        if (sub.orgId && sub.orgId !== "org-core") {
+          await updateOrgPlan(sub.orgId, {
+            planId: newPlanId,
+            planStatus: newPlanId === "enterprise" ? "quote_pending" : "active",
+          });
+        }
+        showFeedback("Subscription tier updated and synced to Firestore.");
         fetchSubscriptions();
       }
     } catch (e) {
       console.warn("Error updating plan:", e);
+    }
+  };
+
+  const handleApproveInvoice = async (sub: MemberSubscriptionRecord) => {
+    try {
+      const res = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve_invoice",
+          userId: sub.userId,
+          userEmail: sub.userEmail,
+          orgId: sub.orgId,
+          planId: sub.planId,
+        }),
+      });
+      if (res.ok) {
+        if (sub.orgId && sub.orgId !== "org-core") {
+          await updateOrgPlan(sub.orgId, {
+            planId: sub.planId,
+            planStatus: "active",
+            billingSource: "manual_invoice",
+          });
+        }
+        showFeedback(`Approved manual invoice for ${sub.userEmail} and synced live.`);
+        fetchSubscriptions();
+      }
+    } catch (e) {
+      console.warn("Error approving invoice:", e);
+    }
+  };
+
+  const handleApproveQuote = async (quote: EnterpriseQuoteRequest) => {
+    try {
+      const res = await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_status",
+          quoteId: quote.id,
+          status: "approved",
+        }),
+      });
+      if (res.ok) {
+        if (quote.orgId && quote.orgId !== "org-core") {
+          await updateOrgPlan(quote.orgId, {
+            planId: "enterprise",
+            planStatus: "active",
+            billingSource: "enterprise_quote",
+          });
+        }
+        showFeedback(`Approved Enterprise quote for ${quote.companyName}.`);
+        fetchSubscriptions();
+      }
+    } catch (e) {
+      console.warn("Error approving quote:", e);
     }
   };
 
@@ -213,27 +294,27 @@ export const AdminSubscriptionModal: React.FC<AdminSubscriptionModalProps> = ({
 
           <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Enterprise Tier</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Enterprise Quotes</span>
               <Award className="w-4 h-4 text-indigo-500" />
             </div>
             <div className="text-xl font-bold mt-1 text-slate-900 dark:text-white">
               {kpis.entCount}
             </div>
             <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
-              $49 / month
+              Custom Contract ({quotes.length} leads)
             </div>
           </div>
 
           <div className="p-3.5 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-xs">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pro Tier</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Growth / Pro</span>
               <Sparkles className="w-4 h-4 text-blue-500" />
             </div>
             <div className="text-xl font-bold mt-1 text-slate-900 dark:text-white">
-              {kpis.proCount}
+              {kpis.growthCount + kpis.proCount}
             </div>
             <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">
-              $19 / month
+              {kpis.growthCount} Growth ($9) | {kpis.proCount} Pro ($19)
             </div>
           </div>
         </div>
@@ -251,37 +332,91 @@ export const AdminSubscriptionModal: React.FC<AdminSubscriptionModalProps> = ({
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Filter:</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
             <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-900 text-xs">
-              {(["all", "enterprise", "pro", "free"] as const).map((tier) => (
-                <button
-                  key={tier}
-                  onClick={() => setFilterPlan(tier)}
-                  className={`px-2.5 py-1 rounded capitalize font-medium transition-colors ${
-                    filterPlan === tier
-                      ? "bg-purple-600 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
-                  }`}
-                >
-                  {tier}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveSubTab("subscriptions")}
+                className={`px-2.5 py-1 rounded font-semibold cursor-pointer ${
+                  activeSubTab === "subscriptions" ? "bg-purple-600 text-white" : "text-slate-600 dark:text-slate-300"
+                }`}
+              >
+                Plans ({subscriptions.length})
+              </button>
+              <button
+                onClick={() => setActiveSubTab("quotes")}
+                className={`px-2.5 py-1 rounded font-semibold cursor-pointer ${
+                  activeSubTab === "quotes" ? "bg-purple-600 text-white" : "text-slate-600 dark:text-slate-300"
+                }`}
+              >
+                Enterprise Quotes ({quotes.length})
+              </button>
             </div>
+
+            {activeSubTab === "subscriptions" && (
+              <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-900 text-xs">
+                {(["all", "enterprise", "pro", "growth", "free"] as const).map((tier) => (
+                  <button
+                    key={tier}
+                    onClick={() => setFilterPlan(tier)}
+                    className={`px-2.5 py-1 rounded capitalize font-medium transition-colors cursor-pointer ${
+                      filterPlan === tier
+                        ? "bg-purple-600 text-white shadow-xs"
+                        : "text-slate-600 dark:text-slate-300 hover:text-slate-900"
+                    }`}
+                  >
+                    {tier}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <button
               onClick={fetchSubscriptions}
               title="Refresh subscriptions"
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
 
-        {/* Member Subscriptions Table */}
+        {/* Member Subscriptions / Enterprise Quotes Table */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
-          {filteredSubscriptions.length === 0 ? (
+          {activeSubTab === "quotes" ? (
+            quotes.length === 0 ? (
+              <div className="py-12 text-center text-slate-500 text-xs">
+                No custom Enterprise quote requests submitted yet.
+              </div>
+            ) : (
+              quotes.map((q) => (
+                <div
+                  key={q.id}
+                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-slate-900 dark:text-white">{q.companyName}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold uppercase">
+                        {q.status}
+                      </span>
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">
+                      {q.contactName} ({q.contactEmail}) — {q.estimatedSeats} seats requested ({q.teamSize})
+                    </p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-1 italic">{q.requirements}</p>
+                  </div>
+                  {q.status !== "approved" && (
+                    <button
+                      onClick={() => handleApproveQuote(q)}
+                      className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0 cursor-pointer"
+                    >
+                      Approve Enterprise Contract
+                    </button>
+                  )}
+                </div>
+              ))
+            )
+          ) : filteredSubscriptions.length === 0 ? (
             <div className="py-12 text-center text-slate-500 text-xs">
               No subscription records matching the current query.
             </div>
@@ -351,17 +486,24 @@ export const AdminSubscriptionModal: React.FC<AdminSubscriptionModalProps> = ({
                     <select
                       value={sub.planId}
                       onChange={(e) =>
-                        handleUpdatePlan(
-                          sub.userId,
-                          e.target.value as "free" | "pro" | "enterprise"
-                        )
+                        handleUpdatePlan(sub, e.target.value as PlanTierId)
                       }
                       className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500"
                     >
                       <option value="free">Free ($0/mo)</option>
+                      <option value="growth">Growth ($9/mo)</option>
                       <option value="pro">Pro ($19/mo)</option>
-                      <option value="enterprise">Enterprise ($49/mo)</option>
+                      <option value="enterprise">Enterprise (Custom)</option>
                     </select>
+
+                    {sub.invoiceRequested && sub.status !== "active" && (
+                      <button
+                        onClick={() => handleApproveInvoice(sub)}
+                        className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Approve Invoice
+                      </button>
+                    )}
 
                     <button
                       onClick={() => handleExtendTrial(sub.userId, 30)}

@@ -3,6 +3,9 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TaskPulseItem, ColleagueProfile, TaskStatus, UserRole, Department, Project } from "@shared/types";
+import { checkPlanQuota } from "@shared/plans";
+import { useOrganization } from "@/context/OrganizationContext";
+import { useAuth } from "@/context/AuthContext";
 import { TaskPulseCard } from "./TaskPulseCard";
 import { ProjectTabBar } from "./ProjectTabBar";
 import { TaskDetailModal } from "./TaskDetailModal";
@@ -81,6 +84,8 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
   onClearTasks,
   onResetDemoTasks,
 }) => {
+  const { currentOrg } = useOrganization();
+  const { user } = useAuth();
   const [selectedProjectId, setSelectedProjectId] = useState<string>(propActiveProjectId || initialProjectId || "all");
   const [selectedDept, setSelectedDept] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -237,6 +242,14 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
     e.preventDefault();
     if (!newTitle.trim()) return;
 
+    const taskQuota = checkPlanQuota(currentOrg, "tasks", tasks.length, user?.email);
+    if (!taskQuota.allowed) {
+      setInviteSuccessToast(taskQuota.reason || "Task limit reached. Upgrade your plan in Account -> Workspace Billing.");
+      setTimeout(() => setInviteSuccessToast(null), 5000);
+      setIsModalOpen(false);
+      return;
+    }
+
     let assignee = colleagues.find((c) => c.id === newAssigneeId);
 
     // If manager chose to invite a new person via email
@@ -301,6 +314,14 @@ export const ManagerDispatcher: React.FC<ManagerDispatcherProps> = ({
   const handleCreateProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim() || !newProjCode.trim()) return;
+
+    const projectQuota = checkPlanQuota(currentOrg, "projects", projects.length, user?.email);
+    if (!projectQuota.allowed) {
+      setInviteSuccessToast(projectQuota.reason || "Project limit reached. Upgrade your plan in Account -> Workspace Billing.");
+      setTimeout(() => setInviteSuccessToast(null), 5000);
+      setIsProjectModalOpen(false);
+      return;
+    }
 
     const code = newProjCode.trim().toUpperCase();
     const newProj: Project = {

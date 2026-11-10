@@ -19,7 +19,7 @@ export interface MemberSubscription {
   userName: string;
   userEmail: string;
   role: "admin" | "manager" | "member";
-  planId: "free" | "pro" | "enterprise";
+  planId: "free" | "growth" | "pro" | "enterprise";
   planName: string;
   price: number;
   status: "active" | "trialing" | "past_due" | "cancelled";
@@ -53,7 +53,7 @@ export const AdminSubscriptionPanelModal: React.FC<
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<
-    "all" | "enterprise" | "pro" | "free"
+    "all" | "enterprise" | "pro" | "growth" | "free"
   >("all");
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
@@ -104,16 +104,19 @@ export const AdminSubscriptionPanelModal: React.FC<
 
   const handlePlanChange = (
     userId: string,
-    newPlan: "free" | "pro" | "enterprise"
+    newPlan: "free" | "growth" | "pro" | "enterprise"
   ) => {
     if (triggerHaptic) triggerHaptic("selection");
-    const planName =
-      newPlan === "enterprise"
-        ? "Enterprise Suite"
-        : newPlan === "pro"
-        ? "TaskPulse Pro"
-        : "Starter Free";
-    const price = newPlan === "enterprise" ? 49 : newPlan === "pro" ? 19 : 0;
+    const planMeta: Record<
+      "free" | "growth" | "pro" | "enterprise",
+      { planName: string; price: number }
+    > = {
+      free: { planName: "TaskPulse Free", price: 0 },
+      growth: { planName: "TaskPulse Growth", price: 9 },
+      pro: { planName: "TaskPulse Pro", price: 19 },
+      enterprise: { planName: "TaskPulse Enterprise", price: 0 },
+    };
+    const { planName, price } = planMeta[newPlan];
 
     onUpdateSubscription(userId, {
       planId: newPlan,
@@ -312,6 +315,7 @@ export const AdminSubscriptionPanelModal: React.FC<
                       label: `Enterprise (${metrics.entCount})`,
                     },
                     { key: "pro", label: `Pro (${metrics.proCount})` },
+                    { key: "growth", label: "Growth" },
                     { key: "free", label: `Free (${metrics.freeCount})` },
                   ] as const
                 ).map((f) => (
@@ -519,7 +523,7 @@ export const AdminSubscriptionPanelModal: React.FC<
                           CHANGE SUBSCRIPTION TIER
                         </Text>
                         <View style={styles.tierBtnRow}>
-                          {(["free", "pro", "enterprise"] as const).map((tier) => (
+                          {(["free", "growth", "pro", "enterprise"] as const).map((tier) => (
                             <TouchableOpacity
                               key={tier}
                               onPress={() =>

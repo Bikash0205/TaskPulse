@@ -1,10 +1,30 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { Organization, OrganizationInvite, UserRole, Department, Project } from "@shared/types";
-import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
+import {
+  Organization,
+  OrganizationInvite,
+  UserRole,
+  Department,
+  Project,
+  PlanTierId,
+  PlanStatus,
+  BillingSource,
+  EnterpriseQuoteRequest,
+} from "@shared/types";
+import { PLAN_DEFINITIONS, normalizePlanId } from "@shared/plans";
+import { doc, getDoc, setDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "./AuthContext";
+
+export interface OnboardPlanConfig {
+  planId: PlanTierId;
+  planStatus?: PlanStatus;
+  billingSource?: BillingSource;
+  billingCycle?: "monthly" | "annual";
+  teamSize?: string;
+  trialDays?: number;
+}
 
 export interface OrganizationContextType {
   currentOrg: Organization | null;
@@ -20,7 +40,8 @@ export interface OrganizationContextType {
     departments?: Department[] | Department,
     initialProjectName?: string,
     initialProjectCode?: string,
-    explicitAdminEmail?: string
+    explicitAdminEmail?: string,
+    planConfig?: OnboardPlanConfig
   ) => Promise<{ org: Organization; initialProject: Project }>;
   joinWithCode: (
     codeOrOrgId: string,
@@ -34,6 +55,20 @@ export interface OrganizationContextType {
     department: Department,
     assignedProjectIds: string[]
   ) => Promise<OrganizationInvite>;
+  updateOrgPlan: (
+    orgId: string,
+    updates: {
+      planId: PlanTierId;
+      planStatus?: PlanStatus;
+      billingSource?: BillingSource;
+      billingCycle?: "monthly" | "annual";
+      trialDays?: number;
+      googlePlayOrderId?: string;
+    }
+  ) => Promise<void>;
+  submitEnterpriseQuote: (
+    payload: Omit<EnterpriseQuoteRequest, "id" | "status" | "createdAt">
+  ) => Promise<EnterpriseQuoteRequest>;
   switchOrganization: (orgId: string) => void;
 }
 
@@ -45,6 +80,10 @@ export const DEFAULT_CORE_ORG: Organization = {
   createdAt: "2026-09-01T00:00:00.000Z",
   departments: ["Engineering", "Product", "Design", "Marketing", "Security", "Operations"],
   inviteCode: "TASK-CORE-2026",
+  planId: "enterprise",
+  planStatus: "active",
+  billingSource: "enterprise_quote",
+  billingCycle: "annual",
 };
 
 export const DEFAULT_INVITES: OrganizationInvite[] = [
@@ -256,13 +295,37 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setCurrentOrg(null);
   }, [user?.email, organizations, invites, orgsInitialized]);
 
+  // Real-time Firestore plan & workspace sync for the active organization
+  useEffect(() => {
+    if (!db || !currentOrg?.id || currentOrg.id === "org-core") return;
+    const orgRef = doc(db, "organizations", currentOrg.id);
+    const unsub = onSnapshot(
+      orgRef,
+      (snap) => {
+        if (!snap.exists()) return;
+        const freshOrg = snap.data() as Organization;
+        setOrganizations((prev) => {
+          const updated = prev.map((o) => (o.id === freshOrg.id ? { ...o, ...freshOrg } : o));
+          if (typeof window !== "undefined") {
+            localStorage.setItem("taskpulse_organizations", JSON.stringify(updated));
+          }
+          return updated;
+        });
+        setCurrentOrg((prev) => (prev && prev.id === freshOrg.id ? { ...prev, ...freshOrg } : prev));
+      },
+      () => {}
+    );
+    return () => unsub();
+  }, [currentOrg?.id]);
+
   // Onboard a new company as Admin
   const onboardCompany = async (
     name: string,
     departments?: Department[] | Department,
     initialProjectName?: string,
     initialProjectCode?: string,
-    explicitAdminEmail?: string
+    explicitAdminEmail?: string,
+    planConfig?: OnboardPlanConfig
   ): Promise<{ org: Organization; initialProject: Project }> => {
     let fallbackStoredEmail = "";
     if (typeof window !== "undefined") {
@@ -293,6 +356,29 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
     const uniqueDepts = Array.from(new Set(resolvedDepts));
 
+    const resolvedPlanId = normalizePlanId(planConfig?.planId || "free");
+    const planDef = PLAN_DEFINITIONS[resolvedPlanId];
+    const resolvedBillingSource: BillingSource =
+      planConfig?.billingSource ||
+      (resolvedPlanId === "free"
+        ? "free"
+        : resolvedPlanId === "enterprise"
+        ? "enterprise_quote"
+        : "web_trial");
+    const resolvedPlanStatus: PlanStatus =
+      planConfig?.planStatus ||
+      (resolvedPlanId === "free"
+        ? "active"
+        : resolvedPlanId === "enterprise"
+        ? "quote_pending"
+        : resolvedBillingSource === "web_trial"
+        ? "trialing"
+        : "past_due");
+    const trialEndsAt =
+      resolvedPlanStatus === "trialing"
+        ? new Date(Date.now() + (planConfig?.trialDays || 14) * 24 * 60 * 60 * 1000).toISOString()
+        : undefined;
+
     const newOrg: Organization = {
       id: orgId,
       name: name.trim(),
@@ -301,6 +387,16 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       createdAt: new Date().toISOString(),
       departments: uniqueDepts,
       inviteCode: `${cleanCode}-${Math.floor(1000 + Math.random() * 9000)}`,
+      teamSize: planConfig?.teamSize,
+      planId: resolvedPlanId,
+      planStatus: resolvedPlanStatus,
+      billingSource: resolvedBillingSource,
+      billingCycle: planConfig?.billingCycle || "monthly",
+      seatLimit: planDef.maxSeats,
+      projectLimit: planDef.maxProjects,
+      departmentLimit: planDef.maxDepartments,
+      taskLimit: planDef.maxActiveTasks,
+      ...(trialEndsAt ? { trialEndsAt } : {}),
     };
 
     const initialProject: Project & { orgId?: string } = {
@@ -339,6 +435,29 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         console.warn("Firestore onboard sync warning:", err);
       }
     }
+
+    // Sync organization plan record with /api/subscriptions
+    fetch("/api/subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action:
+          resolvedPlanStatus === "trialing"
+            ? "start_trial"
+            : resolvedBillingSource === "manual_invoice"
+            ? "request_invoice"
+            : "update_plan",
+        userEmail: adminEmail,
+        userName: user?.displayName || adminEmail.split("@")[0],
+        orgId,
+        orgName: newOrg.name,
+        planId: resolvedPlanId,
+        billingSource: resolvedBillingSource,
+        billingCycle: newOrg.billingCycle,
+        status: resolvedPlanStatus,
+        days: planConfig?.trialDays || 14,
+      }),
+    }).catch(() => {});
 
     return { org: newOrg, initialProject };
   };
@@ -460,6 +579,82 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return newInvite;
   };
 
+  const updateOrgPlan = async (
+    orgId: string,
+    updates: {
+      planId: PlanTierId;
+      planStatus?: PlanStatus;
+      billingSource?: BillingSource;
+      billingCycle?: "monthly" | "annual";
+      trialDays?: number;
+      googlePlayOrderId?: string;
+    }
+  ) => {
+    const planDef = PLAN_DEFINITIONS[normalizePlanId(updates.planId)];
+    const trialEndsAt =
+      updates.planStatus === "trialing"
+        ? new Date(Date.now() + (updates.trialDays || 14) * 24 * 60 * 60 * 1000).toISOString()
+        : undefined;
+
+    const patch: Partial<Organization> = {
+      planId: planDef.id,
+      planStatus: updates.planStatus || (planDef.id === "enterprise" ? "quote_pending" : "active"),
+      billingSource: updates.billingSource || (planDef.id === "free" ? "free" : "web_trial"),
+      billingCycle: updates.billingCycle || "monthly",
+      seatLimit: planDef.maxSeats,
+      projectLimit: planDef.maxProjects,
+      departmentLimit: planDef.maxDepartments,
+      taskLimit: planDef.maxActiveTasks,
+      ...(trialEndsAt ? { trialEndsAt } : {}),
+      ...(updates.googlePlayOrderId ? { googlePlayOrderId: updates.googlePlayOrderId } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setOrganizations((prev) => {
+      const next = prev.map((o) => (o.id === orgId ? { ...o, ...patch } : o));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("taskpulse_organizations", JSON.stringify(next));
+      }
+      return next;
+    });
+    setCurrentOrg((prev) => (prev && prev.id === orgId ? { ...prev, ...patch } : prev));
+
+    if (db) {
+      try {
+        await setDoc(doc(db, "organizations", orgId), patch, { merge: true });
+      } catch (err) {
+        console.warn("Firestore org plan update warning:", err);
+      }
+    }
+  };
+
+  const submitEnterpriseQuote = async (
+    payload: Omit<EnterpriseQuoteRequest, "id" | "status" | "createdAt">
+  ): Promise<EnterpriseQuoteRequest> => {
+    const quote: EnterpriseQuoteRequest = {
+      id: `quote-${Date.now()}`,
+      ...payload,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+
+    if (db) {
+      try {
+        await setDoc(doc(db, "enterprise_quotes", quote.id), quote);
+      } catch (err) {
+        console.warn("Firestore quote save warning:", err);
+      }
+    }
+
+    await fetch("/api/quotes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quote),
+    }).catch(() => {});
+
+    return quote;
+  };
+
   const switchOrganization = (orgId: string) => {
     const found = organizations.find((o) => o.id === orgId);
     if (found) {
@@ -484,6 +679,8 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         onboardCompany,
         joinWithCode,
         inviteTeammate,
+        updateOrgPlan,
+        submitEnterpriseQuote,
         switchOrganization,
       }}
     >

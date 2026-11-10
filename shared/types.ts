@@ -75,6 +75,15 @@ export interface ColleaguePulseFeedItem {
   lastHeartbeat: string;
 }
 
+export type PlanTierId = "free" | "growth" | "pro" | "enterprise";
+export type PlanStatus = "active" | "trialing" | "past_due" | "quote_pending" | "cancelled";
+export type BillingSource =
+  | "free"
+  | "google_play"
+  | "web_trial"
+  | "manual_invoice"
+  | "enterprise_quote";
+
 export interface Organization {
   id: string;
   name: string;
@@ -83,6 +92,32 @@ export interface Organization {
   createdAt: string;
   departments: Department[];
   inviteCode: string;
+  teamSize?: string;
+  planId?: PlanTierId;
+  planStatus?: PlanStatus;
+  billingSource?: BillingSource;
+  billingCycle?: "monthly" | "annual";
+  seatLimit?: number | null;
+  projectLimit?: number | null;
+  departmentLimit?: number | null;
+  taskLimit?: number | null;
+  trialEndsAt?: string;
+  googlePlayOrderId?: string;
+  invoiceRequestedAt?: string;
+  updatedAt?: string;
+}
+
+export interface EnterpriseQuoteRequest {
+  id: string;
+  orgId?: string;
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  teamSize: string;
+  estimatedSeats: number;
+  requirements: string;
+  status: "pending" | "contacted" | "approved";
+  createdAt: string;
 }
 
 export interface OrganizationInvite {

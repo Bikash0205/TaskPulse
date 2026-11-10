@@ -19,52 +19,63 @@ interface UserSubscriptionModalProps {
   isDarkMode: boolean;
   onClose: () => void;
   currentSubscription?: MemberSubscription;
-  onUpgradePlan: (planId: "free" | "pro" | "enterprise") => void;
+  onUpgradePlan: (planId: "free" | "growth" | "pro" | "enterprise") => void;
   triggerHaptic?: (type?: "light" | "selection" | "success") => void;
 }
 
 const PLANS = [
   {
     id: "free" as const,
-    name: "Starter Free",
+    name: "TaskPulse Free",
     price: 0,
-    tagline: "Essential project tracking for solo creators & micro-teams",
+    tagline: "1 Admin + up to 3 members, 1 project, 25 active tasks",
     features: [
-      "Up to 3 active projects",
-      "Standard Kanban task boards",
-      "Community support",
-      "7-day activity history",
+      "1 Admin + up to 3 Members (4 seats)",
+      "1 Project & 1 Department",
+      "Up to 25 Active Tasks",
+      "Basic AI Task Parsing (5/month)",
     ],
     sku: "taskpulse_free_tier",
+  },
+  {
+    id: "growth" as const,
+    name: "TaskPulse Growth",
+    price: 9,
+    tagline: "For small enterprises & growing teams needing offline sync",
+    features: [
+      "Up to 15 Workspace Seats",
+      "Up to 5 Projects & 3 Departments",
+      "Up to 250 Active Tasks",
+      "Android Offline SQLite + Web Real-Time Sync",
+    ],
+    sku: "taskpulse_growth_monthly_9",
   },
   {
     id: "pro" as const,
     name: "TaskPulse Pro",
     price: 19,
-    tagline: "Supercharged velocity & sprint analytics for growing teams",
+    tagline: "Full execution suite with 50 seats & unlimited projects",
     features: [
-      "Unlimited active projects & boards",
-      "Real-time Sprint Burndown charts",
-      "Automated team velocity reports",
-      "Executive PDF board exports",
-      "Priority 24/7 technical support",
+      "50 Included Workspace Seats",
+      "Unlimited Projects & Departments",
+      "Interactive Gantt Timeline & Exports",
+      "Unlimited Gemini Pro AI Parsing",
     ],
     sku: "taskpulse_pro_monthly_19",
     popular: true,
   },
   {
     id: "enterprise" as const,
-    name: "Enterprise Suite",
-    price: 49,
-    tagline: "Complete governance, SOC 2 compliance & dedicated support",
+    name: "TaskPulse Enterprise",
+    price: 0,
+    tagline: "Custom quote, contracted seats, SSO & SLA compliance",
     features: [
-      "Everything in Pro included",
-      "SOC 2 immutable audit logging",
-      "Custom RBAC granular permissions",
-      "Google Workspace & SAML SSO",
-      "Dedicated account manager & SLA",
+      "Custom Contracted Seat Capacity (50+ / Unlimited)",
+      "Google Workspace SSO & Domain Lock",
+      "SOC 2 Immutable Audit Logging",
+      "Dedicated Account Manager & SLA",
     ],
-    sku: "taskpulse_ent_monthly_49",
+    sku: "taskpulse_ent_custom_quote",
   },
 ];
 

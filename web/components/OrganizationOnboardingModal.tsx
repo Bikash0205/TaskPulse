@@ -4,7 +4,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
-import { Department, UserRole } from "@shared/types";
+import { Department, PlanTierId, UserRole } from "@shared/types";
+import { PlanSelectionCards, PaidFulfillmentMode } from "./PlanSelectionCards";
 import {
   Building2,
   KeyRound,
@@ -55,6 +56,7 @@ export const OrganizationOnboardingModal: React.FC = () => {
     onboardCompany,
     joinWithCode,
     inviteTeammate,
+    submitEnterpriseQuote,
   } = useOrganization();
 
   const verifiedGoogleEmail =
@@ -64,6 +66,11 @@ export const OrganizationOnboardingModal: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [selectedPlan, setSelectedPlan] = useState<PlanTierId>("free");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+  const [fulfillmentMode, setFulfillmentMode] = useState<PaidFulfillmentMode>("web_trial");
+  const [quoteSeats, setQuoteSeats] = useState<number>(100);
+  const [quoteRequirements, setQuoteRequirements] = useState<string>("");
 
   // Step 1: Admin & Organization Profile (Empty by default unless pre-filled from verified Google auth)
   const [adminName, setAdminName] = useState("");
@@ -142,13 +149,48 @@ export const OrganizationOnboardingModal: React.FC = () => {
     }
 
     try {
+      const resolvedBillingSource =
+        selectedPlan === "free"
+          ? ("free" as const)
+          : selectedPlan === "enterprise"
+          ? ("enterprise_quote" as const)
+          : fulfillmentMode;
+      const resolvedPlanStatus =
+        selectedPlan === "free"
+          ? ("active" as const)
+          : selectedPlan === "enterprise"
+          ? ("quote_pending" as const)
+          : fulfillmentMode === "web_trial"
+          ? ("trialing" as const)
+          : ("past_due" as const);
+
       const { org, initialProject: proj } = await onboardCompany(
         companyName.trim(),
         customDepts,
         `${companyName.trim()} Core Roadmap`,
         undefined,
-        resolvedEmail
+        resolvedEmail,
+        {
+          planId: selectedPlan,
+          planStatus: resolvedPlanStatus,
+          billingSource: resolvedBillingSource,
+          billingCycle,
+          teamSize,
+          trialDays: 14,
+        }
       );
+
+      if (selectedPlan === "enterprise") {
+        await submitEnterpriseQuote({
+          orgId: org.id,
+          companyName: org.name,
+          contactName: resolvedName,
+          contactEmail: resolvedEmail,
+          teamSize,
+          estimatedSeats: quoteSeats,
+          requirements: quoteRequirements.trim() || "Custom enterprise deployment & SLA",
+        });
+      }
 
       // Register all invited teammates
       for (const emp of employees) {
@@ -738,6 +780,21 @@ export const OrganizationOnboardingModal: React.FC = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Hybrid Plan Selection */}
+                    <PlanSelectionCards
+                      compact
+                      selectedPlan={selectedPlan}
+                      onSelectPlan={setSelectedPlan}
+                      billingCycle={billingCycle}
+                      onChangeBillingCycle={setBillingCycle}
+                      fulfillmentMode={fulfillmentMode}
+                      onChangeFulfillmentMode={setFulfillmentMode}
+                      quoteSeats={quoteSeats}
+                      onChangeQuoteSeats={setQuoteSeats}
+                      quoteRequirements={quoteRequirements}
+                      onChangeQuoteRequirements={setQuoteRequirements}
+                    />
 
                     {/* Shareable Link Box */}
                     <div>

@@ -1719,44 +1719,129 @@ export default function App() {
     triggerHaptic("success");
   };
 
-  const handleUpgradeCurrentUserPlan = (planId: "free" | "pro" | "enterprise") => {
+  // Sync active subscription entitlement across Web & Android for any signed-in user
+  useEffect(() => {
+    if (!currentUser?.email) return;
+    let active = true;
+    const syncSubscription = async () => {
+      try {
+        const res = await fetch(
+          `https://happy-fermi-kappa.vercel.app/api/subscriptions?email=${encodeURIComponent(
+            currentUser.email
+          )}`
+        );
+        if (!res.ok || !active) return;
+        const data = await res.json();
+        const remote = data?.subscription;
+        if (!remote) return;
+        setMemberSubscriptions((prev) => {
+          const exists = prev.some(
+            (s) => s.userEmail.toLowerCase() === currentUser.email.toLowerCase()
+          );
+          return exists
+            ? prev.map((s) =>
+                s.userEmail.toLowerCase() === currentUser.email.toLowerCase()
+                  ? { ...s, ...remote }
+                  : s
+              )
+            : [remote, ...prev];
+        });
+      } catch {
+        // Offline resilience
+      }
+    };
+    syncSubscription();
+    const timer = setInterval(syncSubscription, 15000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [currentUser?.email]);
+
+  const handleUpgradeCurrentUserPlan = (
+    planId: "free" | "growth" | "pro" | "enterprise"
+  ) => {
     if (!currentUser) return;
-    const planName =
-      planId === "enterprise"
-        ? "Enterprise Suite"
-        : planId === "pro"
-        ? "TaskPulse Pro"
-        : "Starter Free";
-    const price = planId === "enterprise" ? 49 : planId === "pro" ? 19 : 0;
+    const meta = {
+      free: { planName: "TaskPulse Free", price: 0, status: "active" as const },
+      growth: { planName: "TaskPulse Growth", price: 9, status: "active" as const },
+      pro: { planName: "TaskPulse Pro", price: 19, status: "active" as const },
+      enterprise: {
+        planName: "TaskPulse Enterprise",
+        price: 0,
+        status: "trialing" as const,
+      },
+    }[planId];
+    const orderId = `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(
+      1000 + Math.random() * 9000
+    )}`;
 
     setMemberSubscriptions((prev) => {
-      const exists = prev.some((s) => s.userEmail.toLowerCase() === currentUser.email.toLowerCase());
+      const exists = prev.some(
+        (s) => s.userEmail.toLowerCase() === currentUser.email.toLowerCase()
+      );
       if (exists) {
         return prev.map((s) =>
           s.userEmail.toLowerCase() === currentUser.email.toLowerCase()
-            ? { ...s, planId, planName, price, status: "active" }
+            ? {
+                ...s,
+                planId,
+                planName: meta.planName,
+                price: meta.price,
+                status: meta.status,
+                orderId,
+              }
             : s
         );
-      } else {
-        return [
-          {
-            userId: currentUser.id,
-            userName: currentUser.name,
-            userEmail: currentUser.email,
-            role: currentUser.role as any,
-            planId,
-            planName,
-            price,
-            status: "active",
-            billingCycle: "monthly",
-            renewsAt: "Dec 31, 2026",
-            paymentMethod: "Google Play Billing",
-            orderId: `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
-          },
-          ...prev,
-        ];
       }
+      return [
+        {
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userEmail: currentUser.email,
+          role: currentUser.role as "admin" | "manager" | "member",
+          planId,
+          planName: meta.planName,
+          price: meta.price,
+          status: meta.status,
+          billingCycle: "monthly",
+          renewsAt: planId === "enterprise" ? "Custom Contract" : "Dec 31, 2026",
+          paymentMethod:
+            planId === "enterprise"
+              ? "Custom Enterprise Quote"
+              : "Google Play Billing",
+          orderId,
+        },
+        ...prev,
+      ];
     });
+
+    if (planId === "enterprise") {
+      fetch("https://happy-fermi-kappa.vercel.app/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyName: currentUser.organization || "Mobile Workspace",
+          contactName: currentUser.name,
+          contactEmail: currentUser.email,
+          estimatedSeats: 100,
+          requirements: "Requested from TaskPulse Android App",
+        }),
+      }).catch(() => {});
+    } else {
+      fetch("https://happy-fermi-kappa.vercel.app/api/billing/google-play/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+          userName: currentUser.name,
+          orgName: currentUser.organization,
+          planId,
+          orderId,
+        }),
+      }).catch(() => {});
+    }
     triggerHaptic("success");
   };
 
@@ -1858,24 +1943,37 @@ export default function App() {
       },
     }));
 
-    // Register active subscription for new workspace admin
+    // Provision new workspace admin on Free tier by default (synced to /api/subscriptions)
     setMemberSubscriptions((prev) => [
       {
         userId: newAdminAccount.id,
         userName: newAdminAccount.name,
         userEmail: newAdminAccount.email,
         role: "admin",
-        planId: "enterprise",
-        planName: "Enterprise Suite",
-        price: 49,
+        planId: "free",
+        planName: "TaskPulse Free",
+        price: 0,
         status: "active",
         billingCycle: "monthly",
-        renewsAt: "Dec 31, 2026",
-        paymentMethod: "Google Play Billing",
-        orderId: `GPA.${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        renewsAt: "Free Forever",
+        paymentMethod: "Free Tier",
+        orderId: `TP-FREE-${Math.floor(1000 + Math.random() * 9000)}`,
       },
       ...prev,
     ]);
+    fetch("https://happy-fermi-kappa.vercel.app/api/subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update_plan",
+        userId: newAdminAccount.id,
+        userName: newAdminAccount.name,
+        userEmail: newAdminAccount.email,
+        orgName: orgTitle,
+        planId: "free",
+        status: "active",
+      }),
+    }).catch(() => {});
 
     setRegisteredAccounts((prev) => [...prev, newAdminAccount, ...newTeamAccounts]);
     setProjects(freshProjects);

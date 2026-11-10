@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
+import { checkPlanQuota } from "@shared/plans";
 import { UserRole, Department, Project } from "@shared/types";
 import { mockColleagues, mockProjects } from "@shared/mockData";
 import {
@@ -147,6 +148,14 @@ export const RoleManagementModal: React.FC<RoleManagementModalProps> = ({
   const handleAddNewMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail.trim()) return;
+
+    const currentSeatCount = baseMembers.filter((m) => m.email !== PERMANENT_ADMIN_EMAIL).length + 1;
+    const seatQuota = checkPlanQuota(currentOrg, "seats", currentSeatCount, user?.email);
+    if (!seatQuota.allowed) {
+      setFeedback(seatQuota.reason || "Seat quota reached on your current plan.");
+      setTimeout(() => setFeedback(null), 5000);
+      return;
+    }
 
     const email = newEmail.trim().toLowerCase();
     const name = newName.trim() || email.split("@")[0].replace(".", " ");
