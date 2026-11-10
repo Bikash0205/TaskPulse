@@ -58,6 +58,8 @@ import {
   SlidersIcon,
   InfoIcon,
   BarChartIcon,
+  ZapIcon,
+  SparklesIcon,
 } from "./components/Icons";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -3837,6 +3839,55 @@ export default function App() {
               </View>
             </View>
 
+            {/* TaskPulse Lite Active Membership Card */}
+            <View style={styles.liteMembershipCard}>
+              <View style={styles.liteCardHeader}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={styles.liteIconBadge}>
+                    <ZapIcon size={16} color="#FFFFFF" />
+                  </View>
+                  <View style={{ marginLeft: 10 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={styles.litePlanTitle}>TaskPulse Lite</Text>
+                      <View style={styles.liteActivePill}>
+                        <Text style={styles.liteActivePillText}>ACTIVE</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.litePlanSubtitle}>Soft Launch 14-Day Trial</Text>
+                  </View>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.liteDaysCount}>14 Days</Text>
+                  <Text style={styles.liteDaysLabel}>Remaining</Text>
+                </View>
+              </View>
+
+              <View style={styles.liteSpecsBox}>
+                <View style={styles.liteSpecRow}>
+                  <Text style={styles.liteSpecKey}>Storage Engine:</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View style={styles.liteGreenDot} />
+                    <Text style={styles.liteSpecValueGreen}>100% Offline-First SQLite</Text>
+                  </View>
+                </View>
+                <View style={[styles.liteSpecRow, { marginTop: 4 }]}>
+                  <Text style={styles.liteSpecKey}>Post-Trial Rate:</Text>
+                  <Text style={styles.liteSpecValue}>₹199 / mo (Google Play)</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic("selection");
+                  setIsAnalyticsModalOpen(true);
+                }}
+                style={styles.liteUpgradeBtn}
+              >
+                <SparklesIcon size={14} color={COLORS.primary} />
+                <Text style={styles.liteUpgradeBtnText}>Explore Enterprise Tier ($19/mo)</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Quick Action: Workspace Settings & Team Management (Admin Only) */}
             {currentUser.role === "admin" && (
               <View style={styles.quickActionCard}>
@@ -5969,6 +6020,109 @@ const getStyles = (COLORS: typeof LIGHT_COLORS, isDarkMode: boolean = false) =>
       width: 1,
       height: 20,
       backgroundColor: COLORS.border,
+    },
+    liteMembershipCard: {
+      marginTop: 12,
+      backgroundColor: isDarkMode ? "#131C2E" : "#F4FDF7",
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "#1E2E48" : "#A7F3D0",
+      padding: 14,
+    },
+    liteCardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    liteIconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: "#10B981",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    litePlanTitle: {
+      fontSize: 13,
+      fontWeight: "bold",
+      color: isDarkMode ? COLORS.white : COLORS.navy,
+    },
+    liteActivePill: {
+      marginLeft: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: 10,
+      backgroundColor: isDarkMode ? "#064E3B" : "#D1FAE5",
+    },
+    liteActivePillText: {
+      fontSize: 9,
+      fontWeight: "900",
+      color: isDarkMode ? "#34D399" : "#065F46",
+    },
+    litePlanSubtitle: {
+      fontSize: 10,
+      color: COLORS.muted,
+      marginTop: 1,
+    },
+    liteDaysCount: {
+      fontSize: 13,
+      fontWeight: "bold",
+      color: "#059669",
+    },
+    liteDaysLabel: {
+      fontSize: 9,
+      color: COLORS.muted,
+    },
+    liteSpecsBox: {
+      marginTop: 10,
+      backgroundColor: isDarkMode ? "#0F172A" : COLORS.white,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "#1E293B" : "#E2E8F0",
+      padding: 10,
+    },
+    liteSpecRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    liteSpecKey: {
+      fontSize: 10,
+      color: COLORS.muted,
+    },
+    liteGreenDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "#10B981",
+      marginRight: 4,
+    },
+    liteSpecValueGreen: {
+      fontSize: 10,
+      fontWeight: "bold",
+      color: "#10B981",
+    },
+    liteSpecValue: {
+      fontSize: 10,
+      fontWeight: "bold",
+      color: isDarkMode ? COLORS.white : COLORS.navy,
+    },
+    liteUpgradeBtn: {
+      marginTop: 10,
+      backgroundColor: isDarkMode ? "#1E293B" : COLORS.white,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: isDarkMode ? "#334155" : COLORS.primaryLight,
+      paddingVertical: 9,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    liteUpgradeBtnText: {
+      fontSize: 11,
+      fontWeight: "bold",
+      color: COLORS.primary,
+      marginLeft: 4,
     },
     quickActionCard: {
       marginTop: 12,

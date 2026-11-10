@@ -33,6 +33,8 @@ import {
   Shield,
   Briefcase,
   Users,
+  Zap,
+  Sparkles,
   ChevronDown,
   Trash2,
   TrendingUp,
@@ -1261,6 +1263,52 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                         <div className="text-[9px] text-[#848A94]">Velocity</div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* TaskPulse Lite Active Membership Card */}
+                  <div className="p-4 rounded-3xl bg-gradient-to-br from-[#F0EFFF] to-[#E8F5E9] border border-emerald-500/20 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                          <Zap className="w-4 h-4 fill-white" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-xs text-[#002055]">TaskPulse Lite</span>
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase">
+                              Active
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-[#848A94]">Soft Launch 14-Day Trial</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-extrabold text-xs text-emerald-700">14 Days</span>
+                        <div className="text-[9px] text-[#848A94]">Remaining</div>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-white/80 border border-slate-100 space-y-1.5 text-[11px]">
+                      <div className="flex items-center justify-between text-[#002055]">
+                        <span className="text-[#848A94]">Storage Architecture:</span>
+                        <span className="font-bold text-emerald-600 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          100% Offline-First
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[#002055]">
+                        <span className="text-[#848A94]">Post-Trial Rate:</span>
+                        <span className="font-bold">₹199 / mo</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setIsCorporateAnalyticsOpen(true)}
+                      className="w-full py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#756EF3]/30 text-[#756EF3] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Explore Enterprise Tier ($19/mo)</span>
+                    </button>
                   </div>
 
                   {/* Weekly Completion Bar Chart */}

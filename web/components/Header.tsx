@@ -17,11 +17,13 @@ import {
   Shield,
   Users,
   Building2,
+  Zap,
 } from "lucide-react";
 import GoogleSignInModal from "./GoogleSignInModal";
 import RoleManagementModal from "./RoleManagementModal";
 import { OrganizationOnboardingModal } from "./OrganizationOnboardingModal";
 import { FluidNeumorphicThemeToggle } from "./FluidNeumorphicThemeToggle";
+import { TaskPulseLiteModal } from "./TaskPulseLiteModal";
 
 interface HeaderProps {
   projects?: Project[];
@@ -34,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
   const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
+  const [isLiteModalOpen, setIsLiteModalOpen] = useState(false);
 
   const roles: UserRole[] = ["admin", "manager", "member"];
 
@@ -79,6 +82,18 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
 
           {/* Fluid Neumorphic Light / Dark Mode Toggle */}
           <FluidNeumorphicThemeToggle size="sm" />
+
+          {/* TaskPulse Lite Soft Launch Trial Badge */}
+          <button
+            onClick={() => setIsLiteModalOpen(true)}
+            data-testid="header-lite-plan-btn"
+            title="TaskPulse Lite // Active 14-Day Soft Launch Trial"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-[#756EF3]/10 hover:from-emerald-500/20 hover:to-[#756EF3]/20 border border-emerald-500/30 text-xs font-bold text-emerald-700 dark:text-emerald-400 shadow-xs transition-all cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500 shrink-0" />
+            <span className="hidden sm:inline">Lite Trial</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black leading-none">14d</span>
+          </button>
 
           {user ? (
             <>
@@ -219,6 +234,11 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
       />
 
       <OrganizationOnboardingModal />
+
+      <TaskPulseLiteModal
+        isOpen={isLiteModalOpen}
+        onClose={() => setIsLiteModalOpen(false)}
+      />
     </>
   );
 };

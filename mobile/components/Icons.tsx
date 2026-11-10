@@ -1155,5 +1155,55 @@ export const DownloadIcon: React.FC<IconProps> = ({ size = 20, color = "#002055"
   );
 };
 
+export const ZapIcon: React.FC<IconProps> = ({ size = 20, color = "#10B981" }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: Math.round(size * 0.22),
+          borderRightWidth: Math.round(size * 0.1),
+          borderBottomWidth: Math.round(size * 0.48),
+          borderLeftColor: "transparent",
+          borderRightColor: "transparent",
+          borderBottomColor: color,
+          transform: [{ rotate: "15deg" }],
+          marginBottom: -Math.round(size * 0.12),
+        }}
+      />
+      <View
+        style={{
+          width: 0,
+          height: 0,
+          borderLeftWidth: Math.round(size * 0.1),
+          borderRightWidth: Math.round(size * 0.22),
+          borderTopWidth: Math.round(size * 0.48),
+          borderLeftColor: "transparent",
+          borderRightColor: "transparent",
+          borderTopColor: color,
+          transform: [{ rotate: "15deg" }],
+        }}
+      />
+    </View>
+  );
+};
+
+export const SparklesIcon: React.FC<IconProps> = ({ size = 20, color = "#756EF3" }) => {
+  return (
+    <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          width: Math.round(size * 0.45),
+          height: Math.round(size * 0.45),
+          backgroundColor: color,
+          transform: [{ rotate: "45deg" }],
+          borderRadius: 2,
+        }}
+      />
+    </View>
+  );
+};
+
 
 
