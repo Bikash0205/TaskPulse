@@ -60,6 +60,7 @@ import {
   BarChartIcon,
   ZapIcon,
   SparklesIcon,
+  GoogleIcon,
 } from "./components/Icons";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -1373,6 +1374,28 @@ export default function App() {
       setUninvitedWarning(targetEmail);
       triggerHaptic("selection");
     }
+  };
+
+  // Handle Google Single Sign-On
+  const handleGoogleSignIn = () => {
+    triggerHaptic("selection");
+    const googleAccount = registeredAccounts.find(
+      (a) => a.email.toLowerCase() === "zevonbcash@gmail.com"
+    ) || {
+      id: "u-google",
+      name: "Bikash Kumar Yadav",
+      email: "zevonbcash@gmail.com",
+      role: "admin",
+      organization: "TaskPulse Technologies",
+      assignedProjects: ["Application Design", "Unity Dashboard", "Instagram Shots", "Cubbles Engine", "Ui8 Platform"],
+    };
+
+    setUninvitedWarning(null);
+    setCurrentUser(googleAccount);
+    setNavHistory([]);
+    setSelectedProjectView(null);
+    setCurrentTab("home");
+    triggerHaptic("success");
   };
 
   // Add Employee in Step 2
@@ -2776,8 +2799,24 @@ export default function App() {
             <View style={styles.authCard}>
               <Text style={styles.authCardTitle}>Sign In to Workspace</Text>
               <Text style={styles.authCardDesc}>
-                Enter your organization email to access your assigned projects and deliverables.
+                Authenticate with your corporate Google SSO or enter your workspace email.
               </Text>
+
+              {/* Prominent Google Single Sign-On Button */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleGoogleSignIn}
+                style={styles.googleAuthBtn}
+              >
+                <GoogleIcon size={18} />
+                <Text style={styles.googleAuthBtnText}>Continue with Google</Text>
+              </TouchableOpacity>
+
+              <View style={styles.authDividerRow}>
+                <View style={styles.authDividerLine} />
+                <Text style={styles.authDividerText}>OR WORK EMAIL</Text>
+                <View style={styles.authDividerLine} />
+              </View>
 
               {/* Uninvited Warning Banner */}
               {uninvitedWarning && (
@@ -2801,7 +2840,7 @@ export default function App() {
                 </View>
               )}
 
-              <Text style={[styles.inputLabel, { marginTop: 14 }]}>WORK EMAIL</Text>
+              <Text style={[styles.inputLabel, { marginTop: 6 }]}>WORK EMAIL</Text>
               <TextInput
                 value={loginEmail}
                 onChangeText={(t) => {
@@ -2818,6 +2857,25 @@ export default function App() {
               <TouchableOpacity onPress={() => handleSignIn()} style={styles.authSubmitBtn}>
                 <Text style={styles.authSubmitBtnText}>Sign In</Text>
               </TouchableOpacity>
+
+              {/* Quick Role Sandbox Chips */}
+              <View style={{ marginTop: 14 }}>
+                <Text style={[styles.inputLabel, { marginBottom: 6 }]}>QUICK ROLE SANDBOX</Text>
+                <View style={styles.sandboxRow}>
+                  {registeredAccounts.map((acc) => (
+                    <TouchableOpacity
+                      key={acc.id}
+                      activeOpacity={0.8}
+                      onPress={() => handleSignIn(acc.email)}
+                      style={styles.sandboxChip}
+                    >
+                      <Text style={styles.sandboxChipText}>
+                        {acc.name.split(" ")[0]} ({acc.role})
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
             </View>
           ) : (
             /* SIGN UP / ADMIN 3-STEP ONBOARDING WIZARD */
@@ -6621,6 +6679,65 @@ const getStyles = (COLORS: typeof LIGHT_COLORS, isDarkMode: boolean = false) =>
       color: COLORS.muted,
       marginTop: 2,
       marginBottom: 12,
+    },
+    googleAuthBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDarkMode ? "#1E2538" : "#FFFFFF",
+      borderWidth: 1.2,
+      borderColor: isDarkMode ? "rgba(255, 255, 255, 0.15)" : "#CBD5E1",
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      marginTop: 4,
+      marginBottom: 10,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDarkMode ? 0.25 : 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    googleAuthBtnText: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: isDarkMode ? "#F8FAFC" : "#002055",
+      marginLeft: 10,
+    },
+    authDividerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginVertical: 8,
+    },
+    authDividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.10)" : "#E2E8F0",
+    },
+    authDividerText: {
+      fontSize: 10,
+      fontWeight: "800",
+      color: COLORS.muted,
+      marginHorizontal: 10,
+      letterSpacing: 0.5,
+    },
+    sandboxRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    sandboxChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: isDarkMode ? "rgba(117, 110, 243, 0.15)" : "#F0EFFF",
+      borderWidth: 1,
+      borderColor: isDarkMode ? "rgba(117, 110, 243, 0.3)" : "#E2E0FD",
+    },
+    sandboxChipText: {
+      fontSize: 10,
+      fontWeight: "600",
+      color: isDarkMode ? "#818CF8" : "#756EF3",
     },
     authSubmitBtn: {
       backgroundColor: COLORS.primary,
