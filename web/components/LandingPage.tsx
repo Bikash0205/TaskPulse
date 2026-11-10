@@ -433,15 +433,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* Masked Kinetic Lines */}
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black tracking-tight text-[#1E222D] dark:text-white leading-[1.08] font-sans">
-              <span className="block overflow-hidden pb-1">
-                <span className="lp-hero-line block">Project execution</span>
+            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black tracking-tight text-[#1E222D] dark:text-white leading-[1.18] sm:leading-[1.16] xl:leading-[1.16] font-sans">
+              <span className="block overflow-hidden pb-1.5">
+                <span className="lp-hero-line block leading-[1.16]">Project execution</span>
               </span>
-              <span className="block overflow-hidden pb-1">
-                <span className="lp-hero-line block">built for clarity.</span>
+              <span className="block overflow-hidden pb-1.5">
+                <span className="lp-hero-line block leading-[1.16]">built for clarity.</span>
               </span>
-              <span className="block overflow-hidden pb-1">
-                <span className="lp-hero-line block bg-gradient-to-r from-[#5D55D6] via-[#0284C7] to-[#0F8C65] bg-clip-text text-transparent">
+              <span className="block overflow-hidden pb-2.5">
+                <span className="lp-hero-line block leading-[1.18] pb-2 bg-gradient-to-r from-[#5D55D6] via-[#0284C7] to-[#0F8C65] bg-clip-text text-transparent">
                   Zero glare. Zero clutter.
                 </span>
               </span>
