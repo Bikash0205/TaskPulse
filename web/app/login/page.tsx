@@ -266,27 +266,28 @@ export default function LoginPage() {
       {/* 1. Global Navigation Bar */}
       <header
         ref={headerRef}
-        className="relative z-40 border-b border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3 transition-all"
+        className="relative z-40 border-b border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-3 sm:px-8 py-3 flex items-center justify-between gap-2 transition-all"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/"
-            className="group p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            className="group w-9 h-9 flex items-center justify-center shrink-0 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
             title="Return to Home"
             aria-label="Return to Home"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           </Link>
-          <TaskPulseLogo size="md" />
+          <span className="sm:hidden shrink-0"><TaskPulseLogo size="sm" /></span>
+          <span className="hidden sm:inline-flex shrink-0"><TaskPulseLogo size="md" /></span>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Tactile Liquid Glass Light / Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
             data-testid="fluid-theme-toggle"
             title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white/80 dark:bg-[#151C2C]/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white/80 dark:bg-[#151C2C]/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
             aria-label="Toggle Theme"
           >
             {theme === "dark" ? (
@@ -298,12 +299,12 @@ export default function LoginPage() {
 
           <Link
             href="/onboarding"
-            className="relative group px-4 py-2 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5 cursor-pointer overflow-hidden"
+            className="relative group px-3 sm:px-4 h-9 rounded-xl bg-[#756EF3] hover:bg-[#635BFF] text-white text-xs font-semibold shadow-md shadow-[#756EF3]/20 hover:shadow-lg hover:shadow-[#756EF3]/30 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer overflow-hidden"
           >
-            <Building2 className="w-3.5 h-3.5" />
+            <Building2 className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Organization Onboarding</span>
             <span className="sm:hidden">Sign Up</span>
-            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
       </header>

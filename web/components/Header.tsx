@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
                 type="button"
                 onClick={() => setIsAccountMenuOpen((prev) => !prev)}
                 data-testid="header-user-info"
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[#F4F2ED] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-[#1E293B] hover:border-[#5D55D6]/60 transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-2.5 h-9 rounded-xl bg-[#F4F2ED] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-[#1E293B] hover:border-[#5D55D6]/60 transition-colors cursor-pointer"
               >
                 {user.photoURL ? (
                   <img
@@ -223,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
                 data-testid="sign-out-btn"
                 title="Sign Out"
                 aria-label="Sign Out"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-red-700 dark:text-red-400 bg-red-50/80 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200/80 dark:border-red-800/60 transition-colors cursor-pointer"
+                className="w-9 h-9 sm:w-auto sm:h-9 flex items-center justify-center gap-1.5 sm:px-2.5 rounded-xl text-xs font-medium text-red-700 dark:text-red-400 bg-red-50/80 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200/80 dark:border-red-800/60 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -236,7 +236,7 @@ export const Header: React.FC<HeaderProps> = ({ projects }) => {
             onClick={toggleTheme}
             data-testid="fluid-theme-toggle"
             title={theme === "dark" ? "Switch to Soft Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-[#DDD8CE] dark:border-[#1E293B] bg-[#F4F2ED] dark:bg-[#151C2C] hover:bg-[#EAE6DC] dark:hover:bg-slate-800 text-[#1E222D] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#DDD8CE] dark:border-[#1E293B] bg-[#F4F2ED] dark:bg-[#151C2C] hover:bg-[#EAE6DC] dark:hover:bg-slate-800 text-[#1E222D] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer"
             aria-label="Toggle Theme"
           >
             {theme === "dark" ? (

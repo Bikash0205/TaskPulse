@@ -393,25 +393,26 @@ export default function OnboardingPage() {
       <AmbientBackground />
 
       {/* Global Navigation Header */}
-      <header className="relative z-40 border-b border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between gap-3 transition-all">
-        <div className="flex items-center gap-3">
+      <header className="relative z-40 border-b border-[#DDD8CE] dark:border-[#1E293B]/80 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-3 sm:px-8 py-3 flex items-center justify-between gap-2 transition-all">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/"
-            className="group p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            className="group w-9 h-9 flex items-center justify-center shrink-0 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
             title="Return to Home"
             aria-label="Return to Home"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           </Link>
-          <TaskPulseLogo size="md" />
+          <span className="sm:hidden shrink-0"><TaskPulseLogo size="sm" /></span>
+          <span className="hidden sm:inline-flex shrink-0"><TaskPulseLogo size="md" /></span>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
             title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:bg-slate-100 dark:hover:bg-slate-800 text-[#002055] dark:text-[#F8FAFC] transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
             aria-label="Toggle Theme"
           >
             {theme === "dark" ? (
@@ -423,7 +424,7 @@ export default function OnboardingPage() {
 
           <Link
             href="/login"
-            className="px-4 py-2 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:border-[#756EF3] text-[#002055] dark:text-[#F8FAFC] text-xs font-semibold shadow-xs hover:shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5 cursor-pointer"
+            className="px-3 sm:px-4 h-9 rounded-xl border border-[#E9F1FF] dark:border-[#1E293B] bg-white dark:bg-[#151C2C] hover:border-[#756EF3] text-[#002055] dark:text-[#F8FAFC] text-xs font-semibold shadow-xs hover:shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <span className="hidden sm:inline">Already have a workspace?</span>
             <span className="text-[#756EF3] dark:text-[#818CF8]">Sign In</span>

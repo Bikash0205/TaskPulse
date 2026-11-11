@@ -7,22 +7,23 @@ import { TaskPulseLogo } from "@/components/TaskPulseLogo";
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-[#F8FAFC] flex flex-col font-sans transition-colors selection:bg-[#5D55D6]/20 selection:text-[#5D55D6]">
-      <header className="border-b border-[#DDD8CE] dark:border-[#1E293B] bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-6 py-4 sticky top-0 z-20 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen overflow-x-clip bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-[#F8FAFC] flex flex-col font-sans transition-colors selection:bg-[#5D55D6]/20 selection:text-[#5D55D6]">
+      <header className="border-b border-[#DDD8CE] dark:border-[#1E293B] bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/80 backdrop-blur-xl px-3.5 sm:px-6 py-3 sm:py-4 sticky top-0 z-20 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/"
-            className="p-2 rounded-xl border border-[#DDD8CE] dark:border-[#1E293B] bg-[#F4F2ED] dark:bg-[#151C2C] hover:bg-[#EAE6DC] dark:hover:bg-slate-800 transition-colors"
+            className="w-9 h-9 flex items-center justify-center shrink-0 rounded-xl border border-[#DDD8CE] dark:border-[#1E293B] bg-[#F4F2ED] dark:bg-[#151C2C] hover:bg-[#EAE6DC] dark:hover:bg-slate-800 transition-colors"
             aria-label="Return to Home"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
-          <TaskPulseLogo size="md" />
+          <span className="sm:hidden shrink-0"><TaskPulseLogo size="sm" /></span>
+          <span className="hidden sm:inline-flex shrink-0"><TaskPulseLogo size="md" /></span>
         </div>
-        <div className="text-xs font-semibold text-slate-500">Legal Documentation</div>
+        <div className="text-[11px] sm:text-xs font-semibold text-slate-500 whitespace-nowrap shrink-0">Legal Docs</div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-12 flex-1 w-full space-y-8 text-left">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 w-full space-y-6 sm:space-y-8 text-left">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F0EFFF] dark:bg-[#756EF3]/15 text-[#756EF3] dark:text-[#818CF8] text-xs font-semibold uppercase tracking-wider mb-3">
             <Shield className="w-3.5 h-3.5" />
@@ -34,7 +35,7 @@ export default function PrivacyPolicyPage() {
           <p className="text-xs text-slate-500 mt-2">Last updated: September 21, 2026</p>
         </div>
 
-        <div className="prose dark:prose-invert max-w-none space-y-6 text-sm text-[#556070] dark:text-[#94A3B8] leading-relaxed">
+        <div className="prose dark:prose-invert max-w-none break-words space-y-6 text-sm text-[#556070] dark:text-[#94A3B8] leading-relaxed">
           <section className="p-6 rounded-2xl bg-white dark:bg-[#151C2C] border border-[#E9F1FF] dark:border-[#1E293B] shadow-xs space-y-3">
             <h2 className="text-base font-bold text-[#002055] dark:text-white flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#756EF3]" />
