@@ -23,6 +23,7 @@ import {
 import { mockColleagues, mockTasks, mockPulseFeed, mockProjects } from "@shared/mockData";
 import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole, Project, SubTask } from "@shared/types";
 import { formatPlanStatusLabel, getEffectivePlan } from "@shared/plans";
+import { useViewportProfile } from "@/lib/useViewportProfile";
 
 export default function TaskPulseWorkspacePage() {
   const router = useRouter();
@@ -39,7 +40,8 @@ export default function TaskPulseWorkspacePage() {
   const [pulseFeed, setPulseFeed] = useState<ColleaguePulseFeedItem[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string>("all");
   const [assignedBannerProject, setAssignedBannerProject] = useState<{ id: string; name: string } | null>(null);
-  const [viewportMode, setViewportMode] = useState<"desktop" | "mobile">("desktop");
+  const viewport = useViewportProfile();
+  const viewportMode: "desktop" | "mobile" = viewport.isMobileViewport ? "mobile" : "desktop";
   const [bootSplashComplete, setBootSplashComplete] = useState(false);
 
   const isCoreDemoAccount =
@@ -57,21 +59,6 @@ export default function TaskPulseWorkspacePage() {
 
   const tasksStorageKey = orgScope ? `taskpulse_custom_tasks_${orgScope}` : "taskpulse_custom_tasks";
   const projectsStorageKey = orgScope ? `taskpulse_custom_projects_${orgScope}` : "taskpulse_custom_projects";
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const checkViewport = () => {
-        const isMobileUa =
-          typeof navigator !== "undefined" &&
-          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const shouldUseMobile = window.innerWidth < 768 || (isMobileUa && window.innerWidth < 1024);
-        setViewportMode(shouldUseMobile ? "mobile" : "desktop");
-      };
-      checkViewport();
-      window.addEventListener("resize", checkViewport);
-      return () => window.removeEventListener("resize", checkViewport);
-    }
-  }, []);
 
   useEffect(() => {
     if (!user || orgLoading) return;

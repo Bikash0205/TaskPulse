@@ -10,7 +10,7 @@ interface BootSplashProps {
 
 export const BootSplash: React.FC<BootSplashProps> = ({
   onComplete,
-  minDurationMs = 2200,
+  minDurationMs = 1200,
 }) => {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isMounted, setIsMounted] = useState(true);

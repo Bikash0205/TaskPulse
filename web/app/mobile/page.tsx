@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { MobileDeviceFrame } from "@/components/MobileDeviceFrame";
+import { LandingPage } from "@/components/LandingPage";
 import { useAuth, PERMANENT_ADMIN_EMAIL } from "@/context/AuthContext";
 import { useOrganization } from "@/context/OrganizationContext";
 import { Header } from "@/components/Header";
@@ -13,7 +14,7 @@ import { TaskPulseItem, ColleagueProfile, ColleaguePulseFeedItem, UserRole } fro
 import { ArrowLeft, Smartphone, Monitor } from "lucide-react";
 
 export default function MobileAppDedicatedPage() {
-  const { user } = useAuth();
+  const { user, loading, loginDemoUser, signInWithCustomUser } = useAuth();
   const { currentOrg, orgLoading } = useOrganization();
   const [tasks, setTasks] = useState<TaskPulseItem[]>([]);
   const [colleagues, setColleagues] = useState<ColleagueProfile[]>([]);
@@ -266,6 +267,20 @@ export default function MobileAppDedicatedPage() {
     maxBandwidth: 5,
     isOnline: !!user,
   };
+
+  if (loading) {
+    return <div className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19]" />;
+  }
+
+  if (!user) {
+    return (
+      <LandingPage
+        onEnterDemo={loginDemoUser}
+        onEnterMarcus={() => signInWithCustomUser("Marcus Vance", "marcus.vance@taskpulse.internal")}
+        onEnterAdmin={() => signInWithCustomUser("Zevon", PERMANENT_ADMIN_EMAIL)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#F8FAFF] dark:bg-[#0B0F19] text-[#002055] dark:text-[#F8FAFC] flex flex-col transition-colors duration-200 selection:bg-[#756EF3]/20 selection:text-[#756EF3]">

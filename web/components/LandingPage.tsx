@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { TaskPulseLogo } from "./TaskPulseLogo";
 import { useTheme } from "@/context/ThemeContext";
+import { useViewportProfile } from "@/lib/useViewportProfile";
 import { GeminiTaskArchitectBar } from "./GeminiTaskArchitectBar";
 import { PricingTiersSection } from "./PricingTiersSection";
 import { InteractiveProductShowcase } from "./InteractiveProductShowcase";
@@ -48,6 +49,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onEnterDemo,
 }) => {
   const { theme, toggleTheme } = useTheme();
+  const vp = useViewportProfile();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const pageRef = useRef<HTMLDivElement>(null);
@@ -324,10 +326,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div
       ref={pageRef}
+      data-device={vp.deviceClass}
+      data-orientation={vp.orientation}
+      data-aspect={vp.aspectRatio}
       className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-white flex flex-col transition-colors duration-200 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6] overflow-x-hidden"
     >
       {/* 1. Floating Warm-Paper / Obsidian Navigation Bar */}
-      <header className="sticky top-2 sm:top-3 z-50 max-w-[1360px] w-[96%] mx-auto rounded-2xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/85 backdrop-blur-2xl shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 transition-all relative overflow-hidden">
+      <header className={`sticky top-2 sm:top-3 z-50 ${vp.containerClass} w-[96%] mx-auto rounded-2xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/85 backdrop-blur-2xl shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-3 transition-all relative overflow-hidden`}>
         <div
           ref={scrollBarRef}
           style={{ transform: "scaleX(0)" }}
@@ -335,8 +340,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         />
         <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-[#5D55D6]/40 dark:via-cyan-400/60 to-transparent pointer-events-none" />
 
-        <div className="flex items-center gap-4 sm:gap-6">
-          <TaskPulseLogo size="md" />
+        <div className="flex items-center gap-2 sm:gap-5 min-w-0 shrink-0">
+          <TaskPulseLogo size={vp.isMobileViewport ? "sm" : "md"} />
 
           <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#E4F2EC] dark:bg-emerald-500/10 border border-[#C5E3D5] dark:border-emerald-500/20 text-[10px] font-mono text-[#0F7656] dark:text-emerald-400 font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0F8C65] animate-ping" />
@@ -389,7 +394,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <Link
             href="/login"
-            className="px-3.5 py-1.5 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C]/70 hover:border-[#5D55D6] text-[#1E222D] dark:text-white text-xs font-semibold shadow-2xs hover:shadow transition-all cursor-pointer"
+            className="hidden sm:inline-flex whitespace-nowrap shrink-0 px-3.5 py-1.5 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C]/70 hover:border-[#5D55D6] text-[#1E222D] dark:text-white text-xs font-semibold shadow-2xs hover:shadow transition-all cursor-pointer"
           >
             Sign In
           </Link>
@@ -397,9 +402,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <Link
             href="/onboarding"
             data-testid="nav-get-started-btn"
-            className="px-3.5 sm:px-4 py-1.5 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-md shadow-[#5D55D6]/20 transition-all cursor-pointer flex items-center gap-1.5"
+            className="whitespace-nowrap shrink-0 px-2.5 sm:px-4 py-1.5 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-md shadow-[#5D55D6]/20 transition-all cursor-pointer flex items-center gap-1"
           >
-            <span>Get Started</span>
+            <span>{vp.isMobileViewport ? "Start" : "Get Started"}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
 
@@ -472,22 +477,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       )}
 
       {/* 2. Asymmetric Editorial Hero Section */}
-      <section className="relative pt-10 sm:pt-16 pb-12 sm:pb-16 px-4 sm:px-6 max-w-[1360px] w-full mx-auto">
+      <section
+        className={`relative ${
+          vp.isMobileViewport ? "pt-6 pb-10" : "pt-10 sm:pt-16 pb-12 sm:pb-16"
+        } ${vp.sectionPaddingClass} ${vp.containerClass} w-full mx-auto`}
+      >
         {/* Soft warm atmospheric radial glow (no harsh neon glare) */}
         <div className="absolute -top-10 left-1/3 w-[560px] h-[340px] bg-[#5D55D6]/[0.06] dark:bg-[#756EF3]/15 blur-[130px] rounded-full pointer-events-none -z-10" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+        <div className={`grid grid-cols-1 ${vp.aspectRatio >= 1.15 ? "lg:grid-cols-12" : ""} gap-8 lg:gap-12 items-center`}>
           {/* Left 7 Columns: Kinetic Typography + Actions + Telemetry Strip */}
-          <div className="lg:col-span-7 text-left space-y-6">
-            <div className="lp-hero-pill inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] sm:text-xs font-semibold tracking-wide shadow-2xs">
+          <div className={`${vp.aspectRatio >= 1.15 ? "lg:col-span-7" : ""} text-left space-y-5 sm:space-y-6`}>
+            <div className="lp-hero-pill inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] sm:text-xs font-semibold tracking-wide shadow-2xs">
               <Zap className="w-3.5 h-3.5" />
               <span>TaskPulse 2.0</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#5D55D6] dark:bg-[#818CF8]" />
-              <span>Calm, High-Velocity Execution</span>
+              <span>
+                {vp.isMobileViewport
+                  ? `Mobile View (${vp.width}x${vp.height})`
+                  : "Calm, High-Velocity Execution"}
+              </span>
             </div>
 
             {/* Masked Kinetic Lines */}
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black tracking-tight text-[#1E222D] dark:text-white leading-[1.18] sm:leading-[1.16] xl:leading-[1.16] font-sans">
+            <h1 className={`${vp.heroHeadingClass} font-black tracking-tight text-[#1E222D] dark:text-white leading-[1.18] sm:leading-[1.16] xl:leading-[1.16] font-sans`}>
               <span className="block overflow-hidden pb-1.5">
                 <span className="lp-hero-line block leading-[1.16]">Project execution</span>
               </span>
@@ -560,7 +573,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             ref={heroStackRef}
             onMouseMove={handleStackMouseMove}
             onMouseLeave={handleStackMouseLeave}
-            className="lg:col-span-5 relative py-4 select-none"
+            className={`${vp.aspectRatio >= 1.15 ? "lg:col-span-5" : ""} relative py-4 select-none`}
           >
             {/* Primary Matte Workspace Card */}
             <div className="lp-stack-card relative rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xl shadow-[#1E222D]/[0.06] p-5 sm:p-6 space-y-4">
@@ -650,7 +663,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* 3. Interactive Telemetry Stage + AI Task Architect + Product Tour */}
-      <section id="showcase" className="px-4 sm:px-6 max-w-[1360px] w-full mx-auto">
+      <section id="showcase" className={`${vp.sectionPaddingClass} ${vp.containerClass} w-full mx-auto`}>
         <HeroMotionGraphic />
 
         <div className="lp-showcase-wrap space-y-6 mt-4">
@@ -695,7 +708,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* 4. Asymmetric Editorial Bento Capabilities Grid */}
       <section
         id="features"
-        className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1360px] w-full mx-auto mt-10 border-t border-[#DDD8CE] dark:border-white/10"
+        className={`py-14 sm:py-22 ${vp.sectionPaddingClass} ${vp.containerClass} w-full mx-auto mt-10 border-t border-[#DDD8CE] dark:border-white/10`}
       >
         <div className="max-w-2xl mb-12 text-left">
           <div className="text-xs font-bold text-[#5D55D6] dark:text-[#818CF8] tracking-wider uppercase font-mono mb-2">
