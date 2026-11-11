@@ -184,33 +184,22 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         try {
           const orgsCol = collection(db!, "organizations");
           const orgSnap = await getDocs(orgsCol);
-          if (!orgSnap.empty) {
-            const firestoreOrgs: Organization[] = [];
-            orgSnap.forEach((d) => firestoreOrgs.push(d.data() as Organization));
-            // Merge preserving uniqueness
-            const merged = [...firestoreOrgs];
-            localOrgs.forEach((lo) => {
-              if (!merged.some((m) => m.id === lo.id)) merged.push(lo);
-            });
-            setOrganizations(merged);
-            if (typeof window !== "undefined") {
-              localStorage.setItem("taskpulse_organizations", JSON.stringify(merged));
-            }
+          const firestoreOrgs: Organization[] = [];
+          orgSnap.forEach((d) => firestoreOrgs.push(d.data() as Organization));
+          const hasCore = firestoreOrgs.some((o) => o.id === DEFAULT_CORE_ORG.id);
+          const synced = hasCore ? firestoreOrgs : [DEFAULT_CORE_ORG, ...firestoreOrgs];
+          setOrganizations(synced);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("taskpulse_organizations", JSON.stringify(synced));
           }
 
           const invitesCol = collection(db!, "invites");
           const invSnap = await getDocs(invitesCol);
-          if (!invSnap.empty) {
-            const firestoreInvites: OrganizationInvite[] = [];
-            invSnap.forEach((d) => firestoreInvites.push(d.data() as OrganizationInvite));
-            const mergedInvites = [...firestoreInvites];
-            localInvites.forEach((li) => {
-              if (!mergedInvites.some((m) => m.id === li.id)) mergedInvites.push(li);
-            });
-            setInvites(mergedInvites);
-            if (typeof window !== "undefined") {
-              localStorage.setItem("taskpulse_org_invites", JSON.stringify(mergedInvites));
-            }
+          const firestoreInvites: OrganizationInvite[] = [];
+          invSnap.forEach((d) => firestoreInvites.push(d.data() as OrganizationInvite));
+          setInvites(firestoreInvites);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("taskpulse_org_invites", JSON.stringify(firestoreInvites));
           }
         } catch (err) {
           console.warn("Firestore organization load notice:", err);

@@ -194,6 +194,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
+    // Authoritative check against live Firestore before trusting stale browser storage
+    if (db) {
+      try {
+        const mapUserDoc = (data: Record<string, any>) =>
+          data.onboardingComplete === true || Boolean(data.orgId)
+            ? {
+                provisioned: true,
+                role: (data.role as UserRole) || "member",
+                department: (data.department as Department) || "Engineering",
+                displayName: data.displayName,
+                orgId: data.orgId,
+              }
+            : null;
+
+        if (uid) {
+          const userSnap = await getDoc(doc(db, "users", uid));
+          if (userSnap.exists()) {
+            const mapped = mapUserDoc(userSnap.data());
+            if (mapped) return mapped;
+          }
+        } else {
+          const userQSnap = await getDocs(query(collection(db, "users"), where("email", "==", cleanEmail)));
+          if (!userQSnap.empty) {
+            const mapped = mapUserDoc(userQSnap.docs[0].data());
+            if (mapped) return mapped;
+          }
+        }
+
+        const orgQ = query(collection(db, "organizations"), where("adminEmail", "==", cleanEmail));
+        const orgSnap = await getDocs(orgQ);
+        if (!orgSnap.empty) {
+          const orgData = orgSnap.docs[0].data();
+          return {
+            provisioned: true,
+            role: "admin",
+            department: "Engineering",
+            orgId: orgData.id || orgSnap.docs[0].id,
+          };
+        }
+
+        const invQ = query(collection(db, "invites"), where("email", "==", cleanEmail));
+        const invSnap = await getDocs(invQ);
+        if (!invSnap.empty) {
+          const invData = invSnap.docs[0].data();
+          return {
+            provisioned: true,
+            role: (invData.role as UserRole) || "member",
+            department: (invData.department as Department) || "Engineering",
+            displayName: invData.name,
+            orgId: invData.orgId,
+            assignedProjectIds: invData.assignedProjectIds,
+          };
+        }
+
+        // Live Firestore succeeded and found no matching user, org, or invite
+        return { provisioned: false };
+      } catch (err) {
+        console.warn("Firestore provisioning lookup notice:", err);
+      }
+    }
+
+    // Offline / unconfigured fallback only
     if (typeof window !== "undefined") {
       try {
         const regRaw = localStorage.getItem(REGISTERED_USERS_STORAGE_KEY);
@@ -242,52 +304,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    if (db && uid) {
-      try {
-        const userSnap = await getDoc(doc(db, "users", uid));
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          if (data.onboardingComplete === true || Boolean(data.orgId)) {
-            return {
-              provisioned: true,
-              role: (data.role as UserRole) || "member",
-              department: (data.department as Department) || "Engineering",
-              displayName: data.displayName,
-              orgId: data.orgId,
-            };
-          }
-        }
-
-        const orgQ = query(collection(db, "organizations"), where("adminEmail", "==", cleanEmail));
-        const orgSnap = await getDocs(orgQ);
-        if (!orgSnap.empty) {
-          const orgData = orgSnap.docs[0].data();
-          return {
-            provisioned: true,
-            role: "admin",
-            department: "Engineering",
-            orgId: orgData.id || orgSnap.docs[0].id,
-          };
-        }
-
-        const invQ = query(collection(db, "invites"), where("email", "==", cleanEmail));
-        const invSnap = await getDocs(invQ);
-        if (!invSnap.empty) {
-          const invData = invSnap.docs[0].data();
-          return {
-            provisioned: true,
-            role: (invData.role as UserRole) || "member",
-            department: (invData.department as Department) || "Engineering",
-            displayName: invData.name,
-            orgId: invData.orgId,
-            assignedProjectIds: invData.assignedProjectIds,
-          };
-        }
-      } catch (err) {
-        console.warn("Firestore provisioning lookup notice:", err);
-      }
-    }
-
     return { provisioned: false };
   };
 
@@ -316,7 +332,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 1. Initial local restore
+    // 1. Initial local restore (immediate only for internal/offline sessions; Firebase accounts wait for provisioning check)
     if (typeof window !== "undefined") {
       const isSignedOut = localStorage.getItem("taskpulse_signed_out") === "true";
       if (isSignedOut) {
@@ -327,11 +343,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (savedUser) {
           try {
             const parsed = JSON.parse(savedUser);
-            if (parsed && (parsed.email || parsed.displayName)) {
+            const cleanEmail = (parsed?.email || "").toLowerCase().trim();
+            const isInternalOrPerm =
+              isPermanentAdminEmail(cleanEmail) || cleanEmail.endsWith("@taskpulse.internal");
+            if (parsed && (parsed.email || parsed.displayName) && (!isFirebaseConfigured || !auth || isInternalOrPerm)) {
               const isPerm = isPermanentAdminEmail(parsed.email);
               parsed.role = isPerm
                 ? "admin"
-                : (parsed.email ? (loadedRoles[parsed.email.toLowerCase().trim()] || parsed.role) : parsed.role);
+                : (parsed.email ? (loadedRoles[cleanEmail] || parsed.role) : parsed.role);
               parsed.isPermanentAdmin = isPerm;
               setUser(parsed);
               setLoading(false);
@@ -462,6 +481,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(null);
             if (typeof window !== "undefined") {
               localStorage.removeItem("taskpulse_logged_user");
+            }
+          } else if (typeof window !== "undefined") {
+            const savedUser = localStorage.getItem("taskpulse_logged_user");
+            if (savedUser) {
+              try {
+                const parsed = JSON.parse(savedUser);
+                const cleanEmail = (parsed?.email || "").toLowerCase().trim();
+                const isInternalOrPerm =
+                  isPermanentAdminEmail(cleanEmail) || cleanEmail.endsWith("@taskpulse.internal");
+                if (isInternalOrPerm) {
+                  setUser(parsed);
+                } else if (cleanEmail) {
+                  const status = await checkUserProvisioned(cleanEmail, parsed?.uid);
+                  if (status.provisioned) {
+                    setUser({
+                      ...parsed,
+                      role: status.role || parsed.role,
+                      department: status.department || parsed.department,
+                      orgId: status.orgId || parsed.orgId,
+                      assignedProjectIds: status.assignedProjectIds || parsed.assignedProjectIds,
+                    });
+                  } else {
+                    setUser(null);
+                    localStorage.removeItem("taskpulse_logged_user");
+                    localStorage.removeItem(PENDING_GOOGLE_STORAGE_KEY);
+                  }
+                }
+              } catch {
+                setUser(null);
+                localStorage.removeItem("taskpulse_logged_user");
+              }
             }
           }
           setLoading(false);
