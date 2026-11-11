@@ -48,7 +48,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto my-6 p-4 sm:p-5 rounded-2xl bg-[#FAF8F4]/95 dark:bg-[#151C2C]/85 border border-[#DDD8CE] dark:border-white/15 shadow-lg shadow-[#1E222D]/[0.05] backdrop-blur-xl transition-all">
+    <div className="w-full max-w-3xl mx-auto my-4 sm:my-6 p-4 sm:p-5 rounded-2xl bg-[#FAF8F4]/95 dark:bg-[#151C2C]/85 border border-[#DDD8CE] dark:border-white/15 shadow-lg shadow-[#1E222D]/[0.05] backdrop-blur-xl transition-all">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 text-xs font-semibold text-[#5D55D6] dark:text-[#818CF8]">
           <Sparkles className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
@@ -65,12 +65,12 @@ export const GeminiTaskArchitectBar: React.FC = () => {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Try: 'Launch seasonal discount campaign by Thursday with 3 check points'..."
-          className="w-full pl-4 pr-28 py-3 text-xs sm:text-sm rounded-xl bg-[#F4F2ED] dark:bg-[#0B0F19] border border-[#DDD8CE] dark:border-white/10 text-[#1E222D] dark:text-white placeholder-[#7B8291] focus:outline-none focus:ring-2 focus:ring-[#5D55D6]/35 transition-all font-sans"
+          className="w-full pl-3.5 sm:pl-4 pr-24 sm:pr-28 py-3 min-h-[44px] text-xs sm:text-sm rounded-xl bg-[#F4F2ED] dark:bg-[#0B0F19] border border-[#DDD8CE] dark:border-white/10 text-[#1E222D] dark:text-white placeholder-[#7B8291] focus:outline-none focus:ring-2 focus:ring-[#5D55D6]/35 transition-all font-sans"
         />
         <button
           type="submit"
           disabled={isLoading || !prompt.trim()}
-          className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 sm:px-4 rounded-lg bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+          className="absolute right-1.5 top-1.5 bottom-1.5 px-3.5 sm:px-4 min-h-[36px] rounded-lg bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
         >
           {isLoading ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -93,7 +93,7 @@ export const GeminiTaskArchitectBar: React.FC = () => {
             onClick={() => {
               setPrompt(sp);
             }}
-            className="px-2.5 py-0.5 rounded-md bg-[#ECE8DF] dark:bg-[#1E293B] hover:bg-[#E1DCEB] hover:text-[#5D55D6] dark:hover:text-[#818CF8] transition-colors truncate max-w-[280px] text-left cursor-pointer"
+            className="px-2.5 py-1.5 min-h-[36px] rounded-lg bg-[#ECE8DF] dark:bg-[#1E293B] hover:bg-[#E1DCEB] hover:text-[#5D55D6] dark:hover:text-[#818CF8] transition-colors truncate max-w-full sm:max-w-[280px] text-left cursor-pointer"
           >
             &ldquo;{sp}&rdquo;
           </button>

@@ -7,7 +7,7 @@ import { PLAN_DEFINITIONS, PLAN_ORDER } from "@shared/plans";
 
 export const PricingTiersSection: React.FC = () => {
   return (
-    <section id="pricing" className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1300px] w-full mx-auto text-center">
+    <section id="pricing" className="py-10 sm:py-24 px-3.5 sm:px-6 max-w-[1300px] w-full mx-auto text-center">
       <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[#5D55D6] dark:text-[#818CF8] text-xs font-semibold mb-4">
         <Zap className="w-3.5 h-3.5" />
         <span>Transparent 4-Tier SaaS Architecture</span>
@@ -20,7 +20,12 @@ export const PricingTiersSection: React.FC = () => {
         Sign up, configure your organization, and activate Free, Growth, Pro, or custom-quoted Enterprise across Desktop Web and Android.
       </p>
 
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-left">
+      <div className="md:hidden mt-6 flex items-center justify-between text-[11px] font-mono text-[#5D55D6]">
+        <span>4 Plan Tiers</span>
+        <span>Swipe plans &rarr;</span>
+      </div>
+
+      <div className="mt-2 md:mt-12 flex overflow-x-auto snap-x snap-mandatory gap-3.5 pb-3 -mx-3.5 px-3.5 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-5 text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {PLAN_ORDER.map((tierId) => {
           const plan = PLAN_DEFINITIONS[tierId];
           const isFeatured = tierId === "pro";
@@ -28,7 +33,7 @@ export const PricingTiersSection: React.FC = () => {
           return (
             <div
               key={tierId}
-              className={`pricing-card p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden transition-all ${
+              className={`pricing-card shrink-0 w-[82vw] max-w-[325px] md:w-auto md:max-w-none snap-start p-5 sm:p-6 rounded-3xl flex flex-col justify-between relative overflow-hidden transition-all ${
                 isFeatured
                   ? "bg-gradient-to-b from-[#FAF8F4] to-[#F1EEE7] dark:from-[#151C2C] dark:to-[#0F1626] border-2 border-[#5D55D6] shadow-xl shadow-[#5D55D6]/[0.08]"
                   : "bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-sm hover:shadow-md"
@@ -81,7 +86,7 @@ export const PricingTiersSection: React.FC = () => {
               <div className="mt-7 pt-5 border-t border-[#E5E0D6] dark:border-white/10">
                 <Link
                   href="/onboarding"
-                  className={`w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`w-full py-3 min-h-[42px] rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     isFeatured
                       ? "bg-[#5D55D6] hover:bg-[#4F47C7] text-white shadow-md"
                       : "bg-[#EAE8F8] dark:bg-[#756EF3]/15 hover:bg-[#DDD8F4] dark:hover:bg-[#756EF3]/25 text-[#5D55D6] dark:text-[#818CF8]"

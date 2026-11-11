@@ -216,7 +216,7 @@ export const HeroMotionGraphic: React.FC = () => {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-6xl mx-auto mt-10 mb-6 select-none">
+    <div ref={containerRef} className="relative w-full max-w-6xl mx-auto mt-6 sm:mt-10 mb-5 sm:mb-6 select-none">
       <div
         ref={stageRef}
         onMouseMove={handleMouseMove}
@@ -224,7 +224,7 @@ export const HeroMotionGraphic: React.FC = () => {
         className="relative rounded-2xl sm:rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] shadow-xl shadow-[#1E222D]/[0.05] dark:shadow-black/60 overflow-hidden"
       >
         {/* Cockpit Chrome Top Bar */}
-        <div className="px-4 sm:px-6 py-3.5 border-b border-[#E4DFD5] dark:border-white/[0.07] bg-[#F2EFE8]/80 dark:bg-[#12161F] flex flex-wrap items-center justify-between gap-3">
+        <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-b border-[#E4DFD5] dark:border-white/[0.07] bg-[#F2EFE8]/80 dark:bg-[#12161F] flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]/80" />
@@ -241,11 +241,11 @@ export const HeroMotionGraphic: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#EAE6DC] dark:bg-[#090C11] border border-[#DDD8CE] dark:border-white/[0.07] text-[11px] font-semibold">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#EAE6DC] dark:bg-[#090C11] border border-[#DDD8CE] dark:border-white/[0.07] text-[11px] font-semibold">
             <button
               type="button"
               onClick={() => setActiveMetricView("burnup")}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 min-h-[36px] rounded-md transition-colors cursor-pointer ${
                 activeMetricView === "burnup"
                   ? "bg-[#FAF8F4] dark:bg-[#1B202C] text-[#1E222D] dark:text-white shadow-2xs"
                   : "text-[#4E5565] dark:text-slate-400"
@@ -256,7 +256,7 @@ export const HeroMotionGraphic: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveMetricView("throughput")}
-              className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 min-h-[36px] rounded-md transition-colors cursor-pointer ${
                 activeMetricView === "throughput"
                   ? "bg-[#FAF8F4] dark:bg-[#1B202C] text-[#1E222D] dark:text-white shadow-2xs"
                   : "text-[#4E5565] dark:text-slate-400"
@@ -317,7 +317,7 @@ export const HeroMotionGraphic: React.FC = () => {
                 <span>Cycle Days 01 – 14</span>
               </div>
 
-              <svg viewBox="0 0 600 220" className="w-full h-44 sm:h-52 overflow-visible">
+              <svg viewBox="0 0 600 220" className="w-full h-36 sm:h-52 overflow-visible">
                 <defs>
                   <linearGradient id="cockpitAreaGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#5D55D6" stopOpacity="0.22" />

@@ -10,7 +10,7 @@ interface BootSplashProps {
 
 export const BootSplash: React.FC<BootSplashProps> = ({
   onComplete,
-  minDurationMs = 1200,
+  minDurationMs,
 }) => {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
@@ -18,13 +18,23 @@ export const BootSplash: React.FC<BootSplashProps> = ({
   const isDark = themeContext ? themeContext.theme === "dark" : true;
 
   useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("tp_booted") === "1") {
+      setIsMounted(false);
+      onComplete?.();
+      return;
+    }
+    const isNarrow = typeof window !== "undefined" && window.innerWidth < 768;
+    const duration = minDurationMs ?? (isNarrow ? 420 : 800);
     const timer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("tp_booted", "1");
+      }
       setIsFadingOut(true);
       setTimeout(() => {
         setIsMounted(false);
         onComplete?.();
-      }, 420); // fade out & glide duration
-    }, minDurationMs);
+      }, 280);
+    }, duration);
 
     return () => clearTimeout(timer);
   }, [minDurationMs, onComplete]);

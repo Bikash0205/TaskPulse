@@ -19,6 +19,7 @@ interface StageNode {
   id: string;
   step: string;
   title: string;
+  shortTitle: string;
   description: string;
   icon: React.ReactNode;
   metric: string;
@@ -29,6 +30,7 @@ const STAGES: StageNode[] = [
     id: "triage",
     step: "01",
     title: "Structured Intake & Triage",
+    shortTitle: "Intake & Triage",
     description:
       "Natural-language work requests convert into priority-scored tasks with subtask checkpoints and owners.",
     icon: <Sparkles className="w-4 h-4" />,
@@ -38,6 +40,7 @@ const STAGES: StageNode[] = [
     id: "gantt",
     step: "02",
     title: "Critical-Path Gantt Graph",
+    shortTitle: "Gantt Graph",
     description:
       "Multi-lane dependency scheduling highlights slack, blockers, and release milestones automatically.",
     icon: <Calendar className="w-4 h-4" />,
@@ -47,6 +50,7 @@ const STAGES: StageNode[] = [
     id: "sync",
     step: "03",
     title: "Hybrid Cross-Platform Sync",
+    shortTitle: "Hybrid Sync",
     description:
       "Plan entitlements, tasks, and bandwidth heatmaps synchronize live across Desktop Web and Android.",
     icon: <Activity className="w-4 h-4" />,
@@ -56,6 +60,7 @@ const STAGES: StageNode[] = [
     id: "audit",
     step: "04",
     title: "Manager Verification Gate",
+    shortTitle: "Audit Gate",
     description:
       "Deliverables require evidence-backed review before closing, generating a clean compliance audit trail.",
     icon: <ShieldCheck className="w-4 h-4" />,
@@ -159,9 +164,9 @@ export const ScrollMotionGraphics: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1360px] w-full mx-auto relative overflow-hidden border-t border-[#DDD8CE] dark:border-white/[0.08]"
+      className="py-10 sm:py-24 px-3.5 sm:px-6 max-w-[1360px] w-full mx-auto relative overflow-hidden border-t border-[#DDD8CE] dark:border-white/[0.08]"
     >
-      <div className="smg-heading text-left max-w-2xl mb-10">
+      <div className="smg-heading text-left max-w-2xl mb-6 sm:mb-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#5D55D6]/15 border border-[#D4D0F0] dark:border-[#5D55D6]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] font-mono font-bold tracking-wider uppercase mb-3">
           <GitBranch className="w-3.5 h-3.5" />
           <span>EXECUTION ARCHITECTURE</span>
@@ -175,10 +180,10 @@ export const ScrollMotionGraphics: React.FC = () => {
       </div>
 
       {/* Asymmetric Split Enterprise Pipeline */}
-      <div className="smg-container grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Left 5 Columns: Vertical Spine + 4 Stage Selectors */}
-        <div className="lg:col-span-5 relative pl-5 space-y-3">
-          <div className="absolute left-1.5 top-4 bottom-4 w-0.5 bg-[#E4DFD5] dark:bg-white/[0.08] rounded-full overflow-hidden">
+      <div className="smg-container grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
+        {/* Left 5 Columns: Compact 2x2 Phase Grid on Mobile, Vertical Spine on Desktop */}
+        <div className="lg:col-span-5 relative lg:pl-5 grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
+          <div className="hidden lg:block absolute left-1.5 top-4 bottom-4 w-0.5 bg-[#E4DFD5] dark:bg-white/[0.08] rounded-full overflow-hidden">
             <div
               ref={spineFillRef}
               style={{ transform: "scaleY(0)" }}
@@ -193,16 +198,16 @@ export const ScrollMotionGraphics: React.FC = () => {
                 key={stage.id}
                 type="button"
                 onClick={() => setActiveStage(idx)}
-                className={`smg-step-btn w-full text-left p-4 rounded-2xl border transition-colors cursor-pointer relative ${
+                className={`smg-step-btn w-full text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-colors cursor-pointer relative min-h-[44px] ${
                   isActive
                     ? "bg-[#FAF8F4] dark:bg-[#141822] border-[#5D55D6] dark:border-[#818CF8] shadow-md"
                     : "bg-[#FAF8F4]/60 dark:bg-[#0D1017] border-[#E4DFD5] dark:border-white/[0.07] hover:border-[#5D55D6]/40"
                 }`}
               >
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <span
-                      className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-mono font-bold ${
+                      className={`w-6 h-6 shrink-0 rounded-lg flex items-center justify-center text-[11px] font-mono font-bold ${
                         isActive
                           ? "bg-[#5D55D6] text-white"
                           : "bg-[#EAE6DC] dark:bg-white/[0.08] text-[#4E5565] dark:text-slate-300"
@@ -210,15 +215,16 @@ export const ScrollMotionGraphics: React.FC = () => {
                     >
                       {stage.step}
                     </span>
-                    <span className="text-sm font-bold text-[#1E222D] dark:text-white">
-                      {stage.title}
+                    <span className="text-xs sm:text-sm font-bold text-[#1E222D] dark:text-white truncate">
+                      <span className="lg:hidden">{stage.shortTitle}</span>
+                      <span className="hidden lg:inline">{stage.title}</span>
                     </span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-md bg-[#EAE6DC] dark:bg-white/[0.06] text-[10px] font-mono font-bold text-[#4E5565] dark:text-slate-300">
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-[#EAE6DC] dark:bg-white/[0.06] text-[10px] font-mono font-bold text-[#4E5565] dark:text-slate-300 shrink-0">
                     {stage.metric}
                   </span>
                 </div>
-                <p className="text-xs text-[#4E5565] dark:text-slate-400 leading-relaxed pl-8">
+                <p className="hidden sm:block text-xs text-[#4E5565] dark:text-slate-400 leading-relaxed pl-8">
                   {stage.description}
                 </p>
               </button>
@@ -229,7 +235,7 @@ export const ScrollMotionGraphics: React.FC = () => {
         {/* Right 7 Columns: Live Explanatory Diagram Canvas */}
         <div
           ref={previewStageRef}
-          className="lg:col-span-7 rounded-2xl sm:rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] p-5 sm:p-8 flex flex-col justify-between shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 text-left"
+          className="lg:col-span-7 rounded-2xl sm:rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] p-4 sm:p-8 flex flex-col justify-between shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 text-left"
         >
           <div className="flex items-center justify-between pb-4 border-b border-[#E4DFD5] dark:border-white/[0.07]">
             <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#5D55D6] dark:text-[#818CF8]">
@@ -393,9 +399,12 @@ export const ScrollMotionGraphics: React.FC = () => {
             )}
           </div>
 
-          <div className="pt-4 border-t border-[#E4DFD5] dark:border-white/[0.07] flex items-center justify-between text-[11px] text-[#6E7485] dark:text-slate-400 font-mono">
-            <span>Phase {activeStage + 1} of 4</span>
-            <span>Interactive GSAP Scroll &amp; State Choreography</span>
+          <div className="pt-3.5 sm:pt-4 border-t border-[#E4DFD5] dark:border-white/[0.07] flex items-center justify-between gap-3 text-[11px] text-[#6E7485] dark:text-slate-400 font-mono">
+            <span className="whitespace-nowrap shrink-0">Phase {activeStage + 1} of 4</span>
+            <span className="truncate text-right">
+              <span className="sm:hidden">GSAP State Choreography</span>
+              <span className="hidden sm:inline">Interactive GSAP Scroll &amp; State Choreography</span>
+            </span>
           </div>
         </div>
       </div>

@@ -344,25 +344,31 @@ export const FeatureMatrixShowcase: React.FC = () => {
   );
 
   return (
-    <div ref={gridRef} className="lp-matrix-grid mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-      {FEATURES.map((feat) => (
-        <div
-          key={feat.id}
-          className="lp-matrix-tile group p-4 rounded-2xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] hover:border-[#5D55D6]/60 transition-colors flex flex-col justify-between gap-3"
-        >
-          <div className="rounded-xl bg-[#F2EFE8]/85 dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.06] p-2 overflow-hidden">
-            <FeatureVectorGraphic id={feat.id} />
-          </div>
+    <div ref={gridRef} className="mt-5 sm:mt-6">
+      <div className="sm:hidden flex items-center justify-between text-[11px] font-mono text-[#5D55D6] mb-2">
+        <span>8 Core Modules</span>
+        <span>Swipe &rarr;</span>
+      </div>
+      <div className="lp-matrix-grid flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2 -mx-3.5 px-3.5 sm:mx-0 sm:px-0 sm:pb-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {FEATURES.map((feat) => (
+          <div
+            key={feat.id}
+            className="lp-matrix-tile group shrink-0 w-[76vw] max-w-[286px] sm:w-auto sm:max-w-none snap-start p-4 rounded-2xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] hover:border-[#5D55D6]/60 transition-colors flex flex-col justify-between gap-2.5 sm:gap-3"
+          >
+            <div className="rounded-xl bg-[#F2EFE8]/85 dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.06] p-2 overflow-hidden">
+              <FeatureVectorGraphic id={feat.id} />
+            </div>
 
-          <div>
-            <span className="text-[10px] font-mono font-bold tracking-wider text-[#5D55D6] dark:text-[#818CF8]">
-              {feat.tag}
-            </span>
-            <h4 className="text-sm font-bold text-[#1E222D] dark:text-white mt-0.5">{feat.title}</h4>
-            <p className="text-xs text-[#4E5565] dark:text-slate-400 mt-1 leading-relaxed">{feat.desc}</p>
+            <div>
+              <span className="text-[10px] font-mono font-bold tracking-wider text-[#5D55D6] dark:text-[#818CF8]">
+                {feat.tag}
+              </span>
+              <h4 className="text-sm font-bold text-[#1E222D] dark:text-white mt-0.5">{feat.title}</h4>
+              <p className="text-xs text-[#4E5565] dark:text-slate-400 mt-1 leading-relaxed">{feat.desc}</p>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

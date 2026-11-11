@@ -329,10 +329,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       data-device={vp.deviceClass}
       data-orientation={vp.orientation}
       data-aspect={vp.aspectRatio}
-      className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-white flex flex-col transition-colors duration-200 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6] overflow-x-hidden"
+      className="min-h-screen w-full bg-[#F4F2ED] dark:bg-[#0B0F19] text-[#1E222D] dark:text-white flex flex-col transition-colors duration-200 selection:bg-[#5D55D6]/20 selection:text-[#5D55D6] overflow-x-clip"
     >
       {/* 1. Floating Warm-Paper / Obsidian Navigation Bar */}
-      <header className={`sticky top-2 sm:top-3 z-50 ${vp.containerClass} w-[96%] mx-auto rounded-2xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/90 dark:bg-[#0B0F19]/85 backdrop-blur-2xl shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-2 sm:gap-3 transition-all relative overflow-hidden`}>
+      <header className={`sticky top-2 sm:top-3 z-50 ${vp.containerClass} w-[96%] mx-auto rounded-2xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4]/92 dark:bg-[#0B0F19]/88 backdrop-blur-2xl shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 px-2.5 sm:px-6 py-2 flex items-center justify-between gap-1.5 sm:gap-3 transition-all relative overflow-hidden`}>
         <div
           ref={scrollBarRef}
           style={{ transform: "scaleX(0)" }}
@@ -376,13 +376,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Tactile Light / Dark Mode Toggle */}
           <button
             onClick={toggleTheme}
             data-testid="fluid-theme-toggle"
             title={theme === "dark" ? "Switch to Soft Light Mode" : "Switch to Dark Mode"}
-            className="p-2 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#F4F2ED] dark:bg-[#151C2C]/80 hover:bg-[#EAE6DC] dark:hover:bg-slate-800 text-[#1E222D] dark:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xs"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#F4F2ED] dark:bg-[#151C2C]/80 hover:bg-[#EAE6DC] dark:hover:bg-slate-800 text-[#1E222D] dark:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-2xs"
             aria-label="Toggle Theme"
           >
             {theme === "dark" ? (
@@ -394,7 +394,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <Link
             href="/login"
-            className="hidden sm:inline-flex whitespace-nowrap shrink-0 px-3.5 py-1.5 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C]/70 hover:border-[#5D55D6] text-[#1E222D] dark:text-white text-xs font-semibold shadow-2xs hover:shadow transition-all cursor-pointer"
+            className="hidden sm:inline-flex whitespace-nowrap shrink-0 px-3.5 py-2 min-h-[40px] items-center rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C]/70 hover:border-[#5D55D6] text-[#1E222D] dark:text-white text-xs font-semibold shadow-2xs hover:shadow transition-all cursor-pointer"
           >
             Sign In
           </Link>
@@ -402,7 +402,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <Link
             href="/onboarding"
             data-testid="nav-get-started-btn"
-            className="whitespace-nowrap shrink-0 px-2.5 sm:px-4 py-1.5 rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-md shadow-[#5D55D6]/20 transition-all cursor-pointer flex items-center gap-1"
+            className="whitespace-nowrap shrink-0 px-2.5 sm:px-4 py-1.5 sm:py-2 min-h-[36px] sm:min-h-[40px] rounded-xl bg-[#5D55D6] hover:bg-[#4F47C7] text-white text-xs font-semibold shadow-md shadow-[#5D55D6]/20 transition-all cursor-pointer flex items-center gap-1"
           >
             <span>{vp.isMobileViewport ? "Start" : "Get Started"}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -410,7 +410,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C] text-[#1E222D] dark:text-white hover:bg-[#ECE8DF] dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="lg:hidden w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl border border-[#DDD8CE] dark:border-white/10 bg-[#FAF8F4] dark:bg-[#151C2C] text-[#1E222D] dark:text-white hover:bg-[#ECE8DF] dark:hover:bg-slate-800 transition-colors cursor-pointer"
             aria-label="Toggle Mobile Menu"
           >
             {isMobileMenuOpen ? (
@@ -479,22 +479,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* 2. Asymmetric Editorial Hero Section */}
       <section
         className={`relative ${
-          vp.isMobileViewport ? "pt-6 pb-10" : "pt-10 sm:pt-16 pb-12 sm:pb-16"
+          vp.isMobileViewport ? "pt-4 pb-6" : "pt-10 sm:pt-16 pb-12 sm:pb-16"
         } ${vp.sectionPaddingClass} ${vp.containerClass} w-full mx-auto`}
       >
         {/* Soft warm atmospheric radial glow (no harsh neon glare) */}
-        <div className="absolute -top-10 left-1/3 w-[560px] h-[340px] bg-[#5D55D6]/[0.06] dark:bg-[#756EF3]/15 blur-[130px] rounded-full pointer-events-none -z-10" />
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[min(560px,92vw)] h-[280px] sm:h-[340px] bg-[#5D55D6]/[0.06] dark:bg-[#756EF3]/15 blur-[130px] rounded-full pointer-events-none -z-10" />
 
-        <div className={`grid grid-cols-1 ${vp.aspectRatio >= 1.15 ? "lg:grid-cols-12" : ""} gap-8 lg:gap-12 items-center`}>
+        <div className={`grid grid-cols-1 ${vp.aspectRatio >= 1.15 ? "lg:grid-cols-12" : ""} gap-6 lg:gap-12 items-center`}>
           {/* Left 7 Columns: Kinetic Typography + Actions + Telemetry Strip */}
-          <div className={`${vp.aspectRatio >= 1.15 ? "lg:col-span-7" : ""} text-left space-y-5 sm:space-y-6`}>
+          <div className={`${vp.aspectRatio >= 1.15 ? "lg:col-span-7" : ""} text-left space-y-4 sm:space-y-6`}>
             <div className="lp-hero-pill inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] sm:text-xs font-semibold tracking-wide shadow-2xs">
               <Zap className="w-3.5 h-3.5" />
               <span>TaskPulse 2.0</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#5D55D6] dark:bg-[#818CF8]" />
               <span>
                 {vp.isMobileViewport
-                  ? `Mobile View (${vp.width}x${vp.height})`
+                  ? "Mobile & Desktop Sync"
                   : "Calm, High-Velocity Execution"}
               </span>
             </div>
@@ -634,7 +634,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="flex items-center gap-2 min-w-0">
                   <CheckCircle2 className="w-4 h-4 text-[#0F8C65] shrink-0" />
                   <span className="truncate font-semibold text-[#1E222D] dark:text-slate-100">
-                    Google OAuth &amp; Workspace Isolation
+                    Google OAuth Workspace Lock
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-[#6E7485] dark:text-slate-400 shrink-0 flex items-center gap-1">
@@ -708,9 +708,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* 4. Asymmetric Editorial Bento Capabilities Grid */}
       <section
         id="features"
-        className={`py-14 sm:py-22 ${vp.sectionPaddingClass} ${vp.containerClass} w-full mx-auto mt-10 border-t border-[#DDD8CE] dark:border-white/10`}
+        className={`py-10 sm:py-22 ${vp.sectionPaddingClass} ${vp.containerClass} w-full mx-auto mt-6 sm:mt-10 border-t border-[#DDD8CE] dark:border-white/10`}
       >
-        <div className="max-w-2xl mb-12 text-left">
+        <div className="max-w-2xl mb-6 sm:mb-12 text-left">
           <div className="text-xs font-bold text-[#5D55D6] dark:text-[#818CF8] tracking-wider uppercase font-mono mb-2">
             CORE CAPABILITIES
           </div>
@@ -722,11 +722,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
         </div>
 
-        <div className="lp-bento-grid grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+        <div className="lp-bento-grid grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           {/* Bento Card 1 (Wide 7-col): Continuous Capacity Guardrails */}
           <div
             id="workload"
-            className="lp-bento-card lg:col-span-7 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between gap-6"
+            className="lp-bento-card lg:col-span-7 p-4 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between gap-4 sm:gap-6"
           >
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -767,7 +767,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Bento Card 2 (5-col): Verified Change Logs */}
           <div
             id="dispatcher"
-            className="lp-bento-card lg:col-span-5 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between"
+            className="lp-bento-card lg:col-span-5 p-4 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-[#E4F2EC] dark:bg-emerald-500/15 text-[#0F7656] dark:text-emerald-400 flex items-center justify-center mb-4">
@@ -789,7 +789,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Bento Card 3 (5-col): Role-Based Governance */}
           <div
             id="security"
-            className="lp-bento-card lg:col-span-5 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between"
+            className="lp-bento-card lg:col-span-5 p-4 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-[#F5ECE1] dark:bg-amber-500/15 text-[#B45309] dark:text-amber-400 flex items-center justify-center mb-4">
@@ -817,7 +817,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Bento Card 4 (Wide 7-col): Cross-Platform Client Parity & Onboarding */}
           <div
             id="mobile"
-            className="lp-bento-card lg:col-span-7 p-6 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between gap-5"
+            className="lp-bento-card lg:col-span-7 p-4 sm:p-7 rounded-3xl bg-[#FAF8F4] dark:bg-[#151C2C] border border-[#DDD8CE] dark:border-white/10 shadow-xs hover:border-[#5D55D6]/50 transition-colors flex flex-col justify-between gap-4 sm:gap-5"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
               <div>
@@ -884,8 +884,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <PricingTiersSection />
 
       {/* 7. Clean Executive Conversion Callout */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 max-w-[1200px] w-full mx-auto border-t border-[#DDD8CE] dark:border-white/10">
-        <div className="lp-callout-box rounded-3xl bg-gradient-to-b from-[#FAF8F4] to-[#EFECE5] dark:from-[#151C2C] dark:to-[#0B0F19] border border-[#DDD8CE] dark:border-white/10 p-8 sm:p-14 text-center max-w-3xl mx-auto shadow-md shadow-[#1E222D]/[0.04]">
+      <section className="py-10 sm:py-24 px-3.5 sm:px-6 max-w-[1200px] w-full mx-auto border-t border-[#DDD8CE] dark:border-white/10">
+        <div className="lp-callout-box rounded-3xl bg-gradient-to-b from-[#FAF8F4] to-[#EFECE5] dark:from-[#151C2C] dark:to-[#0B0F19] border border-[#DDD8CE] dark:border-white/10 p-6 sm:p-14 text-center max-w-3xl mx-auto shadow-md shadow-[#1E222D]/[0.04]">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 text-[#5D55D6] dark:text-[#818CF8] text-xs font-semibold mb-4">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Enterprise Workspace Access</span>

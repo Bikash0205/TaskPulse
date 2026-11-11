@@ -61,20 +61,20 @@ export const InteractiveProductShowcase: React.FC = () => {
     <div className="w-full rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] shadow-xl shadow-[#1E222D]/[0.05] overflow-hidden">
       {/* Interactive Tab Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-[#F2EFE8] dark:bg-[#12161F] border-b border-[#E4DFD5] dark:border-white/[0.07]">
-        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 w-full xl:w-auto py-0.5">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-2 min-h-[40px] rounded-xl text-[11px] sm:text-xs font-bold transition-colors flex items-center justify-center sm:justify-start gap-1.5 cursor-pointer ${
                 activeTab === t.id
                   ? "bg-[#5D55D6] text-white shadow-sm"
-                  : "text-[#1E222D] dark:text-slate-200 hover:bg-[#E4E0D6] dark:hover:bg-white/[0.06]"
+                  : "text-[#1E222D] dark:text-slate-200 bg-[#FAF8F4]/70 sm:bg-transparent dark:bg-white/[0.03] sm:dark:bg-transparent hover:bg-[#E4E0D6] dark:hover:bg-white/[0.06]"
               }`}
             >
               {t.icon}
-              <span>{t.label}</span>
+              <span className="truncate">{t.label}</span>
             </button>
           ))}
         </div>
@@ -86,7 +86,7 @@ export const InteractiveProductShowcase: React.FC = () => {
       </div>
 
       {/* Tab Content Panel */}
-      <div ref={panelRef} className="p-5 sm:p-7 min-h-[300px] flex flex-col justify-center bg-[#FAF8F4] dark:bg-[#0D1017] text-left">
+      <div ref={panelRef} className="p-4 sm:p-7 min-h-[250px] sm:min-h-[300px] flex flex-col justify-center bg-[#FAF8F4] dark:bg-[#0D1017] text-left">
         {activeTab === "gantt" && (
           <div className="space-y-4">
             <div className="ips-anim flex flex-wrap items-center justify-between gap-2">

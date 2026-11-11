@@ -517,19 +517,19 @@ export default function TaskPulseWorkspacePage() {
       {/* Main Workspace Body */}
       <main className={`flex-1 ${viewportMode === "mobile" ? "p-0" : "p-3 sm:p-5 md:p-6"} flex flex-col gap-3 sm:gap-5 max-w-[1720px] w-full mx-auto`}>
         {/* Workspace Info Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 px-3 sm:px-0 py-2 sm:py-0 pb-2.5 border-b border-[#DDD8CE] dark:border-[#1E293B]">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans">
-            <Building2 className="w-4 h-4 text-[#5D55D6]" />
-            <span>Workspace:</span>
+        <div className={`flex items-center justify-between border-b border-[#DDD8CE] dark:border-[#1E293B] ${viewportMode === "mobile" ? "flex-nowrap overflow-x-auto whitespace-nowrap gap-2 px-3 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "flex-wrap gap-2.5 pb-2.5"}`}>
+          <div className={`flex items-center gap-2 text-xs text-[#4E5565] dark:text-[#94A3B8] font-sans ${viewportMode === "mobile" ? "flex-nowrap shrink-0" : "flex-wrap"}`}>
+            <Building2 className="w-4 h-4 text-[#5D55D6] shrink-0" />
+            <span className="hidden sm:inline">Workspace:</span>
             <span className="text-[#1E222D] dark:text-[#F8FAFC] font-semibold">{currentOrg?.name || "Workspace"}</span>
             {currentOrg?.inviteCode && (
-              <span className="ml-1.5 px-2.5 py-0.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 text-[#5D55D6] dark:text-[#818CF8] border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[11px] font-mono font-semibold">
-                Invite Code: {currentOrg.inviteCode}
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-[#EAE8F8] dark:bg-[#756EF3]/15 text-[#5D55D6] dark:text-[#818CF8] border border-[#D4D0F0] dark:border-[#756EF3]/30 text-[10px] sm:text-[11px] font-mono font-semibold shrink-0">
+                {viewportMode === "mobile" ? currentOrg.inviteCode : `Invite Code: ${currentOrg.inviteCode}`}
               </span>
             )}
             <span
               data-testid="workspace-plan-badge"
-              className="px-2.5 py-0.5 rounded-full bg-[#E4F2EC] dark:bg-emerald-950/50 text-[#0F7656] dark:text-emerald-300 border border-[#C5E3D5] dark:border-emerald-800/60 text-[11px] font-semibold"
+              className="px-2 py-0.5 rounded-full bg-[#E4F2EC] dark:bg-emerald-950/50 text-[#0F7656] dark:text-emerald-300 border border-[#C5E3D5] dark:border-emerald-800/60 text-[10px] sm:text-[11px] font-semibold shrink-0"
             >
               {getEffectivePlan(currentOrg, user?.email).name} ({formatPlanStatusLabel(currentOrg?.planStatus, currentOrg?.trialEndsAt)})
             </span>

@@ -254,11 +254,11 @@ export const LiveMultiplayerPresenceCanvas: React.FC<LiveMultiplayerPresenceCanv
 
   return (
     <>
-      {/* 1. Live Presence HUD Floating Badge (Bottom Right) */}
-      <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2">
+      {/* 1. Live Presence HUD Floating Badge */}
+      <div className="fixed bottom-20 right-3 md:bottom-4 md:right-4 z-40 flex items-center gap-2">
         <button
           onClick={() => setShowRosterModal(!showRosterModal)}
-          className="group flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-[#FAF8F4]/95 dark:bg-[#111726]/95 border border-[#DDD8CE] dark:border-white/10 shadow-lg backdrop-blur-md text-xs font-semibold text-[#1E222D] dark:text-white hover:border-[#5D55D6] transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          className="group flex items-center gap-2 px-2.5 sm:px-3.5 py-2 min-h-[40px] rounded-full sm:rounded-2xl bg-[#FAF8F4]/95 dark:bg-[#111726]/95 border border-[#DDD8CE] dark:border-white/10 shadow-lg backdrop-blur-md text-xs font-semibold text-[#1E222D] dark:text-white hover:border-[#5D55D6] transition-all hover:scale-105 active:scale-95 cursor-pointer"
           title="Click to view active workspace roster"
         >
           <div className="relative flex items-center justify-center">
@@ -266,14 +266,14 @@ export const LiveMultiplayerPresenceCanvas: React.FC<LiveMultiplayerPresenceCanv
           </div>
 
           <div className="flex items-center gap-1.5">
-            <Radio className="w-3.5 h-3.5 text-[#5D55D6] dark:text-[#818CF8]" />
-            <span>Live Presence</span>
+            <Radio className="w-3.5 h-3.5 text-[#5D55D6] dark:text-[#818CF8] hidden sm:inline" />
+            <span className="hidden sm:inline">Live Presence</span>
             <span className="px-2 py-0.5 rounded-full bg-[#5D55D6]/12 text-[#5D55D6] dark:text-[#818CF8] font-bold font-mono text-[10px]">
               {onlineCount} Online
             </span>
           </div>
 
-          <div className="flex -space-x-1.5 overflow-hidden ml-1">
+          <div className="hidden sm:flex -space-x-1.5 overflow-hidden ml-1">
             <div
               className="w-5 h-5 rounded-full border-2 border-[#FAF8F4] dark:border-[#111726] flex items-center justify-center text-[9px] font-bold text-white shadow-2xs"
               style={{ backgroundColor: userColor }}
@@ -307,7 +307,7 @@ export const LiveMultiplayerPresenceCanvas: React.FC<LiveMultiplayerPresenceCanv
 
       {/* 2. Active Workspace Roster Modal */}
       {showRosterModal && (
-        <div className="fixed bottom-16 right-4 z-50 w-80 p-4 rounded-3xl bg-[#FAF8F4] dark:bg-[#111726] border border-[#DDD8CE] dark:border-white/10 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed bottom-32 right-3 md:bottom-16 md:right-4 z-50 w-[calc(100vw-1.5rem)] max-w-80 p-4 rounded-3xl bg-[#FAF8F4] dark:bg-[#111726] border border-[#DDD8CE] dark:border-white/10 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-[#E6E2D8] dark:border-white/10 mb-3">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-[#5D55D6]" />
