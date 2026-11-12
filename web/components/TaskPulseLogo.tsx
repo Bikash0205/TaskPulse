@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 
 interface TaskPulseLogoProps {
   className?: string;
@@ -30,6 +30,13 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
   showText = true,
   animated = false,
 }) => {
+  const rawId = useId();
+  const uid = rawId.replace(/:/g, "");
+  const emeraldGlowId = `${uid}-emerald-glow`;
+  const blueGlowId = `${uid}-pulse-blue-glow`;
+  const arrowGradId = `${uid}-arrow-grad`;
+  const pulseGradId = `${uid}-pulse-grad`;
+  const pulseMarkId = `${uid}-pulse-mark`;
   const currentSize = sizeMap[size];
 
   return (
@@ -102,7 +109,7 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
             }
           `}</style>
         )}
-        <filter id="emerald-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <filter id={emeraldGlowId} x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feColorMatrix
             in="blur"
@@ -121,7 +128,7 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
           </feMerge>
         </filter>
 
-        <filter id="pulse-blue-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <filter id={blueGlowId} x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="1.8" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -129,19 +136,19 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
           </feMerge>
         </filter>
 
-        <linearGradient id="arrow-grad" x1="95" y1="25" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+        <linearGradient id={arrowGradId} x1="95" y1="25" x2="105" y2="15" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#34D399" />
           <stop offset="100%" stopColor="#10B981" />
         </linearGradient>
 
-        <linearGradient id="pulse-grad" x1="10" y1="35" x2="105" y2="15" gradientUnits="userSpaceOnUse">
+        <linearGradient id={pulseGradId} x1="10" y1="35" x2="105" y2="15" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#818CF8" />
           <stop offset="60%" stopColor="#756EF3" />
           <stop offset="100%" stopColor="#10B981" />
         </linearGradient>
       </defs>
 
-      <g id="pulse-mark">
+      <g id={pulseMarkId}>
         <path
           d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
           stroke="#756EF3"
@@ -149,7 +156,7 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
           strokeLinecap="round"
           strokeLinejoin="round"
           opacity="0.25"
-          filter="url(#pulse-blue-glow)"
+          filter={`url(#${blueGlowId})`}
           strokeDasharray="200"
           strokeDashoffset={animated ? 200 : 0}
           style={
@@ -164,7 +171,7 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
 
         <path
           d="M 10 35 L 30 35 L 40 48 L 55 18 L 68 42 L 80 28 L 92 35 L 105 15"
-          stroke="url(#pulse-grad)"
+          stroke={`url(#${pulseGradId})`}
           strokeWidth="4"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -182,11 +189,11 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
 
         <path
           d="M 95 15 L 105 15 L 105 25"
-          stroke="url(#arrow-grad)"
+          stroke={`url(#${arrowGradId})`}
           strokeWidth="4"
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter="url(#emerald-glow)"
+          filter={`url(#${emeraldGlowId})`}
           strokeDasharray="35"
           strokeDashoffset={animated ? 35 : 0}
           style={
@@ -204,7 +211,7 @@ export const TaskPulseLogo: React.FC<TaskPulseLogoProps> = ({
           cy="15"
           r="3"
           fill="#FFFFFF"
-          filter="url(#emerald-glow)"
+          filter={`url(#${emeraldGlowId})`}
           style={
             animated
               ? {
