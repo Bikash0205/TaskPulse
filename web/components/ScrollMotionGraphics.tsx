@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import {
-  Sparkles,
+  Terminal,
   Calendar,
   Activity,
   ShieldCheck,
@@ -32,9 +32,9 @@ const STAGES: StageNode[] = [
     title: "Structured Intake & Triage",
     shortTitle: "Intake & Triage",
     description:
-      "Natural-language work requests convert into priority-scored tasks with subtask checkpoints and owners.",
-    icon: <Sparkles className="w-4 h-4" />,
-    metric: "< 800ms",
+      "Plain deliverable briefs convert into priority-scored tasks with subtask checkpoints and owners.",
+    icon: <Terminal className="w-4 h-4" />,
+    metric: "Brief Parser",
   },
   {
     id: "gantt",
@@ -164,18 +164,17 @@ export const ScrollMotionGraphics: React.FC = () => {
   return (
     <section
       ref={sectionRef}
-      className="py-10 sm:py-24 px-3.5 sm:px-6 max-w-[1360px] w-full mx-auto relative overflow-hidden border-t border-[#DDD8CE] dark:border-white/[0.08]"
+      className="py-12 sm:py-20 px-3.5 sm:px-6 max-w-[1280px] w-full mx-auto relative overflow-hidden border-t border-[#DDD8CE] dark:border-white/[0.08]"
     >
       <div className="smg-heading text-left max-w-2xl mb-6 sm:mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAE8F8] dark:bg-[#5D55D6]/15 border border-[#D4D0F0] dark:border-[#5D55D6]/30 text-[#5D55D6] dark:text-[#818CF8] text-[11px] font-mono font-bold tracking-wider uppercase mb-3">
-          <GitBranch className="w-3.5 h-3.5" />
-          <span>EXECUTION ARCHITECTURE</span>
+        <div className="text-[11px] font-mono font-semibold tracking-[0.14em] uppercase text-[#5D55D6] dark:text-[#818CF8] mb-2">
+          WORKFLOW LIFECYCLE
         </div>
-        <h2 className="text-2xl sm:text-4xl font-extrabold text-[#1E222D] dark:text-white tracking-[-0.02em]">
-          How Teams Ship Without Status Meetings
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#1E222D] dark:text-white tracking-tight">
+          From initial brief to verified release sign-off.
         </h2>
-        <p className="text-xs sm:text-sm md:text-base text-[#4E5565] dark:text-slate-300 mt-2.5 leading-relaxed">
-          Inspect each phase of the TaskPulse lifecycle—from structured intake to verified release sign-off.
+        <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 mt-2 leading-relaxed">
+          Inspect each stage of how teams organize, track, and close sprint deliverables.
         </p>
       </div>
 
@@ -235,7 +234,7 @@ export const ScrollMotionGraphics: React.FC = () => {
         {/* Right 7 Columns: Live Explanatory Diagram Canvas */}
         <div
           ref={previewStageRef}
-          className="lg:col-span-7 rounded-2xl sm:rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] p-4 sm:p-8 flex flex-col justify-between shadow-lg shadow-[#1E222D]/[0.04] dark:shadow-black/50 text-left"
+          className="lg:col-span-7 rounded-xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between text-left"
         >
           <div className="flex items-center justify-between pb-4 border-b border-[#E4DFD5] dark:border-white/[0.07]">
             <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#5D55D6] dark:text-[#818CF8]">
@@ -306,10 +305,25 @@ export const ScrollMotionGraphics: React.FC = () => {
                       </text>
                     </g>
                   ))}
-                  {/* Swimlane Gantt Bars */}
-                  <rect x="20" y="34" width="160" height="24" rx="6" fill="#5D55D6" className="smg-anim-bar" />
-                  <rect x="195" y="76" width="145" height="24" rx="6" fill="#0284C7" className="smg-anim-bar" />
-                  <rect x="355" y="118" width="135" height="24" rx="6" fill="#0F8C65" className="smg-anim-bar" />
+                  {/* Swimlane Gantt Bars + Attached Labels */}
+                  <g className="smg-anim-bar">
+                    <rect x="20" y="34" width="160" height="24" rx="5" fill="#5D55D6" />
+                    <text x="30" y="50" className="fill-white text-[10px] font-mono font-bold">
+                      Schema &amp; Quotas
+                    </text>
+                  </g>
+                  <g className="smg-anim-bar">
+                    <rect x="195" y="76" width="145" height="24" rx="5" fill="#0284C7" />
+                    <text x="205" y="92" className="fill-white text-[10px] font-mono font-bold">
+                      Hybrid Billing
+                    </text>
+                  </g>
+                  <g className="smg-anim-bar">
+                    <rect x="355" y="118" width="135" height="24" rx="5" fill="#0F8C65" />
+                    <text x="365" y="134" className="fill-white text-[10px] font-mono font-bold">
+                      Prod Release
+                    </text>
+                  </g>
                   {/* SVG Dependency Elbow Connectors */}
                   <path
                     d="M 180,46 L 210,46 L 210,74"
@@ -325,15 +339,6 @@ export const ScrollMotionGraphics: React.FC = () => {
                     fill="none"
                     className="smg-draw-path"
                   />
-                  <text x="30" y="50" className="fill-white text-[10px] font-mono font-bold">
-                    Schema &amp; Quotas
-                  </text>
-                  <text x="205" y="92" className="fill-white text-[10px] font-mono font-bold">
-                    Hybrid Billing
-                  </text>
-                  <text x="365" y="134" className="fill-white text-[10px] font-mono font-bold">
-                    Prod Release
-                  </text>
                 </svg>
               </div>
             )}

@@ -6,7 +6,7 @@ import { useGSAP } from "@gsap/react";
 import {
   Kanban,
   Calendar,
-  Sparkles,
+  Terminal,
   BarChart3,
   CheckCircle2,
   ShieldCheck,
@@ -21,10 +21,10 @@ type ShowcaseTab = "gantt" | "kanban" | "ai" | "capacity" | "governance" | "bill
 const TABS: { id: ShowcaseTab; label: string; icon: React.ReactNode }[] = [
   { id: "gantt", label: "Gantt & Milestones", icon: <Calendar className="w-3.5 h-3.5" /> },
   { id: "kanban", label: "Boards & Subtasks", icon: <Kanban className="w-3.5 h-3.5" /> },
-  { id: "ai", label: "AI Task Synthesis", icon: <Sparkles className="w-3.5 h-3.5" /> },
+  { id: "ai", label: "Brief Parser", icon: <Terminal className="w-3.5 h-3.5" /> },
   { id: "capacity", label: "Workload & Presence", icon: <BarChart3 className="w-3.5 h-3.5" /> },
   { id: "governance", label: "Verification & Audit", icon: <ShieldCheck className="w-3.5 h-3.5" /> },
-  { id: "billing", label: "Multi-Org & Hybrid Sync", icon: <CreditCard className="w-3.5 h-3.5" /> },
+  { id: "billing", label: "Multi-Org & Sync", icon: <CreditCard className="w-3.5 h-3.5" /> },
 ];
 
 export const InteractiveProductShowcase: React.FC = () => {
@@ -58,30 +58,25 @@ export const InteractiveProductShowcase: React.FC = () => {
   );
 
   return (
-    <div className="w-full rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] shadow-xl shadow-[#1E222D]/[0.05] overflow-hidden">
+    <div className="w-full rounded-xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] overflow-hidden">
       {/* Interactive Tab Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 bg-[#F2EFE8] dark:bg-[#12161F] border-b border-[#E4DFD5] dark:border-white/[0.07]">
-        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 w-full xl:w-auto py-0.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 sm:p-3 bg-[#F2EFE8] dark:bg-[#12161F] border-b border-[#E4DFD5] dark:border-white/[0.07]">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 w-full">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`px-2.5 sm:px-3 py-2 min-h-[40px] rounded-xl text-[11px] sm:text-xs font-bold transition-colors flex items-center justify-center sm:justify-start gap-1.5 cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-2 min-h-[40px] rounded-lg text-[11px] sm:text-xs font-semibold transition-colors flex items-center justify-center sm:justify-start gap-1.5 cursor-pointer ${
                 activeTab === t.id
-                  ? "bg-[#5D55D6] text-white shadow-sm"
-                  : "text-[#1E222D] dark:text-slate-200 bg-[#FAF8F4]/70 sm:bg-transparent dark:bg-white/[0.03] sm:dark:bg-transparent hover:bg-[#E4E0D6] dark:hover:bg-white/[0.06]"
+                  ? "bg-[#1E222D] dark:bg-white text-[#FAF8F4] dark:text-[#0B0F19]"
+                  : "text-[#4E5565] dark:text-slate-300 bg-[#FAF8F4]/80 sm:bg-transparent dark:bg-white/[0.03] sm:dark:bg-transparent hover:text-[#1E222D] dark:hover:text-white hover:bg-[#E4E0D6]/70 dark:hover:bg-white/[0.06]"
               }`}
             >
               {t.icon}
               <span className="truncate">{t.label}</span>
             </button>
           ))}
-        </div>
-
-        <div className="hidden xl:flex items-center gap-2 text-[11px] font-mono text-[#0F7656] dark:text-emerald-300 bg-[#E4F2EC] dark:bg-emerald-500/15 px-3 py-1 rounded-full border border-[#C5E3D5] dark:border-emerald-500/25 font-bold">
-          <span className="w-2 h-2 rounded-full bg-[#0F8C65]" />
-          <span>Interactive Feature Explorer</span>
         </div>
       </div>
 
@@ -110,7 +105,7 @@ export const InteractiveProductShowcase: React.FC = () => {
                 { name: "Android Offline SQLite Reconciler", window: "Week 3 – 4", pct: "62%", w: "w-[62%]", color: "bg-[#0F8C65]", tag: "In Progress" },
               ].map((lane) => (
                 <div key={lane.name} className="ips-anim">
-                  <div className="flex justify-between text-xs font-semibold mb-1 text-[#1E222D] dark:text-white">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 text-xs font-semibold mb-1 text-[#1E222D] dark:text-white">
                     <span>{lane.name}</span>
                     <span className="font-mono text-[11px] text-[#4E5565] dark:text-slate-400">
                       {lane.window} &bull; {lane.pct}
@@ -152,13 +147,13 @@ export const InteractiveProductShowcase: React.FC = () => {
         )}
 
         {activeTab === "ai" && (
-          <div className="ips-anim p-5 rounded-2xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#5D55D6] dark:text-[#818CF8]">
-              <Sparkles className="w-4 h-4" />
-              <span>Natural-Language Sprint Synthesis</span>
+          <div className="ips-anim p-5 rounded-xl bg-[#F4F2ED] dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.07] space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#1E222D] dark:text-white">
+              <Terminal className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
+              <span>Brief-to-Task Extraction</span>
             </div>
             <p className="text-xs sm:text-sm text-[#4E5565] dark:text-slate-300 leading-relaxed">
-              Describe deliverables in plain English. TaskPulse AI infers priority, target completion date, department routing, and actionable subtask checklists automatically.
+              Write a plain deliverable brief. TaskPulse maps priority, target due date, department routing, and actionable subtasks directly into your project ledger.
             </p>
             <div className="p-3.5 rounded-xl bg-[#FAF8F4] dark:bg-[#090C11] border border-[#DDD8CE] dark:border-white/[0.08] font-mono text-xs space-y-1">
               <div>

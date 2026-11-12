@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, ArrowRight, CheckCircle2, Clock, Calendar, Tag, ShieldCheck, Loader2 } from "lucide-react";
+import { Command, ArrowRight, CheckCircle2, Clock, Calendar, Tag, Loader2 } from "lucide-react";
 
 interface ParsedTask {
   title: string;
@@ -48,14 +48,14 @@ export const GeminiTaskArchitectBar: React.FC = () => {
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto my-4 sm:my-6 p-4 sm:p-5 rounded-2xl bg-[#FAF8F4]/95 dark:bg-[#151C2C]/85 border border-[#DDD8CE] dark:border-white/15 shadow-lg shadow-[#1E222D]/[0.05] backdrop-blur-xl transition-all">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 text-xs font-semibold text-[#5D55D6] dark:text-[#818CF8]">
-          <Sparkles className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
-          <span>AI Task Architect</span>
+    <div className="w-full p-4 sm:p-5 rounded-xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] transition-colors">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#1E222D] dark:text-white">
+          <Command className="w-3.5 h-3.5 text-[#5D55D6] dark:text-[#818CF8]" />
+          <span>Structured Task Intake</span>
         </div>
-        <span className="text-[10px] text-[#4E5565] dark:text-slate-200 font-mono bg-[#EDEAE2] dark:bg-[#756EF3]/15 px-2.5 py-0.5 rounded-full border border-[#DDD8CE] dark:border-transparent">
-          Natural Language Engine
+        <span className="text-[11px] text-[#6E7485] dark:text-slate-400 font-mono">
+          Convert a brief into priority, department &amp; subtasks
         </span>
       </div>
 

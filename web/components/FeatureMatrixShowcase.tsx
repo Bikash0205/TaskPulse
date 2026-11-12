@@ -353,9 +353,9 @@ export const FeatureMatrixShowcase: React.FC = () => {
         {FEATURES.map((feat) => (
           <div
             key={feat.id}
-            className="lp-matrix-tile group shrink-0 w-[76vw] max-w-[286px] sm:w-auto sm:max-w-none snap-start p-4 rounded-2xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] hover:border-[#5D55D6]/60 transition-colors flex flex-col justify-between gap-2.5 sm:gap-3"
+            className="lp-matrix-tile group shrink-0 w-[76vw] max-w-[286px] sm:w-auto sm:max-w-none snap-start p-4 rounded-xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] hover:border-[#5D55D6]/60 transition-colors flex flex-col justify-between gap-2.5 sm:gap-3"
           >
-            <div className="rounded-xl bg-[#F2EFE8]/85 dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.06] p-2 overflow-hidden">
+            <div className="rounded-lg bg-[#F2EFE8]/85 dark:bg-[#131720] border border-[#E4DFD5] dark:border-white/[0.06] p-2 overflow-hidden">
               <FeatureVectorGraphic id={feat.id} />
             </div>
 

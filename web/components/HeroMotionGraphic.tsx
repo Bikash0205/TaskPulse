@@ -178,15 +178,15 @@ export const HeroMotionGraphic: React.FC = () => {
         }
 
         if (slaNumRef.current) {
-          const s = { val: 91.5 };
+          const s = { val: 1 };
           gsap.to(s, {
-            val: 99.4,
-            duration: 1.4,
+            val: 4,
+            duration: 0.9,
             ease: "power2.out",
             scrollTrigger: { trigger: containerRef.current, start: "top 86%", once: true },
             onUpdate: () => {
               if (slaNumRef.current) {
-                slaNumRef.current.textContent = `${s.val.toFixed(1)}%`;
+                slaNumRef.current.textContent = `${Math.round(s.val)} Active`;
               }
             },
           });
@@ -196,48 +196,21 @@ export const HeroMotionGraphic: React.FC = () => {
     { scope: containerRef, dependencies: [activeMetricView] }
   );
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!stageRef.current) return;
-    const rect = stageRef.current.getBoundingClientRect();
-    const rx = (e.clientX - rect.left) / rect.width - 0.5;
-    const ry = (e.clientY - rect.top) / rect.height - 0.5;
-    gsap.to(stageRef.current, {
-      rotateY: rx * 3,
-      rotateX: -ry * 3,
-      transformPerspective: 1200,
-      duration: 0.4,
-      ease: "power2.out",
-    });
-  };
-
-  const handleMouseLeave = () => {
-    if (!stageRef.current) return;
-    gsap.to(stageRef.current, { rotateY: 0, rotateX: 0, duration: 0.5, ease: "power2.out" });
-  };
-
   return (
-    <div ref={containerRef} className="relative w-full max-w-6xl mx-auto mt-6 sm:mt-10 mb-5 sm:mb-6 select-none">
+    <div ref={containerRef} className="relative w-full mt-2 select-none">
       <div
         ref={stageRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="relative rounded-2xl sm:rounded-3xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] shadow-xl shadow-[#1E222D]/[0.05] dark:shadow-black/60 overflow-hidden"
+        className="relative rounded-xl bg-[#FAF8F4] dark:bg-[#0D1017] border border-[#DDD8CE] dark:border-white/[0.08] overflow-hidden"
       >
-        {/* Cockpit Chrome Top Bar */}
-        <div className="px-3.5 sm:px-6 py-3 sm:py-3.5 border-b border-[#E4DFD5] dark:border-white/[0.07] bg-[#F2EFE8]/80 dark:bg-[#12161F] flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]/80" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0F8C65]/80" />
-            </div>
-            <div className="h-4 w-px bg-[#DDD8CE] dark:bg-white/10" />
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#1E222D] dark:text-slate-100">
-              <GitCommitHorizontal className="w-3.5 h-3.5 text-[#5D55D6] dark:text-[#818CF8]" />
-              <span>Q4 RELEASE // CYCLE 14</span>
-            </div>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E4F2EC] dark:bg-emerald-500/15 text-[#0F7656] dark:text-emerald-300 border border-[#C5E3D5] dark:border-emerald-500/25 text-[10px] font-mono font-bold">
-              ON TRACK
+        {/* Ledger Header Bar */}
+        <div className="px-4 sm:px-6 py-3 border-b border-[#E4DFD5] dark:border-white/[0.07] bg-[#F2EFE8]/80 dark:bg-[#12161F] flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2.5">
+            <GitCommitHorizontal className="w-4 h-4 text-[#5D55D6] dark:text-[#818CF8]" />
+            <span className="text-xs font-mono font-bold text-[#1E222D] dark:text-slate-100">
+              Q4 RELEASE // CYCLE 14
+            </span>
+            <span className="hidden sm:inline-block text-[11px] font-mono text-[#0F7656] dark:text-emerald-400">
+              &bull; In Progress
             </span>
           </div>
 
@@ -282,12 +255,12 @@ export const HeroMotionGraphic: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#F4F2ED] dark:bg-[#131823] border border-[#E4DFD5] dark:border-white/[0.07]">
+              <div className="p-3 rounded-lg bg-[#F4F2ED] dark:bg-[#131823] border border-[#E4DFD5] dark:border-white/[0.07]">
                 <div className="text-[10px] font-mono uppercase tracking-wider text-[#6E7485] dark:text-slate-400">
-                  SLA Compliance
+                  Verified Workstreams
                 </div>
                 <div className="text-sm sm:text-base font-black font-mono tabular-nums text-[#0F8C65] dark:text-emerald-400 mt-0.5">
-                  <span ref={slaNumRef}>99.4%</span>
+                  <span ref={slaNumRef}>4 Active</span>
                 </div>
               </div>
 
