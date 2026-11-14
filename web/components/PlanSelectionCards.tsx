@@ -106,8 +106,10 @@ export const PlanSelectionCards: React.FC<PlanSelectionCardsProps> = ({
             tierId === "enterprise"
               ? "Custom"
               : tierId === "free"
-              ? "$0"
-              : `$${billingCycle === "annual" ? plan.priceAnnualUsd : plan.priceMonthlyUsd}`;
+              ? "₹0"
+              : billingCycle === "annual"
+              ? `₹${plan.priceAnnualInr ?? Math.round((plan.priceMonthlyInr ?? 0) * 0.8)}`
+              : `₹${plan.priceMonthlyInr}`;
 
           return (
             <button
@@ -157,7 +159,7 @@ export const PlanSelectionCards: React.FC<PlanSelectionCardsProps> = ({
                   </span>
                   {tierId !== "enterprise" && (
                     <span className="text-[11px] text-[#4E5565] dark:text-slate-400">
-                      /mo{tierId !== "free" && plan.priceMonthlyInr ? ` (INR ${plan.priceMonthlyInr})` : ""}
+                      /mo
                     </span>
                   )}
                 </div>

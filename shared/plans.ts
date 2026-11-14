@@ -20,6 +20,7 @@ export interface PlanDefinition {
   priceMonthlyUsd: number | null;
   priceAnnualUsd: number | null;
   priceMonthlyInr: number | null;
+  priceAnnualInr?: number | null;
   maxSeats: number | null; // null = unlimited / custom contracted
   maxProjects: number | null;
   maxDepartments: number | null;
@@ -49,6 +50,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
     priceMonthlyUsd: 0,
     priceAnnualUsd: 0,
     priceMonthlyInr: 0,
+    priceAnnualInr: 0,
     maxSeats: 4, // 1 admin + 3 members
     maxProjects: 1,
     maxDepartments: 1,
@@ -72,13 +74,14 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
   },
   growth: {
     id: "growth",
-    name: "TaskPulse Growth",
-    shortName: "Growth",
-    badge: "Small Teams",
-    tagline: "Structured multi-department workflows for small enterprises and local teams.",
-    priceMonthlyUsd: 9,
-    priceAnnualUsd: 7,
+    name: "TaskPulse Lite",
+    shortName: "Lite",
+    badge: "Solo & Teams",
+    tagline: "Structured multi-department workflows for small enterprises and agile teams.",
+    priceMonthlyUsd: 3,
+    priceAnnualUsd: 2,
     priceMonthlyInr: 199,
+    priceAnnualInr: 159,
     maxSeats: 15,
     maxProjects: 5,
     maxDepartments: 3,
@@ -98,18 +101,19 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
       "Team Invite Codes & Verification Logs",
       "Android Offline-First Sync + 50 AI Parses/mo",
     ],
-    googlePlaySku: "taskpulse_growth_monthly",
+    googlePlaySku: "taskpulse_lite_monthly_199",
     supportLabel: "Priority Email Support",
   },
   pro: {
     id: "pro",
-    name: "TaskPulse Pro",
-    shortName: "Pro",
+    name: "TaskPulse Full",
+    shortName: "Full",
     badge: "Most Popular",
     tagline: "Full execution suite with 60fps Gantt timelines, unlimited projects, and AI synthesis.",
-    priceMonthlyUsd: 19,
-    priceAnnualUsd: 15,
-    priceMonthlyInr: 799,
+    priceMonthlyUsd: 5,
+    priceAnnualUsd: 4,
+    priceMonthlyInr: 399,
+    priceAnnualInr: 319,
     maxSeats: 50,
     maxProjects: null,
     maxDepartments: null,
@@ -129,7 +133,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
       "Interactive Gantt Timeline & Exports",
       "Unlimited AI Task Parsing",
     ],
-    googlePlaySku: "taskpulse_pro_monthly_19",
+    googlePlaySku: "taskpulse_full_monthly_399",
     supportLabel: "24/7 Priority Support",
   },
   enterprise: {
@@ -141,6 +145,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
     priceMonthlyUsd: null,
     priceAnnualUsd: null,
     priceMonthlyInr: null,
+    priceAnnualInr: null,
     maxSeats: null,
     maxProjects: null,
     maxDepartments: null,

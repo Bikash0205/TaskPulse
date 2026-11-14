@@ -178,8 +178,8 @@ export function upsertServerSubscription(
     payload.price !== undefined
       ? payload.price
       : billingCycle === "annual"
-      ? planDef.priceAnnualUsd ?? 0
-      : planDef.priceMonthlyUsd ?? 0;
+      ? planDef.priceAnnualInr ?? planDef.priceAnnualUsd ?? 0
+      : planDef.priceMonthlyInr ?? planDef.priceMonthlyUsd ?? 0;
 
   if (idx >= 0) {
     const merged: MemberSubscriptionRecord = {

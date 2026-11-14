@@ -16,7 +16,7 @@ export const PricingTiersSection: React.FC = () => {
           Plans sized around your organization
         </h2>
         <p className="text-xs sm:text-sm text-[#52525B] dark:text-slate-400 mt-2 leading-relaxed">
-          Start free with a small pilot group, or move into Growth, Pro, and custom Enterprise agreements across web and Android.
+          Start free with a small pilot group, or move into Lite, Full, and custom Enterprise agreements across web and Android.
         </p>
       </div>
 
@@ -54,9 +54,13 @@ export const PricingTiersSection: React.FC = () => {
 
                 <div className="flex items-baseline gap-1.5 mb-2.5">
                   <span className="text-3xl font-bold tracking-tight tabular-nums text-[#18181B] dark:text-white">
-                    {plan.priceMonthlyUsd === null ? "Custom" : `$${plan.priceMonthlyUsd}`}
+                    {plan.priceMonthlyInr === null
+                      ? "Custom"
+                      : tierId === "free"
+                      ? "Free"
+                      : `₹${plan.priceMonthlyInr}`}
                   </span>
-                  {plan.priceMonthlyUsd !== null && (
+                  {plan.priceMonthlyInr !== null && tierId !== "free" && (
                     <span className="text-xs text-[#71717A] dark:text-slate-400">
                       / month
                     </span>

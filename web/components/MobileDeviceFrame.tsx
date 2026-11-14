@@ -1303,7 +1303,7 @@ export const MobileDeviceFrame: React.FC<MobileDeviceFrameProps> = ({
                       className="w-full py-2 rounded-xl bg-white hover:bg-slate-50 border border-[#756EF3]/30 text-[#756EF3] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Explore Enterprise Tier ($19/mo)</span>
+                      <span>Explore Full Tier (₹399/mo)</span>
                     </button>
                   </div>
 

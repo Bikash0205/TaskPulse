@@ -4572,7 +4572,7 @@ export default function App() {
                 style={styles.liteUpgradeBtn}
               >
                 <SparklesIcon size={14} color={COLORS.primary} />
-                <Text style={styles.liteUpgradeBtnText}>Explore Enterprise Tier ($19/mo)</Text>
+                <Text style={styles.liteUpgradeBtnText}>Explore Full Tier (₹399/mo)</Text>
               </TouchableOpacity>
             </View>
 
