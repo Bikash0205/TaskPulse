@@ -51,10 +51,10 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
     priceAnnualUsd: 0,
     priceMonthlyInr: 0,
     priceAnnualInr: 0,
-    maxSeats: 4, // 1 admin + 3 members
+    maxSeats: 3, // Up to 3 workspace members
     maxProjects: 1,
     maxDepartments: 1,
-    maxActiveTasks: 25,
+    maxActiveTasks: 20,
     aiParseMonthlyLimit: 5,
     features: {
       gantt_timeline: false,
@@ -64,9 +64,9 @@ export const PLAN_DEFINITIONS: Record<PlanTierId, PlanDefinition> = {
       sso_domain_lock: false,
     },
     bullets: [
-      "1 Admin + up to 3 Members (4 seats)",
+      "Up to 3 Workspace Members (3 seats)",
       "1 Project & 1 Department",
-      "Up to 25 Active Tasks",
+      "Up to 20 Active Tasks",
       "Basic AI Task Parsing (5/month)",
       "Community Support",
     ],
